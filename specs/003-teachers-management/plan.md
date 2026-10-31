@@ -75,3 +75,4 @@ backend/src/modules/teachers/
    - Director de Mariscal Sucre vincula al MISMO maestro en su colegio sin conflictos (demostrando multi-institucionalidad).
    - Verificación de que la plantilla de Franz Tamayo muestra al maestro, y el expediente del maestro refleja AMBAS vinculaciones simultáneas.
    - Elena pone en `LICENCIA` al maestro en Franz Tamayo y se verifica que en Mariscal Sucre sigue `ACTIVO` (independencia estricta).
+

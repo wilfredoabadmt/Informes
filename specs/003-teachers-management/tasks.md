@@ -1,7 +1,7 @@
 # Tareas de Implementación — Feature 003: Expediente Profesional y Gestión de Maestros
 
 **Feature:** `003-teachers-management`  
-**Estado:** PROPUESTO  
+**Estado:** COMPLETADO Y VERIFICADO  
 **Constitución Referencia:** V1.1.0 (Decisiones 002, 004, 005)  
 **DoD:** Código compilado sin errores + Linter aprobado + Pruebas unitarias + Pruebas de integración E2E contra PostgreSQL + Documentación sincronizada.
 
@@ -11,13 +11,13 @@
 
 | ID | Fase | Tarea | Dependencias | Estado |
 |---|---|---|---|---|
-| `T01-TEA-DTO` | Contratos | Implementar DTOs (`create`, `link`, `status`, `search`) con validaciones de RDA y CI | Ninguna | PENDIENTE |
-| `T02-TEA-SVC` | Backend Core | Implementar `TeachersService` (alta central, búsqueda, multi-vinculación, nómina institucional, expediente e historial) | T01-TEA-DTO | PENDIENTE |
-| `T03-TEA-CTRL`| Endpoints | Implementar `TeachersController` con rutas de Nivel 1, Nivel 2 y Nivel 3 | T02-TEA-SVC | PENDIENTE |
-| `T04-TEA-MOD` | Integración | Configurar `TeachersModule` y registrar en `AppModule` | T03-TEA-CTRL | PENDIENTE |
-| `T05-TEA-AUDIT`| Seguridad | Integrar eventos de auditoría para altas, vinculaciones y cambios de estado | T02-TEA-SVC | PENDIENTE |
-| `T06-TEA-UNIT`| Verificación | Pruebas unitarias en `teachers.service.spec.ts` (RDA duplicado, vinculación, armado de dossier) | T02-TEA-SVC | PENDIENTE |
-| `T07-TEA-E2E` | Verificación | Pruebas E2E en `test/teachers.e2e-spec.ts` demostrando multi-vinculación simultánea e independencia | T04-TEA-MOD | PENDIENTE |
+| `T01-TEA-DTO` | Contratos | Implementar DTOs (`create`, `link`, `status`, `search`) con validaciones de RDA y CI | Ninguna | COMPLETADO |
+| `T02-TEA-SVC` | Backend Core | Implementar `TeachersService` (alta central, búsqueda, multi-vinculación, nómina institucional, expediente e historial) | T01-TEA-DTO | COMPLETADO |
+| `T03-TEA-CTRL`| Endpoints | Implementar `TeachersController` con rutas de Nivel 1, Nivel 2 y Nivel 3 | T02-TEA-SVC | COMPLETADO |
+| `T04-TEA-MOD` | Integración | Configurar `TeachersModule` y registrar en `AppModule` | T03-TEA-CTRL | COMPLETADO |
+| `T05-TEA-AUDIT`| Seguridad | Integrar eventos de auditoría para altas, vinculaciones y cambios de estado | T02-TEA-SVC | COMPLETADO |
+| `T06-TEA-UNIT`| Verificación | Pruebas unitarias en `teachers.service.spec.ts` (RDA duplicado, vinculación, armado de dossier) | T02-TEA-SVC | COMPLETADO |
+| `T07-TEA-E2E` | Verificación | Pruebas E2E en `test/teachers.e2e-spec.ts` demostrando multi-vinculación simultánea e independencia | T04-TEA-MOD | COMPLETADO |
 
 ---
 
@@ -70,3 +70,4 @@
   - Consulta de la nómina de Franz Tamayo aislada de otros colegios.
   - Consulta del expediente donde se visualizan ambas vinculaciones institucionales.
   - Elena pone en `LICENCIA` al docente en Franz Tamayo y se comprueba que en Mariscal Sucre sigue `ACTIVO` (independencia estricta de vinculaciones).
+

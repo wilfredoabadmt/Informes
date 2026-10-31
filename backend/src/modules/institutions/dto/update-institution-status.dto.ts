@@ -10,3 +10,4 @@ export class UpdateInstitutionStatusDto {
   @IsBoolean({ message: 'El estado activo debe ser un valor booleano.' })
   activo: boolean;
 }
+

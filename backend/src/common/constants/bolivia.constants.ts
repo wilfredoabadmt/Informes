@@ -11,3 +11,4 @@ export const DEPARTAMENTOS_BOLIVIA = [
 ] as const;
 
 export type DepartamentoBolivia = (typeof DEPARTAMENTOS_BOLIVIA)[number];
+

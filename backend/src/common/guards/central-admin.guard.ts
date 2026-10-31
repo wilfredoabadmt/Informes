@@ -29,3 +29,4 @@ export class CentralAdminGuard implements CanActivate {
     return true;
   }
 }
+

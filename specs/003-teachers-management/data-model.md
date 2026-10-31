@@ -64,3 +64,4 @@ model VinculacionInstitucional {
 1. **Unicidad de `rda`**: Clave única en `maestros`.
 2. **Índice Compuesto Único**: `[institucionId, usuarioId, rolInstitucional]` en `vinculaciones_institucionales` evita que un docente tenga duplicada la misma vinculación activa en el mismo establecimiento.
 3. **Historial de Desvinculación**: Cuando un docente pasa a `LICENCIA`, `TRASLADADO` o `INACTIVO`, se asigna `fechaFin = CURRENT_DATE` sin eliminar la fila física, preservando la trazabilidad de centralizadores y evaluaciones pasadas.
+

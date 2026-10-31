@@ -49,3 +49,4 @@ export class QueryInstitutionsDto {
   @IsString()
   q?: string;
 }
+
