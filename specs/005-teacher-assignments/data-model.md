@@ -115,3 +115,4 @@ WITH CHECK (
    - En una misma gestión, paralelo y materia, sólo puede existir una asignación activa con `es_titular = true`.
 4. **Tutoría de Aula Única:**
    - En un mismo paralelo y gestión, sólo puede existir un docente titular con `es_tutor = true` (Asesor de Curso).
+

@@ -14,3 +14,4 @@ export class UpdateSchoolYearStatusDto {
   })
   estado: EstadoGestion;
 }
+

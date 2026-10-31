@@ -113,3 +113,4 @@ WITH CHECK (
 -- Grant privileges to application user
 GRANT ALL PRIVILEGES ON ALL TABLES IN SCHEMA public TO maestros_app;
 GRANT ALL PRIVILEGES ON ALL SEQUENCES IN SCHEMA public TO maestros_app;
+

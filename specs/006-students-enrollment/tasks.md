@@ -1,7 +1,7 @@
 # Tareas de Implementación — Feature 006: Empadronamiento de Estudiantes (RUDE) y Matriculación Escolar
 
 **Feature:** `006-students-enrollment`  
-**Estado:** PROPUESTO  
+**Estado:** COMPLETADO Y VERIFICADO  
 **Constitución Referencia:** V1.1.0 (Decisiones 001, 002-B, 004, 005; Sección 4 - Entidades 11 y 12; Sección 6 - RBAC Contextual)  
 **DoD:** Código compilado sin errores + Linter aprobado + Pruebas unitarias + Pruebas de integración E2E contra PostgreSQL con RLS + Documentación sincronizada.
 
@@ -11,13 +11,13 @@
 
 | ID | Fase | Tarea | Dependencias | Estado |
 |---|---|---|---|---|
-| `T01-STU-PRISMA`   | Base de Datos | Agregar `Estudiante`, `Inscripcion` y enums a `schema.prisma` | Ninguna | PENDIENTE |
-| `T02-STU-MIGRATION`| Base de Datos | Generar migración y aplicar PostgreSQL RLS a `inscripciones` | T01-STU-PRISMA | PENDIENTE |
-| `T03-STU-DTO`      | Contratos | Implementar DTOs (`create-student`, `enroll-student`, `update-status`) | Ninguna | PENDIENTE |
-| `T04-STU-SVC`      | Backend Core | Implementar `StudentsService` (empadronamiento, matrícula, roster, traspasos) | T02-STU-MIGRATION, T03-STU-DTO | PENDIENTE |
-| `T05-STU-CTRL`     | Endpoints | Implementar `StudentsController` y registrar en `StudentsModule` y `AppModule` | T04-STU-SVC | PENDIENTE |
-| `T06-STU-UNIT`     | Verificación | Pruebas unitarias en `students.service.spec.ts` | T04-STU-SVC | PENDIENTE |
-| `T07-STU-E2E`      | Verificación | Pruebas E2E en `test/students.e2e-spec.ts` con matriculación, roster y traspaso | T05-STU-CTRL | PENDIENTE |
+| `T01-STU-PRISMA`   | Base de Datos | Agregar `Estudiante`, `Inscripcion` y enums a `schema.prisma` | Ninguna | COMPLETADO |
+| `T02-STU-MIGRATION`| Base de Datos | Generar migración y aplicar PostgreSQL RLS a `inscripciones` | T01-STU-PRISMA | COMPLETADO |
+| `T03-STU-DTO`      | Contratos | Implementar DTOs (`create-student`, `enroll-student`, `update-status`) | Ninguna | COMPLETADO |
+| `T04-STU-SVC`      | Backend Core | Implementar `StudentsService` (empadronamiento, matrícula, roster, traspasos) | T02-STU-MIGRATION, T03-STU-DTO | COMPLETADO |
+| `T05-STU-CTRL`     | Endpoints | Implementar `StudentsController` y registrar en `StudentsModule` y `AppModule` | T04-STU-SVC | COMPLETADO |
+| `T06-STU-UNIT`     | Verificación | Pruebas unitarias en `students.service.spec.ts` | T04-STU-SVC | COMPLETADO |
+| `T07-STU-E2E`      | Verificación | Pruebas E2E en `test/students.e2e-spec.ts` con matriculación, roster y traspaso | T05-STU-CTRL | COMPLETADO |
 
 ---
 

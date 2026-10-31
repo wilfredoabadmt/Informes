@@ -84,3 +84,4 @@ Este módulo formaliza quién enseña qué materia en qué aula, con cuántas ho
 2. **Integridad Referencial Cruzada:** El backend debe validar que `vinculacion_id`, `paralelo_id` y `gestion_id` pertenezcan todos a la misma `institucion_id` antes de persistir.
 3. **Auditoría Obligatoria:** Las operaciones de creación, modificación de carga horaria, reasignación y revocación se auditan inmutablemente.
 4. **Rendimiento:** Tiempos de respuesta inferiores a 100 ms para consultas de la matriz académica por colegio.
+

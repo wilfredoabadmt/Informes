@@ -25,3 +25,4 @@ export class QueryAssignmentsDto {
   @IsUUID()
   maestroId?: string;
 }
+

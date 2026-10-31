@@ -35,3 +35,4 @@ export class CreateSectionDto {
   @Max(60)
   cupoMaximo?: number = 35;
 }
+

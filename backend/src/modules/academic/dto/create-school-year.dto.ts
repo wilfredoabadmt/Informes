@@ -31,3 +31,4 @@ export class CreateSchoolYearDto {
   })
   estado?: EstadoGestion = EstadoGestion.ABIERTA;
 }
+

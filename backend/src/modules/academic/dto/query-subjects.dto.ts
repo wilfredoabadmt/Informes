@@ -13,3 +13,4 @@ export class QuerySubjectsDto {
   @IsEnum(CampoSaberes)
   campo?: CampoSaberes;
 }
+

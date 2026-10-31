@@ -72,3 +72,4 @@ sequenceDiagram
 4. Superadmin asigna a Raúl Condori en Mariscal Sucre para Geografía -> `201 Created` (demuestra que el mismo maestro opera independientemente en ambas escuelas).
 5. Raúl Condori consulta sus asignaciones en Franz Tamayo -> Ve únicamente sus materias en Franz Tamayo.
 6. Raúl Condori cambia contexto a Mariscal Sucre y consulta -> Ve únicamente su materia en Mariscal Sucre.
+
