@@ -155,127 +155,116 @@ describe('Feature 005: Asignaciones Académicas Docentes y Carga Horaria (E2E)',
     });
     paraleloMariscalAId = pm.id;
 
-    // 8. Asegurar Maestro Raúl Condori
-    let mRaul = await prisma.maestro.findUnique({ where: { rda: 'RDA-55667' } });
-    if (!mRaul) {
-      const p = await prisma.persona.create({
-        data: {
-          ci: '8899001',
-          nombres: 'Raúl',
-          primerApellido: 'Condori',
-          segundoApellido: 'Apaza',
-        },
-      });
-      await prisma.usuario.create({
-        data: {
-          personaId: p.id,
-          email: 'raul.condori@minedu.gob.bo',
-          passwordHash:
-            '$argon2id$v=19$m=65536,t=3,p=4$c29tZXNhbHQ$12345678901234567890123456789012',
-        },
-      });
-      mRaul = await prisma.maestro.create({
-        data: {
-          personaId: p.id,
-          rda: 'RDA-55667',
-          especialidad: 'Biología y Geografía',
-        },
-      });
+    // 8. Limpieza y preparación de Maestros de prueba (Marcelo y Pedro)
+    const prevM = await prisma.maestro.findMany({
+      where: { rda: { in: ['RDA-99111', 'RDA-99112'] } },
+    });
+    for (const m of prevM) {
+      await prisma.asignacionAcademica.deleteMany({ where: { vinculacion: { maestroId: m.id } } });
+      await prisma.vinculacionInstitucional.deleteMany({ where: { maestroId: m.id } });
+      await prisma.maestro.delete({ where: { id: m.id } });
+      await prisma.usuario.deleteMany({ where: { personaId: m.personaId } });
+      await prisma.persona.delete({ where: { id: m.personaId } });
     }
+    await prisma.usuario.deleteMany({
+      where: { email: { in: ['marcelo.ticona@minedu.gob.bo', 'pedro.gutierrez@minedu.gob.bo'] } },
+    });
+    await prisma.persona.deleteMany({
+      where: { ci: { in: ['7799111', '7799112'] } },
+    });
+
+    const pMarcelo = await prisma.persona.create({
+      data: {
+        ci: '7799111',
+        nombres: 'Marcelo',
+        primerApellido: 'Ticona',
+        segundoApellido: 'Apaza',
+      },
+    });
+    const uMarcelo = await prisma.usuario.create({
+      data: {
+        personaId: pMarcelo.id,
+        email: 'marcelo.ticona@minedu.gob.bo',
+        passwordHash:
+          '$argon2id$v=19$m=65536,t=3,p=4$c29tZXNhbHQ$12345678901234567890123456789012',
+      },
+    });
+    const mRaul = await prisma.maestro.create({
+      data: {
+        personaId: pMarcelo.id,
+        rda: 'RDA-99111',
+        especialidad: 'Biología y Geografía',
+      },
+    });
     maestroRaulId = mRaul.id;
 
-    // Vincular Raúl en Franz Tamayo
-    const uRaul = await prisma.usuario.findFirst({
-      where: { persona: { maestro: { id: maestroRaulId } } },
+    // Vincular Marcelo en Franz Tamayo
+    const vincRF = await prisma.vinculacionInstitucional.create({
+      data: {
+        institucionId: colFranzTamayoId,
+        usuarioId: uMarcelo.id,
+        maestroId: maestroRaulId,
+        rolInstitucional: RolInstitucional.MAESTRO,
+        estado: EstadoVinculacion.ACTIVO,
+      },
     });
-    let vincRF = await prisma.vinculacionInstitucional.findFirst({
-      where: { institucionId: colFranzTamayoId, maestroId: maestroRaulId },
-    });
-    if (!vincRF) {
-      vincRF = await prisma.vinculacionInstitucional.create({
-        data: {
-          institucionId: colFranzTamayoId,
-          usuarioId: uRaul!.id,
-          maestroId: maestroRaulId,
-          rolInstitucional: RolInstitucional.MAESTRO,
-          estado: EstadoVinculacion.ACTIVO,
-        },
-      });
-    }
     vinculacionRaulFranzId = vincRF.id;
 
-    // Vincular Raúl en Mariscal Sucre
-    let vincRM = await prisma.vinculacionInstitucional.findFirst({
-      where: { institucionId: colMariscalSucreId, maestroId: maestroRaulId },
+    // Vincular Marcelo en Mariscal Sucre
+    const vincRM = await prisma.vinculacionInstitucional.create({
+      data: {
+        institucionId: colMariscalSucreId,
+        usuarioId: uMarcelo.id,
+        maestroId: maestroRaulId,
+        rolInstitucional: RolInstitucional.MAESTRO,
+        estado: EstadoVinculacion.ACTIVO,
+      },
     });
-    if (!vincRM) {
-      vincRM = await prisma.vinculacionInstitucional.create({
-        data: {
-          institucionId: colMariscalSucreId,
-          usuarioId: uRaul!.id,
-          maestroId: maestroRaulId,
-          rolInstitucional: RolInstitucional.MAESTRO,
-          estado: EstadoVinculacion.ACTIVO,
-        },
-      });
-    }
     vinculacionRaulMariscalId = vincRM.id;
 
     // Asegurar Maestro Pedro Gutiérrez (en Franz Tamayo)
-    let mPedro = await prisma.maestro.findUnique({ where: { rda: 'RDA-77889' } });
-    if (!mPedro) {
-      const p = await prisma.persona.create({
-        data: {
-          ci: '9900112',
-          nombres: 'Pedro',
-          primerApellido: 'Gutiérrez',
-        },
-      });
-      const u = await prisma.usuario.create({
-        data: {
-          personaId: p.id,
-          email: 'pedro.gutierrez@minedu.gob.bo',
-          passwordHash:
-            '$argon2id$v=19$m=65536,t=3,p=4$c29tZXNhbHQ$12345678901234567890123456789012',
-        },
-      });
-      mPedro = await prisma.maestro.create({
-        data: {
-          personaId: p.id,
-          rda: 'RDA-77889',
-          especialidad: 'Matemática',
-        },
-      });
-    }
+    const pPedro = await prisma.persona.create({
+      data: {
+        ci: '7799112',
+        nombres: 'Pedro',
+        primerApellido: 'Gutiérrez',
+      },
+    });
+    const uPedro = await prisma.usuario.create({
+      data: {
+        personaId: pPedro.id,
+        email: 'pedro.gutierrez@minedu.gob.bo',
+        passwordHash:
+          '$argon2id$v=19$m=65536,t=3,p=4$c29tZXNhbHQ$12345678901234567890123456789012',
+      },
+    });
+    const mPedro = await prisma.maestro.create({
+      data: {
+        personaId: pPedro.id,
+        rda: 'RDA-99112',
+        especialidad: 'Matemática',
+      },
+    });
     maestroPedroId = mPedro.id;
 
-    const uPedro = await prisma.usuario.findFirst({
-      where: { persona: { maestro: { id: maestroPedroId } } },
+    const vincPF = await prisma.vinculacionInstitucional.create({
+      data: {
+        institucionId: colFranzTamayoId,
+        usuarioId: uPedro.id,
+        maestroId: maestroPedroId,
+        rolInstitucional: RolInstitucional.MAESTRO,
+        estado: EstadoVinculacion.ACTIVO,
+      },
     });
-    let vincPF = await prisma.vinculacionInstitucional.findFirst({
-      where: { institucionId: colFranzTamayoId, maestroId: maestroPedroId },
-    });
-    if (!vincPF) {
-      vincPF = await prisma.vinculacionInstitucional.create({
-        data: {
-          institucionId: colFranzTamayoId,
-          usuarioId: uPedro!.id,
-          maestroId: maestroPedroId,
-          rolInstitucional: RolInstitucional.MAESTRO,
-          estado: EstadoVinculacion.ACTIVO,
-        },
-      });
-    }
     vinculacionPedroFranzId = vincPF.id;
 
-    // Login Raúl
+    // Login Marcelo
     const resRaul = await request(app.getHttpServer())
       .post('/api/v1/auth/login')
-      .send({ identifier: 'raul.condori@minedu.gob.bo', password: 'Bolivia2026!' });
+      .send({ identifier: 'marcelo.ticona@minedu.gob.bo', password: 'Bolivia2026!' });
     if (resRaul.status === 200) {
       maestroRaulToken = resRaul.body.tokens.accessToken;
     } else {
-      // Si la contraseña simulada difiere, usar token del superadmin para pruebas de maestro
       maestroRaulToken = superadminToken;
     }
   });
@@ -290,6 +279,26 @@ describe('Feature 005: Asignaciones Académicas Docentes y Carga Horaria (E2E)',
     await prisma.gestionEscolar.deleteMany({
       where: { institucionId: { in: [colFranzTamayoId, colMariscalSucreId] } },
     });
+
+    if (maestroRaulId) {
+      await prisma.vinculacionInstitucional.deleteMany({ where: { maestroId: maestroRaulId } });
+      const m = await prisma.maestro.findUnique({ where: { id: maestroRaulId } });
+      if (m) {
+        await prisma.maestro.delete({ where: { id: maestroRaulId } });
+        await prisma.usuario.deleteMany({ where: { personaId: m.personaId } });
+        await prisma.persona.delete({ where: { id: m.personaId } });
+      }
+    }
+    if (maestroPedroId) {
+      await prisma.vinculacionInstitucional.deleteMany({ where: { maestroId: maestroPedroId } });
+      const m = await prisma.maestro.findUnique({ where: { id: maestroPedroId } });
+      if (m) {
+        await prisma.maestro.delete({ where: { id: maestroPedroId } });
+        await prisma.usuario.deleteMany({ where: { personaId: m.personaId } });
+        await prisma.persona.delete({ where: { id: m.personaId } });
+      }
+    }
+
     await app.close();
   });
 
@@ -344,8 +353,8 @@ describe('Feature 005: Asignaciones Académicas Docentes y Carga Horaria (E2E)',
         .expect(201);
 
       expect(res.body).toHaveProperty('id');
-      expect(res.body.docente.rda).toBe('RDA-55667');
-      expect(res.body.docente.nombreCompleto).toContain('Raúl Condori');
+      expect(res.body.docente.rda).toBe('RDA-99111');
+      expect(res.body.docente.nombreCompleto).toContain('Marcelo Ticona');
       expect(res.body.materia.nombre).toContain('Biología');
       expect(res.body.paralelo.letra).toBe('A');
       expect(res.body.horasSemanales).toBe(6);
@@ -420,14 +429,14 @@ describe('Feature 005: Asignaciones Académicas Docentes y Carga Horaria (E2E)',
         })
         .expect(201);
 
-      expect(res.body.docente.rda).toBe('RDA-77889');
+      expect(res.body.docente.rda).toBe('RDA-99112');
       expect(res.body.materia.nombre).toContain('Matemática');
       expect(res.body.esTutor).toBe(false);
 
       asignacionPedroFranzId = res.body.id;
     });
 
-    it('debe permitir asignar a Raúl en Mariscal Sucre de forma totalmente independiente (Multi-Tenant)', async () => {
+    it('debe permitir asignar a Marcelo en Mariscal Sucre de forma totalmente independiente (Multi-Tenant)', async () => {
       const res = await request(app.getHttpServer())
         .post('/api/v1/academic/assignments')
         .set('Authorization', `Bearer ${superadminToken}`)
@@ -443,7 +452,7 @@ describe('Feature 005: Asignaciones Académicas Docentes y Carga Horaria (E2E)',
         .expect(201);
 
       expect(res.body.institucionId).toBe(colMariscalSucreId);
-      expect(res.body.docente.rda).toBe('RDA-55667');
+      expect(res.body.docente.rda).toBe('RDA-99111');
     });
   });
 
@@ -474,7 +483,7 @@ describe('Feature 005: Asignaciones Académicas Docentes y Carga Horaria (E2E)',
         .expect(200);
 
       expect(res.body).toHaveLength(1);
-      expect(res.body[0].docente.rda).toBe('RDA-77889');
+      expect(res.body[0].docente.rda).toBe('RDA-99112');
     });
   });
 
