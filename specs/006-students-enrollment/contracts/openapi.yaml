@@ -1,0 +1,378 @@
+openapi: 3.0.3
+info:
+  title: API de Estudiantes y Matriculación Escolar (Feature 006)
+  description: Servicios para el empadronamiento de estudiantes con código RUDE, matrícula escolar en paralelos, traspasos y consultas de nómina docente (SEP Bolivia).
+  version: 1.0.0
+servers:
+  - url: /api/v1
+    description: Servidor Backend Local / Staging
+
+paths:
+  /students:
+    post:
+      summary: Empadronar a un nuevo estudiante con código RUDE (Nivel 1 y Nivel 2)
+      operationId: createStudent
+      security:
+        - BearerAuth: []
+      tags:
+        - Estudiantes y RUDE
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CreateStudentDto'
+      responses:
+        '201':
+          description: Estudiante registrado exitosamente
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/StudentResponseDto'
+        '409':
+          description: El código RUDE o Cédula de Identidad ya está registrado
+
+    get:
+      summary: Buscar estudiantes en el padrón nacional por RUDE, CI o nombres (Nivel 1 y Nivel 2)
+      operationId: searchStudents
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: q
+          in: query
+          required: true
+          schema:
+            type: string
+          description: Término de búsqueda (RUDE, CI, nombres o apellidos)
+      tags:
+        - Estudiantes y RUDE
+      responses:
+        '200':
+          description: Lista de estudiantes encontrados
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/StudentResponseDto'
+
+  /students/{id}:
+    get:
+      summary: Consultar ficha biográfica del estudiante e historial de matrículas
+      operationId: getStudentById
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      tags:
+        - Estudiantes y RUDE
+      responses:
+        '200':
+          description: Ficha completa del estudiante
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/StudentProfileDto'
+        '404':
+          description: Estudiante no encontrado
+
+  /students/enroll:
+    post:
+      summary: Matricular a un estudiante en un paralelo y gestión escolar (Nivel 2)
+      operationId: enrollStudent
+      security:
+        - BearerAuth: []
+      parameters:
+        - $ref: '#/components/parameters/TenantHeader'
+      tags:
+        - Matriculación Escolar (Nivel 2)
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/EnrollStudentDto'
+      responses:
+        '201':
+          description: Estudiante matriculado exitosamente
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/EnrollmentResponseDto'
+        '400':
+          description: Gestión cerrada o cupo del aula superado
+        '404':
+          description: Estudiante, gestión o paralelo no encontrado
+        '409':
+          description: El estudiante ya cuenta con matrícula activa en esta gestión escolar
+
+  /students/sections/{paraleloId}/roster:
+    get:
+      summary: Consultar lista oficial de estudiantes de un aula / paralelo (Nivel 2 y Nivel 3)
+      operationId: getSectionRoster
+      security:
+        - BearerAuth: []
+      parameters:
+        - $ref: '#/components/parameters/TenantHeader'
+        - name: paraleloId
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      tags:
+        - Roster de Aula y Matrícula
+      responses:
+        '200':
+          description: Nómina oficial de estudiantes del paralelo ordenada alfabéticamente
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/RosterItemDto'
+        '403':
+          description: El docente no tiene asignación pedagógica activa en este paralelo
+
+  /students/enrollments/{id}/status:
+    patch:
+      summary: Modificar estado de la matrícula (Traspaso o Retiro) (Nivel 2)
+      operationId: updateEnrollmentStatus
+      security:
+        - BearerAuth: []
+      parameters:
+        - $ref: '#/components/parameters/TenantHeader'
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      tags:
+        - Matriculación Escolar (Nivel 2)
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/UpdateEnrollmentStatusDto'
+      responses:
+        '200':
+          description: Estado de matrícula actualizado
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/EnrollmentResponseDto'
+
+components:
+  securitySchemes:
+    BearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+
+  parameters:
+    TenantHeader:
+      name: X-Institution-Id
+      in: header
+      required: true
+      description: UUID de la institución activa bajo sesión
+      schema:
+        type: string
+        format: uuid
+
+  schemas:
+    CreateStudentDto:
+      type: object
+      required:
+        - codigoRude
+        - nombres
+        - primerApellido
+        - fechaNacimiento
+      properties:
+        codigoRude:
+          type: string
+          example: '8073004520261A'
+        ci:
+          type: string
+          example: '12345678'
+        complemento:
+          type: string
+          example: '1A'
+        nombres:
+          type: string
+          example: 'Mateo'
+        primerApellido:
+          type: string
+          example: 'Mamani'
+        segundoApellido:
+          type: string
+          example: 'Quispe'
+        fechaNacimiento:
+          type: string
+          format: date
+          example: '2012-05-14'
+        genero:
+          type: string
+          enum: [M, F]
+          example: 'M'
+        direccion:
+          type: string
+          example: 'Av. Juan Pablo II #450, El Alto'
+        nombreTutor:
+          type: string
+          example: 'Lucía Quispe'
+        ciTutor:
+          type: string
+          example: '4567890'
+        parentescoTutor:
+          type: string
+          enum: [PADRE, MADRE, TUTOR_LEGAL, ABUELO, HERMANO, OTRO]
+          example: 'MADRE'
+        telefonoTutor:
+          type: string
+          example: '78912345'
+
+    EnrollStudentDto:
+      type: object
+      required:
+        - estudianteId
+        - gestionId
+        - paraleloId
+      properties:
+        estudianteId:
+          type: string
+          format: uuid
+        gestionId:
+          type: string
+          format: uuid
+        paraleloId:
+          type: string
+          format: uuid
+        esRepitente:
+          type: boolean
+          default: false
+        observaciones:
+          type: string
+          example: 'Traslado procedente de La Paz'
+
+    UpdateEnrollmentStatusDto:
+      type: object
+      required:
+        - estado
+      properties:
+        estado:
+          type: string
+          enum: [EFECTIVO, RETIRADO_TRASLADO, RETIRADO_ABANDONO, NO_INCORPORADO]
+          example: 'RETIRADO_TRASLADO'
+        motivo:
+          type: string
+          example: 'Cambio de domicilio interprovincial'
+
+    StudentResponseDto:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        codigoRude:
+          type: string
+        ci:
+          type: string
+        nombreCompleto:
+          type: string
+        fechaNacimiento:
+          type: string
+        genero:
+          type: string
+        tutor:
+          type: object
+          properties:
+            nombre:
+              type: string
+            parentesco:
+              type: string
+            telefono:
+              type: string
+
+    RosterItemDto:
+      type: object
+      properties:
+        inscripcionId:
+          type: string
+          format: uuid
+        estudianteId:
+          type: string
+          format: uuid
+        codigoRude:
+          type: string
+        ci:
+          type: string
+        nombreCompleto:
+          type: string
+        primerApellido:
+          type: string
+        segundoApellido:
+          type: string
+        nombres:
+          type: string
+        genero:
+          type: string
+        esRepitente:
+          type: boolean
+        estadoInscripcion:
+          type: string
+        tutor:
+          type: object
+          properties:
+            nombre:
+              type: string
+            telefono:
+              type: string
+
+    EnrollmentResponseDto:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        estudianteId:
+          type: string
+          format: uuid
+        institucionId:
+          type: string
+          format: uuid
+        gestionId:
+          type: string
+          format: uuid
+        paraleloId:
+          type: string
+          format: uuid
+        estado:
+          type: string
+        esRepitente:
+          type: boolean
+        fechaInscripcion:
+          type: string
+
+    StudentProfileDto:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        codigoRude:
+          type: string
+        persona:
+          type: object
+        tutor:
+          type: object
+        historialMatriculas:
+          type: array
+          items:
+            type: object

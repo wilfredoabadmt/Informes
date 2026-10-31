@@ -21,3 +21,4 @@ export class UpdateAssignmentStatusDto {
   @MaxLength(255)
   motivo?: string;
 }
+

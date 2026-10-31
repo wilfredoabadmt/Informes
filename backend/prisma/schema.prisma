@@ -90,6 +90,22 @@ enum EstadoAsignacion {
   FINALIZADA
 }
 
+enum ParentescoTutor {
+  PADRE
+  MADRE
+  TUTOR_LEGAL
+  ABUELO
+  HERMANO
+  OTRO
+}
+
+enum EstadoInscripcion {
+  EFECTIVO
+  RETIRADO_TRASLADO
+  RETIRADO_ABANDONO
+  NO_INCORPORADO
+}
+
 // -------------------------------------------------------------
 // MODELO DE IDENTIDAD CENTRALIZADA
 // -------------------------------------------------------------
@@ -110,6 +126,7 @@ model Persona {
 
   usuario Usuario?
   maestro Maestro?
+  estudiante Estudiante?
 
   @@index([ci])
   @@map("personas")
@@ -177,6 +194,7 @@ model UnidadEducativa {
   gestiones     GestionEscolar[]
   paralelos     Paralelo[]
   asignaciones  AsignacionAcademica[]
+  inscripciones Inscripcion[]
   auditorias    RegistroAuditoria[]
 
   @@index([sie])
@@ -227,6 +245,7 @@ model GestionEscolar {
   institucion UnidadEducativa @relation(fields: [institucionId], references: [id], onDelete: Cascade)
   paralelos   Paralelo[]
   asignaciones AsignacionAcademica[]
+  inscripciones Inscripcion[]
 
   @@unique([institucionId, anio])
   @@index([institucionId])
@@ -277,6 +296,7 @@ model Paralelo {
   gestion     GestionEscolar  @relation(fields: [gestionId], references: [id], onDelete: Cascade)
   curso       Curso           @relation(fields: [cursoId], references: [id], onDelete: Cascade)
   asignaciones AsignacionAcademica[]
+  inscripciones Inscripcion[]
 
   @@unique([gestionId, cursoId, letra, turno])
   @@index([institucionId])
@@ -318,6 +338,54 @@ model AsignacionAcademica {
   @@index([paraleloId])
   @@index([materiaId])
   @@map("asignaciones_academicas")
+}
+
+// -------------------------------------------------------------
+// ESTUDIANTES Y MATRICULACIÓN ESCOLAR (FEATURE 006)
+// -------------------------------------------------------------
+
+model Estudiante {
+  id              String           @id @default(uuid()) @db.Uuid
+  personaId       String           @unique @map("persona_id") @db.Uuid
+  codigoRude      String           @unique @map("codigo_rude") @db.VarChar(50)
+  nombreTutor     String?          @map("nombre_tutor") @db.VarChar(150)
+  ciTutor         String?          @map("ci_tutor") @db.VarChar(20)
+  parentescoTutor ParentescoTutor? @default(PADRE) @map("parentesco_tutor")
+  telefonoTutor   String?          @map("telefono_tutor") @db.VarChar(30)
+  createdAt       DateTime         @default(now()) @map("created_at")
+  updatedAt       DateTime         @updatedAt @map("updated_at")
+
+  persona       Persona       @relation(fields: [personaId], references: [id], onDelete: Cascade)
+  inscripciones Inscripcion[]
+
+  @@index([codigoRude])
+  @@map("estudiantes")
+}
+
+model Inscripcion {
+  id               String            @id @default(uuid()) @db.Uuid
+  institucionId    String            @map("institucion_id") @db.Uuid
+  estudianteId     String            @map("estudiante_id") @db.Uuid
+  gestionId        String            @map("gestion_id") @db.Uuid
+  paraleloId       String            @map("paralelo_id") @db.Uuid
+  estado           EstadoInscripcion @default(EFECTIVO)
+  esRepitente      Boolean           @default(false) @map("es_repitente")
+  observaciones    String?           @db.VarChar(255)
+  fechaInscripcion DateTime          @default(now()) @map("fecha_inscripcion")
+  activo           Boolean           @default(true)
+  createdAt        DateTime          @default(now()) @map("created_at")
+  updatedAt        DateTime          @updatedAt @map("updated_at")
+
+  institucion UnidadEducativa @relation(fields: [institucionId], references: [id], onDelete: Cascade)
+  estudiante  Estudiante      @relation(fields: [estudianteId], references: [id], onDelete: Cascade)
+  gestion     GestionEscolar  @relation(fields: [gestionId], references: [id], onDelete: Cascade)
+  paralelo    Paralelo        @relation(fields: [paraleloId], references: [id], onDelete: Cascade)
+
+  @@index([institucionId])
+  @@index([estudianteId])
+  @@index([gestionId])
+  @@index([paraleloId])
+  @@map("inscripciones")
 }
 
 model RefreshToken {

@@ -9,3 +9,4 @@ import { TenantContextGuard } from '../../common/guards/tenant-context.guard';
   exports: [AcademicService],
 })
 export class AcademicModule {}
+
