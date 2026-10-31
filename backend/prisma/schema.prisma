@@ -84,6 +84,12 @@ enum CampoSaberes {
   CIENCIA_TECNOLOGIA_PRODUCCION
 }
 
+enum EstadoAsignacion {
+  ACTIVA
+  SUSPENDIDA
+  FINALIZADA
+}
+
 // -------------------------------------------------------------
 // MODELO DE IDENTIDAD CENTRALIZADA
 // -------------------------------------------------------------
@@ -170,6 +176,7 @@ model UnidadEducativa {
   vinculaciones VinculacionInstitucional[]
   gestiones     GestionEscolar[]
   paralelos     Paralelo[]
+  asignaciones  AsignacionAcademica[]
   auditorias    RegistroAuditoria[]
 
   @@index([sie])
@@ -193,6 +200,7 @@ model VinculacionInstitucional {
   institucion UnidadEducativa @relation(fields: [institucionId], references: [id], onDelete: Cascade)
   maestro     Maestro?        @relation(fields: [maestroId], references: [id], onDelete: SetNull)
   usuario     Usuario         @relation(fields: [usuarioId], references: [id], onDelete: Cascade)
+  asignaciones AsignacionAcademica[]
 
   @@unique([institucionId, usuarioId, rolInstitucional])
   @@index([institucionId])
@@ -218,6 +226,7 @@ model GestionEscolar {
 
   institucion UnidadEducativa @relation(fields: [institucionId], references: [id], onDelete: Cascade)
   paralelos   Paralelo[]
+  asignaciones AsignacionAcademica[]
 
   @@unique([institucionId, anio])
   @@index([institucionId])
@@ -245,6 +254,7 @@ model Materia {
   nivel     NivelEducativo
   esTroncal Boolean        @default(true) @map("es_troncal")
   orden     Int            @default(0)
+  asignaciones AsignacionAcademica[]
 
   @@index([nivel])
   @@index([campo])
@@ -266,6 +276,7 @@ model Paralelo {
   institucion UnidadEducativa @relation(fields: [institucionId], references: [id], onDelete: Cascade)
   gestion     GestionEscolar  @relation(fields: [gestionId], references: [id], onDelete: Cascade)
   curso       Curso           @relation(fields: [cursoId], references: [id], onDelete: Cascade)
+  asignaciones AsignacionAcademica[]
 
   @@unique([gestionId, cursoId, letra, turno])
   @@index([institucionId])
@@ -277,6 +288,37 @@ model Paralelo {
 // -------------------------------------------------------------
 // SESIONES, TOKENS Y AUDITORÍA
 // -------------------------------------------------------------
+
+model AsignacionAcademica {
+  id              String           @id @default(uuid()) @db.Uuid
+  institucionId   String           @map("institucion_id") @db.Uuid
+  gestionId       String           @map("gestion_id") @db.Uuid
+  vinculacionId   String           @map("vinculacion_id") @db.Uuid
+  paraleloId      String           @map("paralelo_id") @db.Uuid
+  materiaId       String           @map("materia_id") @db.Uuid
+  horasSemanales  Int              @default(4) @map("horas_semanales")
+  esTitular       Boolean          @default(true) @map("es_titular")
+  esTutor         Boolean          @default(false) @map("es_tutor")
+  estado          EstadoAsignacion @default(ACTIVA)
+  fechaAsignacion DateTime         @default(now()) @map("fecha_asignacion")
+  activo          Boolean          @default(true)
+  createdAt       DateTime         @default(now()) @map("created_at")
+  updatedAt       DateTime         @updatedAt @map("updated_at")
+
+  institucion  UnidadEducativa          @relation(fields: [institucionId], references: [id], onDelete: Cascade)
+  gestion      GestionEscolar           @relation(fields: [gestionId], references: [id], onDelete: Cascade)
+  vinculacion  VinculacionInstitucional @relation(fields: [vinculacionId], references: [id], onDelete: Cascade)
+  paralelo     Paralelo                 @relation(fields: [paraleloId], references: [id], onDelete: Cascade)
+  materia      Materia                  @relation(fields: [materiaId], references: [id], onDelete: Cascade)
+
+  @@unique([gestionId, paraleloId, materiaId, vinculacionId])
+  @@index([institucionId])
+  @@index([gestionId])
+  @@index([vinculacionId])
+  @@index([paraleloId])
+  @@index([materiaId])
+  @@map("asignaciones_academicas")
+}
 
 model RefreshToken {
   id               String    @id @default(uuid()) @db.Uuid

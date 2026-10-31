@@ -1,7 +1,7 @@
 # Tareas de Implementación — Feature 005: Asignaciones Académicas Docentes y Carga Horaria
 
 **Feature:** `005-teacher-assignments`  
-**Estado:** PROPUESTO  
+**Estado:** COMPLETADO Y VERIFICADO  
 **Constitución Referencia:** V1.1.0 (Decisiones 001, 002-A, 002-B, 004, 005; Sección 4 - Modelo de Datos; Sección 6 - RBAC Contextual)  
 **DoD:** Código compilado sin errores + Linter aprobado + Pruebas unitarias + Pruebas de integración E2E contra PostgreSQL con RLS + Documentación sincronizada.
 
@@ -11,13 +11,13 @@
 
 | ID | Fase | Tarea | Dependencias | Estado |
 |---|---|---|---|---|
-| `T01-ASG-PRISMA`   | Base de Datos | Agregar `AsignacionAcademica` y `EstadoAsignacion` a `schema.prisma` | Ninguna | PENDIENTE |
-| `T02-ASG-MIGRATION`| Base de Datos | Generar migración y aplicar políticas PostgreSQL RLS a `asignaciones_academicas` | T01-ASG-PRISMA | PENDIENTE |
-| `T03-ASG-DTO`      | Contratos | Implementar DTOs (`create-assignment`, `update-status`, `query-assignments`) | Ninguna | PENDIENTE |
-| `T04-ASG-SVC`      | Backend Core | Implementar lógica de asignación y validaciones pedagógicas en `AcademicService` | T02-ASG-MIGRATION, T03-ASG-DTO | PENDIENTE |
-| `T05-ASG-CTRL`     | Endpoints | Exponer endpoints REST en `AcademicController` con seguridad de tenant y roles | T04-ASG-SVC | PENDIENTE |
-| `T06-ASG-UNIT`     | Verificación | Pruebas unitarias de validación y reglas de negocio en `academic.service.spec.ts` | T04-ASG-SVC | PENDIENTE |
-| `T07-ASG-E2E`      | Verificación | Pruebas de integración E2E demostrando asignación y multi-tenancy del docente | T05-ASG-CTRL | PENDIENTE |
+| `T01-ASG-PRISMA`   | Base de Datos | Agregar `AsignacionAcademica` y `EstadoAsignacion` a `schema.prisma` | Ninguna | COMPLETADO |
+| `T02-ASG-MIGRATION`| Base de Datos | Generar migración y aplicar políticas PostgreSQL RLS a `asignaciones_academicas` | T01-ASG-PRISMA | COMPLETADO |
+| `T03-ASG-DTO`      | Contratos | Implementar DTOs (`create-assignment`, `update-status`, `query-assignments`) | Ninguna | COMPLETADO |
+| `T04-ASG-SVC`      | Backend Core | Implementar lógica de asignación y validaciones pedagógicas en `AcademicService` | T02-ASG-MIGRATION, T03-ASG-DTO | COMPLETADO |
+| `T05-ASG-CTRL`     | Endpoints | Exponer endpoints REST en `AcademicController` con seguridad de tenant y roles | T04-ASG-SVC | COMPLETADO |
+| `T06-ASG-UNIT`     | Verificación | Pruebas unitarias de validación y reglas de negocio en `academic.service.spec.ts` | T04-ASG-SVC | COMPLETADO |
+| `T07-ASG-E2E`      | Verificación | Pruebas de integración E2E demostrando asignación y multi-tenancy del docente | T05-ASG-CTRL | COMPLETADO |
 
 ---
 

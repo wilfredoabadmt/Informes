@@ -3,6 +3,7 @@ import {
   Post,
   Get,
   Patch,
+  Delete,
   Body,
   Param,
   Query,
@@ -24,6 +25,9 @@ import { CreateSchoolYearDto } from './dto/create-school-year.dto';
 import { UpdateSchoolYearStatusDto } from './dto/update-school-year-status.dto';
 import { CreateSectionDto } from './dto/create-section.dto';
 import { QuerySubjectsDto } from './dto/query-subjects.dto';
+import { CreateAssignmentDto } from './dto/create-assignment.dto';
+import { UpdateAssignmentStatusDto } from './dto/update-assignment-status.dto';
+import { QueryAssignmentsDto } from './dto/query-assignments.dto';
 import { JwtAuthGuard } from '../../common/guards/jwt-auth.guard';
 import { TenantContextGuard } from '../../common/guards/tenant-context.guard';
 import { CurrentUser } from '../../common/decorators/current-user.decorator';
@@ -185,5 +189,142 @@ export class AcademicController {
     @Query('gestionId', ParseUUIDPipe) gestionId: string,
   ) {
     return this.academicService.getAcademicTree(tenant.institutionId, gestionId);
+  }
+
+  // -------------------------------------------------------------
+  // ASIGNACIONES ACADÉMICAS Y CARGA HORARIA (FEATURE 005)
+  // -------------------------------------------------------------
+
+  @Post('assignments')
+  @UseGuards(JwtAuthGuard, TenantContextGuard)
+  @HttpCode(HttpStatus.CREATED)
+  @ApiBearerAuth()
+  @ApiHeader({
+    name: 'X-Institution-Id',
+    description: 'UUID de la institución activa',
+    required: true,
+  })
+  @ApiOperation({
+    summary: 'Asignar materia, curso y carga horaria a un maestro vinculado (Nivel 2)',
+  })
+  @ApiResponse({ status: 201, description: 'Asignación académica creada exitosamente' })
+  @ApiResponse({ status: 400, description: 'Gestión cerrada o incoherencia de nivel curricular' })
+  @ApiResponse({ status: 404, description: 'Docente, materia, gestión o aula no encontrada' })
+  @ApiResponse({ status: 409, description: 'Docente ya asignado o titular ya registrado' })
+  async createAssignment(
+    @CurrentTenant() tenant: TenantContext,
+    @CurrentUser('sub') userId: string,
+    @Body() dto: CreateAssignmentDto,
+    @Req() req: Request,
+  ) {
+    const ip = req.ip;
+    const userAgent = req.headers['user-agent'];
+    return this.academicService.createAssignment(
+      tenant.institutionId,
+      dto,
+      userId,
+      ip,
+      userAgent,
+    );
+  }
+
+  @Get('assignments')
+  @UseGuards(JwtAuthGuard, TenantContextGuard)
+  @ApiBearerAuth()
+  @ApiHeader({
+    name: 'X-Institution-Id',
+    description: 'UUID de la institución activa',
+    required: true,
+  })
+  @ApiOperation({
+    summary: 'Consultar matriz de asignaciones académicas por gestión escolar (Nivel 2)',
+  })
+  @ApiResponse({ status: 200, description: 'Matriz de asignaciones docentes' })
+  async getAssignments(
+    @CurrentTenant() tenant: TenantContext,
+    @Query() query: QueryAssignmentsDto,
+  ) {
+    return this.academicService.getAssignments(tenant.institutionId, query);
+  }
+
+  @Get('assignments/my-assignments')
+  @UseGuards(JwtAuthGuard, TenantContextGuard)
+  @ApiBearerAuth()
+  @ApiHeader({
+    name: 'X-Institution-Id',
+    description: 'UUID de la institución activa',
+    required: true,
+  })
+  @ApiOperation({
+    summary: 'Consultar asignaciones académicas del maestro en sesión en el colegio activo (Nivel 3)',
+  })
+  @ApiResponse({ status: 200, description: 'Asignaciones académicas del docente' })
+  async getMyAssignments(
+    @CurrentTenant() tenant: TenantContext,
+    @CurrentUser('sub') userId: string,
+    @Query('gestionId') gestionId?: string,
+  ) {
+    return this.academicService.getMyAssignments(
+      tenant.institutionId,
+      userId,
+      gestionId,
+    );
+  }
+
+  @Patch('assignments/:id/status')
+  @UseGuards(JwtAuthGuard, TenantContextGuard)
+  @ApiBearerAuth()
+  @ApiHeader({
+    name: 'X-Institution-Id',
+    description: 'UUID de la institución activa',
+    required: true,
+  })
+  @ApiOperation({ summary: 'Modificar estado de una asignación docente (Nivel 2)' })
+  @ApiResponse({ status: 200, description: 'Estado actualizado' })
+  @ApiResponse({ status: 404, description: 'Asignación no encontrada' })
+  async updateAssignmentStatus(
+    @CurrentTenant() tenant: TenantContext,
+    @Param('id', ParseUUIDPipe) id: string,
+    @CurrentUser('sub') userId: string,
+    @Body() dto: UpdateAssignmentStatusDto,
+    @Req() req: Request,
+  ) {
+    const ip = req.ip;
+    const userAgent = req.headers['user-agent'];
+    return this.academicService.updateAssignmentStatus(
+      tenant.institutionId,
+      id,
+      dto,
+      userId,
+      ip,
+      userAgent,
+    );
+  }
+
+  @Delete('assignments/:id')
+  @UseGuards(JwtAuthGuard, TenantContextGuard)
+  @ApiBearerAuth()
+  @ApiHeader({
+    name: 'X-Institution-Id',
+    description: 'UUID de la institución activa',
+    required: true,
+  })
+  @ApiOperation({ summary: 'Revocar o finalizar asignación académica (Nivel 2)' })
+  @ApiResponse({ status: 200, description: 'Asignación dada de baja' })
+  async deleteAssignment(
+    @CurrentTenant() tenant: TenantContext,
+    @Param('id', ParseUUIDPipe) id: string,
+    @CurrentUser('sub') userId: string,
+    @Req() req: Request,
+  ) {
+    const ip = req.ip;
+    const userAgent = req.headers['user-agent'];
+    return this.academicService.deleteAssignment(
+      tenant.institutionId,
+      id,
+      userId,
+      ip,
+      userAgent,
+    );
   }
 }
