@@ -19,3 +19,4 @@ export class QueryInstitutionTeachersDto {
   @IsString()
   q?: string;
 }
+

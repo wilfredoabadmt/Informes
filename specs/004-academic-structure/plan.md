@@ -77,3 +77,4 @@ backend/src/modules/academic/
    - Creación del MISMO paralelo "1º A - Secundaria - Turno Mañana" en Mariscal Sucre (201 Created, demostrando aislamiento).
    - Consulta del árbol académico de Franz Tamayo (muestra únicamente sus cursos y paralelos).
    - Cierre de gestión en Franz Tamayo e intento de crear nuevo paralelo en gestión cerrada (400 Bad Request).
+

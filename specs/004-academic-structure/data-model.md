@@ -148,3 +148,4 @@ WITH CHECK (
   OR NULLIF(current_setting('app.bypass_rls', true), '') = 'true'
 );
 ```
+

@@ -1,4 +1,14 @@
-import { PrismaClient, RolGlobal, RolInstitucional, EstadoUsuario, EstadoVinculacion, TipoInstitucion, NivelEducativo } from '@prisma/client';
+import {
+  PrismaClient,
+  RolGlobal,
+  RolInstitucional,
+  EstadoUsuario,
+  EstadoVinculacion,
+  TipoInstitucion,
+  NivelEducativo,
+  CampoSaberes,
+  EstadoGestion,
+} from '@prisma/client';
 import * as argon2 from 'argon2';
 
 const prisma = new PrismaClient();
@@ -114,7 +124,6 @@ async function main() {
     },
   });
 
-  // Vinculación en Institución 1 (Franz Tamayo)
   await prisma.vinculacionInstitucional.upsert({
     where: {
       institucionId_usuarioId_rolInstitucional: {
@@ -134,7 +143,6 @@ async function main() {
     },
   });
 
-  // Vinculación en Institución 2 (Mariscal Sucre)
   await prisma.vinculacionInstitucional.upsert({
     where: {
       institucionId_usuarioId_rolInstitucional: {
@@ -154,9 +162,7 @@ async function main() {
     },
   });
 
-  console.log(`✅ Maestro multi-institución vinculado: Carlos Mamani (Franz Tamayo + Mariscal Sucre)`);
-
-  // 5. Maestro 2: Elena Flores Quispe (SINGLE-TENANT: Directora en Franz Tamayo)
+  // 5. Maestro 2: Elena Flores Quispe (Directora en Franz Tamayo)
   const personaElena = await prisma.persona.upsert({
     where: { ci: '7214589' },
     update: {},
@@ -213,7 +219,74 @@ async function main() {
     },
   });
 
-  console.log(`✅ Directora institucional creada: Elena Flores (Sólo en Franz Tamayo)`);
+  console.log(`✅ Directora creada: Elena Flores (Franz Tamayo)`);
+
+  // -------------------------------------------------------------
+  // 6. CATÁLOGO BASE DE CURSOS OFICIALES DE BOLIVIA
+  // -------------------------------------------------------------
+  const cursosData = [
+    // Primaria Comunitaria Vocacional
+    { nivel: NivelEducativo.PRIMARIA, grado: 1, nombre: '1º de Primaria Comunitaria Vocacional', orden: 1 },
+    { nivel: NivelEducativo.PRIMARIA, grado: 2, nombre: '2º de Primaria Comunitaria Vocacional', orden: 2 },
+    { nivel: NivelEducativo.PRIMARIA, grado: 3, nombre: '3º de Primaria Comunitaria Vocacional', orden: 3 },
+    { nivel: NivelEducativo.PRIMARIA, grado: 4, nombre: '4º de Primaria Comunitaria Vocacional', orden: 4 },
+    { nivel: NivelEducativo.PRIMARIA, grado: 5, nombre: '5º de Primaria Comunitaria Vocacional', orden: 5 },
+    { nivel: NivelEducativo.PRIMARIA, grado: 6, nombre: '6º de Primaria Comunitaria Vocacional', orden: 6 },
+    // Secundaria Comunitaria Productiva
+    { nivel: NivelEducativo.SECUNDARIA, grado: 1, nombre: '1º de Secundaria Comunitaria Productiva', orden: 7 },
+    { nivel: NivelEducativo.SECUNDARIA, grado: 2, nombre: '2º de Secundaria Comunitaria Productiva', orden: 8 },
+    { nivel: NivelEducativo.SECUNDARIA, grado: 3, nombre: '3º de Secundaria Comunitaria Productiva', orden: 9 },
+    { nivel: NivelEducativo.SECUNDARIA, grado: 4, nombre: '4º de Secundaria Comunitaria Productiva', orden: 10 },
+    { nivel: NivelEducativo.SECUNDARIA, grado: 5, nombre: '5º de Secundaria Comunitaria Productiva', orden: 11 },
+    { nivel: NivelEducativo.SECUNDARIA, grado: 6, nombre: '6º de Secundaria Comunitaria Productiva', orden: 12 },
+  ];
+
+  for (const c of cursosData) {
+    await prisma.curso.upsert({
+      where: { nivel_grado: { nivel: c.nivel, grado: c.grado } },
+      update: { nombre: c.nombre, orden: c.orden },
+      create: c,
+    });
+  }
+  console.log('✅ Catálogo de 12 cursos oficiales creado (Primaria y Secundaria)');
+
+  // -------------------------------------------------------------
+  // 7. CATÁLOGO BASE DE MATERIAS OFICIALES DEL SEP
+  // -------------------------------------------------------------
+  const materiasData = [
+    // Secundaria
+    { codigo: 'SEC-MAT', nombre: 'Matemática', campo: CampoSaberes.CIENCIA_TECNOLOGIA_PRODUCCION, nivel: NivelEducativo.SECUNDARIA, orden: 1 },
+    { codigo: 'SEC-LEN', nombre: 'Comunicación y Lenguajes', campo: CampoSaberes.COMUNIDAD_Y_SOCIEDAD, nivel: NivelEducativo.SECUNDARIA, orden: 2 },
+    { codigo: 'SEC-BIO', nombre: 'Ciencias Naturales: Biología - Geografía', campo: CampoSaberes.VIDA_TIERRA_TERRITORIO, nivel: NivelEducativo.SECUNDARIA, orden: 3 },
+    { codigo: 'SEC-FIS', nombre: 'Física', campo: CampoSaberes.VIDA_TIERRA_TERRITORIO, nivel: NivelEducativo.SECUNDARIA, orden: 4 },
+    { codigo: 'SEC-QUI', nombre: 'Química', campo: CampoSaberes.VIDA_TIERRA_TERRITORIO, nivel: NivelEducativo.SECUNDARIA, orden: 5 },
+    { codigo: 'SEC-SOC', nombre: 'Ciencias Sociales', campo: CampoSaberes.COMUNIDAD_Y_SOCIEDAD, nivel: NivelEducativo.SECUNDARIA, orden: 6 },
+    { codigo: 'SEC-ART', nombre: 'Artes Plásticas y Visuales', campo: CampoSaberes.COMUNIDAD_Y_SOCIEDAD, nivel: NivelEducativo.SECUNDARIA, orden: 7 },
+    { codigo: 'SEC-MUS', nombre: 'Educación Musical', campo: CampoSaberes.COMUNIDAD_Y_SOCIEDAD, nivel: NivelEducativo.SECUNDARIA, orden: 8 },
+    { codigo: 'SEC-EFIS', nombre: 'Educación Física y Deportes', campo: CampoSaberes.COMUNIDAD_Y_SOCIEDAD, nivel: NivelEducativo.SECUNDARIA, orden: 9 },
+    { codigo: 'SEC-FIL', nombre: 'Cosmovisiones, Filosofía y Sicología', campo: CampoSaberes.COSMOS_Y_PENSAMIENTO, nivel: NivelEducativo.SECUNDARIA, orden: 10 },
+    { codigo: 'SEC-REL', nombre: 'Valores, Espiritualidades y Religiones', campo: CampoSaberes.COSMOS_Y_PENSAMIENTO, nivel: NivelEducativo.SECUNDARIA, orden: 11 },
+    { codigo: 'SEC-TEC', nombre: 'Técnica Tecnológica General', campo: CampoSaberes.CIENCIA_TECNOLOGIA_PRODUCCION, nivel: NivelEducativo.SECUNDARIA, orden: 12 },
+    // Primaria
+    { codigo: 'PRI-COM', nombre: 'Comunicación y Lenguajes', campo: CampoSaberes.COMUNIDAD_Y_SOCIEDAD, nivel: NivelEducativo.PRIMARIA, orden: 1 },
+    { codigo: 'PRI-MAT', nombre: 'Matemática', campo: CampoSaberes.CIENCIA_TECNOLOGIA_PRODUCCION, nivel: NivelEducativo.PRIMARIA, orden: 2 },
+    { codigo: 'PRI-NAT', nombre: 'Ciencias Naturales', campo: CampoSaberes.VIDA_TIERRA_TERRITORIO, nivel: NivelEducativo.PRIMARIA, orden: 3 },
+    { codigo: 'PRI-SOC', nombre: 'Ciencias Sociales', campo: CampoSaberes.COMUNIDAD_Y_SOCIEDAD, nivel: NivelEducativo.PRIMARIA, orden: 4 },
+    { codigo: 'PRI-ART', nombre: 'Artes Plásticas y Visuales', campo: CampoSaberes.COMUNIDAD_Y_SOCIEDAD, nivel: NivelEducativo.PRIMARIA, orden: 5 },
+    { codigo: 'PRI-MUS', nombre: 'Educación Musical', campo: CampoSaberes.COMUNIDAD_Y_SOCIEDAD, nivel: NivelEducativo.PRIMARIA, orden: 6 },
+    { codigo: 'PRI-EFIS', nombre: 'Educación Física y Deportes', campo: CampoSaberes.COMUNIDAD_Y_SOCIEDAD, nivel: NivelEducativo.PRIMARIA, orden: 7 },
+    { codigo: 'PRI-VAL', nombre: 'Valores, Espiritualidad y Religiones', campo: CampoSaberes.COSMOS_Y_PENSAMIENTO, nivel: NivelEducativo.PRIMARIA, orden: 8 },
+  ];
+
+  for (const m of materiasData) {
+    await prisma.materia.upsert({
+      where: { codigo: m.codigo },
+      update: { nombre: m.nombre, campo: m.campo, nivel: m.nivel, orden: m.orden },
+      create: m,
+    });
+  }
+  console.log(`✅ Catálogo de ${materiasData.length} materias del SEP creado en los 4 Campos de Saberes`);
+
   console.log('✨ Seed multi-tenant completado con éxito.');
 }
 
@@ -225,4 +298,3 @@ main()
   .finally(async () => {
     await prisma.$disconnect();
   });
-

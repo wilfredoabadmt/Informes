@@ -1,7 +1,7 @@
 # Tareas de Implementación — Feature 004: Estructura Académica Institucional
 
 **Feature:** `004-academic-structure`  
-**Estado:** PROPUESTO  
+**Estado:** COMPLETADO Y VERIFICADO  
 **Constitución Referencia:** V1.1.0 (Decisiones 001, 002-B, 005; Sección 4 - Modelado de Datos)  
 **DoD:** Código compilado sin errores + Linter aprobado + Pruebas unitarias + Pruebas de integración E2E contra PostgreSQL + Documentación sincronizada.
 
@@ -11,16 +11,16 @@
 
 | ID | Fase | Tarea | Dependencias | Estado |
 |---|---|---|---|---|
-| `T01-ACA-PRISMA`   | Base de Datos | Actualizar `schema.prisma` con `GestionEscolar`, `Curso`, `Materia`, `Paralelo` | Ninguna | PENDIENTE |
-| `T02-ACA-MIGRATION`| Base de Datos | Generar migración y aplicar DDL de PostgreSQL RLS en `gestiones_escolares` y `paralelos` | T01-ACA-PRISMA | PENDIENTE |
-| `T03-ACA-SEED`     | Base de Datos | Seed de catálogo nacional del SEP (materias y grados de Primaria y Secundaria) | T02-ACA-MIGRATION | PENDIENTE |
-| `T04-ACA-DTO`      | Contratos | Implementar DTOs (`school-year`, `status`, `section`, `query`) | Ninguna | PENDIENTE |
-| `T05-ACA-SVC`      | Backend Core | Implementar `AcademicService` (gestiones, paralelos, árbol académico, catálogo SEP) | T02-ACA-MIGRATION, T04-ACA-DTO | PENDIENTE |
-| `T06-ACA-CTRL`     | Endpoints | Implementar `AcademicController` con decoradores de seguridad multi-tenant | T05-ACA-SVC | PENDIENTE |
-| `T07-ACA-MOD`      | Integración | Configurar `AcademicModule` y registrar en `AppModule` | T06-ACA-CTRL | PENDIENTE |
-| `T08-ACA-AUDIT`    | Seguridad | Registrar auditoría en apertura y cierre de gestiones escolares | T05-ACA-SVC | PENDIENTE |
-| `T09-ACA-UNIT`     | Verificación | Pruebas unitarias en `academic.service.spec.ts` | T05-ACA-SVC | PENDIENTE |
-| `T10-ACA-E2E`      | Verificación | Pruebas E2E en `test/academic.e2e-spec.ts` demostrando aislamiento por colegio y gestión | T07-ACA-MOD, T03-ACA-SEED | PENDIENTE |
+| `T01-ACA-PRISMA`   | Base de Datos | Actualizar `schema.prisma` con `GestionEscolar`, `Curso`, `Materia`, `Paralelo` | Ninguna | COMPLETADO |
+| `T02-ACA-MIGRATION`| Base de Datos | Generar migración y aplicar DDL de PostgreSQL RLS en `gestiones_escolares` y `paralelos` | T01-ACA-PRISMA | COMPLETADO |
+| `T03-ACA-SEED`     | Base de Datos | Seed de catálogo nacional del SEP (materias y grados de Primaria y Secundaria) | T02-ACA-MIGRATION | COMPLETADO |
+| `T04-ACA-DTO`      | Contratos | Implementar DTOs (`school-year`, `status`, `section`, `query`) | Ninguna | COMPLETADO |
+| `T05-ACA-SVC`      | Backend Core | Implementar `AcademicService` (gestiones, paralelos, árbol académico, catálogo SEP) | T02-ACA-MIGRATION, T04-ACA-DTO | COMPLETADO |
+| `T06-ACA-CTRL`     | Endpoints | Implementar `AcademicController` con decoradores de seguridad multi-tenant | T05-ACA-SVC | COMPLETADO |
+| `T07-ACA-MOD`      | Integración | Configurar `AcademicModule` y registrar en `AppModule` | T06-ACA-CTRL | COMPLETADO |
+| `T08-ACA-AUDIT`    | Seguridad | Registrar auditoría en apertura y cierre de gestiones escolares | T05-ACA-SVC | COMPLETADO |
+| `T09-ACA-UNIT`     | Verificación | Pruebas unitarias en `academic.service.spec.ts` | T05-ACA-SVC | COMPLETADO |
+| `T10-ACA-E2E`      | Verificación | Pruebas E2E en `test/academic.e2e-spec.ts` demostrando aislamiento por colegio y gestión | T07-ACA-MOD, T03-ACA-SEED | COMPLETADO |
 
 ---
 
@@ -79,3 +79,4 @@
   - Creación de Paralelo "1º A - Turno Mañana" en ambas instituciones de forma independiente.
   - Consulta del árbol académico institucional.
   - Cierre de gestión escolar y comprobación de inmutabilidad ante intentos de modificación posterior.
+
