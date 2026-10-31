@@ -1,0 +1,374 @@
+openapi: 3.0.3
+info:
+  title: API de Periodos de Evaluación y Dimensiones SEP (Feature 008)
+  description: Servicios para la calendarización de trimestres escolares, apertura/cierre de periodos y creación de instrumentos de evaluación por dimensión (Ser, Saber, Hacer, Decidir) según el Modelo Educativo Plurinacional de Bolivia.
+  version: 1.0.0
+servers:
+  - url: /api/v1
+    description: Servidor Backend Local / Staging
+
+paths:
+  /evaluation-periods:
+    post:
+      summary: Registrar un periodo evaluativo (trimestre) para una gestión escolar (Nivel 2)
+      operationId: createEvaluationPeriod
+      security:
+        - BearerAuth: []
+      parameters:
+        - $ref: '#/components/parameters/TenantHeader'
+      tags:
+        - Periodos de Evaluación
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CreateEvaluationPeriodDto'
+      responses:
+        '201':
+          description: Periodo creado exitosamente
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/EvaluationPeriodResponseDto'
+        '400':
+          description: Rango de fechas inválido o gestión escolar cerrada
+        '409':
+          description: El trimestre ya se encuentra registrado para esta gestión
+
+    get:
+      summary: Listar los periodos evaluativos de una gestión escolar (Nivel 2 y Nivel 3)
+      operationId: getEvaluationPeriods
+      security:
+        - BearerAuth: []
+      parameters:
+        - $ref: '#/components/parameters/TenantHeader'
+        - name: gestionId
+          in: query
+          required: true
+          schema:
+            type: string
+            format: uuid
+      tags:
+        - Periodos de Evaluación
+      responses:
+        '200':
+          description: Lista de trimestres de la gestión escolar
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/EvaluationPeriodResponseDto'
+
+  /evaluation-periods/{id}/status:
+    patch:
+      summary: Conmutar el estado del trimestre (PROGRAMADO, ABIERTO, CERRADO) (Nivel 2)
+      operationId: updatePeriodStatus
+      security:
+        - BearerAuth: []
+      parameters:
+        - $ref: '#/components/parameters/TenantHeader'
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      tags:
+        - Periodos de Evaluación
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/UpdatePeriodStatusDto'
+      responses:
+        '200':
+          description: Estado del trimestre actualizado exitosamente
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/EvaluationPeriodResponseDto'
+        '400':
+          description: Ya existe otro trimestre abierto en la gestión
+        '404':
+          description: Periodo no encontrado
+
+  /evaluations:
+    post:
+      summary: Crear un instrumento de evaluación para una materia y dimensión (Nivel 3)
+      operationId: createEvaluation
+      security:
+        - BearerAuth: []
+      parameters:
+        - $ref: '#/components/parameters/TenantHeader'
+      tags:
+        - Instrumentos de Evaluación
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CreateEvaluationDto'
+      responses:
+        '201':
+          description: Instrumento de evaluación creado exitosamente
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/EvaluationResponseDto'
+        '400':
+          description: Periodo cerrado, fecha fuera de rango o puntaje excede el límite de la dimensión
+        '403':
+          description: El maestro no tiene asignación pedagógica activa en esta materia y paralelo
+
+    get:
+      summary: Listar instrumentos de evaluación de una asignación y periodo (Nivel 2 y Nivel 3)
+      operationId: getEvaluations
+      security:
+        - BearerAuth: []
+      parameters:
+        - $ref: '#/components/parameters/TenantHeader'
+        - name: asignacionId
+          in: query
+          required: true
+          schema:
+            type: string
+            format: uuid
+        - name: periodoId
+          in: query
+          required: true
+          schema:
+            type: string
+            format: uuid
+      tags:
+        - Instrumentos de Evaluación
+      responses:
+        '200':
+          description: Lista de evaluaciones programadas
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/EvaluationResponseDto'
+
+  /evaluations/{id}:
+    patch:
+      summary: Modificar un instrumento de evaluación (Nivel 3)
+      operationId: updateEvaluation
+      security:
+        - BearerAuth: []
+      parameters:
+        - $ref: '#/components/parameters/TenantHeader'
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      tags:
+        - Instrumentos de Evaluación
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/UpdateEvaluationDto'
+      responses:
+        '200':
+          description: Evaluación actualizada exitosamente
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/EvaluationResponseDto'
+        '400':
+          description: El periodo está cerrado o puntaje inválido
+        '403':
+          description: No autorizado para modificar este instrumento
+        '404':
+          description: Evaluación no encontrada
+
+    delete:
+      summary: Desactivar/eliminar un instrumento de evaluación (Nivel 3)
+      operationId: deleteEvaluation
+      security:
+        - BearerAuth: []
+      parameters:
+        - $ref: '#/components/parameters/TenantHeader'
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      tags:
+        - Instrumentos de Evaluación
+      responses:
+        '200':
+          description: Evaluación eliminada exitosamente
+        '400':
+          description: El periodo está cerrado
+        '404':
+          description: Evaluación no encontrada
+
+components:
+  securitySchemes:
+    BearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+
+  parameters:
+    TenantHeader:
+      name: X-Institution-Id
+      in: header
+      required: true
+      description: UUID de la institución activa bajo sesión
+      schema:
+        type: string
+        format: uuid
+
+  schemas:
+    CreateEvaluationPeriodDto:
+      type: object
+      required:
+        - gestionId
+        - periodo
+        - fechaInicio
+        - fechaFin
+        - fechaLimiteNotas
+      properties:
+        gestionId:
+          type: string
+          format: uuid
+        periodo:
+          type: string
+          enum: [PRIMER_TRIMESTRE, SEGUNDO_TRIMESTRE, TERCER_TRIMESTRE]
+          example: PRIMER_TRIMESTRE
+        fechaInicio:
+          type: string
+          format: date
+          example: '2026-02-02'
+        fechaFin:
+          type: string
+          format: date
+          example: '2026-05-08'
+        fechaLimiteNotas:
+          type: string
+          format: date
+          example: '2026-05-15'
+
+    UpdatePeriodStatusDto:
+      type: object
+      required:
+        - estado
+      properties:
+        estado:
+          type: string
+          enum: [PROGRAMADO, ABIERTO, CERRADO]
+          example: ABIERTO
+
+    EvaluationPeriodResponseDto:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        institucionId:
+          type: string
+          format: uuid
+        gestionId:
+          type: string
+          format: uuid
+        periodo:
+          type: string
+          enum: [PRIMER_TRIMESTRE, SEGUNDO_TRIMESTRE, TERCER_TRIMESTRE]
+        fechaInicio:
+          type: string
+        fechaFin:
+          type: string
+        fechaLimiteNotas:
+          type: string
+        estado:
+          type: string
+          enum: [PROGRAMADO, ABIERTO, CERRADO]
+        activo:
+          type: boolean
+
+    CreateEvaluationDto:
+      type: object
+      required:
+        - asignacionId
+        - periodoId
+        - dimension
+        - nombre
+        - puntajeMaximo
+        - fechaEvaluacion
+      properties:
+        asignacionId:
+          type: string
+          format: uuid
+        periodoId:
+          type: string
+          format: uuid
+        dimension:
+          type: string
+          enum: [SER, SABER, HACER, DECIDIR, AUTOEVALUACION]
+          example: SABER
+        nombre:
+          type: string
+          example: 'Examen de Álgebra y Ecuaciones Lineales'
+        descripcion:
+          type: string
+          example: 'Evaluación individual escrita de resolución de problemas'
+        puntajeMaximo:
+          type: integer
+          example: 35
+        fechaEvaluacion:
+          type: string
+          format: date
+          example: '2026-04-10'
+
+    UpdateEvaluationDto:
+      type: object
+      properties:
+        nombre:
+          type: string
+        descripcion:
+          type: string
+        puntajeMaximo:
+          type: integer
+        fechaEvaluacion:
+          type: string
+          format: date
+
+    EvaluationResponseDto:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        institucionId:
+          type: string
+          format: uuid
+        asignacionId:
+          type: string
+          format: uuid
+        periodoId:
+          type: string
+          format: uuid
+        dimension:
+          type: string
+          enum: [SER, SABER, HACER, DECIDIR, AUTOEVALUACION]
+        nombre:
+          type: string
+        descripcion:
+          type: string
+        puntajeMaximo:
+          type: integer
+        fechaEvaluacion:
+          type: string
+        activo:
+          type: boolean
