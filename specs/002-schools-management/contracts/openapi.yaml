@@ -1,0 +1,487 @@
+openapi: 3.0.3
+info:
+  title: Sistema Integral de Registro y Gestión de Maestros - API de Gestión de Unidades Educativas
+  description: |
+    Contrato formal de API para la Feature 002: Gestión Centralizada de Unidades Educativas
+    y Administración Descentralizada de Ficha Institucional.
+    
+    Alineado a la Constitución V1.1.0 (Decisiones 001, 003, 005) y Niveles 1 y 2 de Arquitectura.
+  version: 1.0.0
+servers:
+  - url: http://localhost:3000/api/v1
+    description: Servidor de desarrollo local
+
+paths:
+  /institutions:
+    post:
+      summary: Registrar una nueva Unidad Educativa (Tenant)
+      description: Permite al Superadministrador o Administrador Central crear una nueva institución.
+      operationId: createInstitution
+      security:
+        - BearerAuth: []
+      tags:
+        - Administración Central de Unidades Educativas
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CreateInstitutionDto'
+      responses:
+        '201':
+          description: Unidad Educativa creada exitosamente
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/InstitutionDetailDto'
+        '400':
+          description: Datos de entrada inválidos o departamento no reconocido
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponseDto'
+        '403':
+          description: Denegado. Solo administradores centrales pueden registrar instituciones.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponseDto'
+        '409':
+          description: Conflicto. El código SIE ya se encuentra registrado.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponseDto'
+
+    get:
+      summary: Listar Unidades Educativas con filtros y paginación
+      description: Consulta el padrón de instituciones con filtros por departamento, distrito, tipo y estado.
+      operationId: listInstitutions
+      security:
+        - BearerAuth: []
+      tags:
+        - Administración Central de Unidades Educativas
+      parameters:
+        - name: page
+          in: query
+          schema:
+            type: integer
+            default: 1
+        - name: limit
+          in: query
+          schema:
+            type: integer
+            default: 20
+        - name: departamento
+          in: query
+          schema:
+            type: string
+        - name: distrito
+          in: query
+          schema:
+            type: string
+        - name: tipo
+          in: query
+          schema:
+            type: string
+            enum: [FISCAL, CONVENIO, PRIVADA]
+        - name: activo
+          in: query
+          schema:
+            type: boolean
+        - name: q
+          in: query
+          description: Búsqueda libre por nombre o código SIE
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Listado paginado de instituciones
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PaginatedInstitutionsDto'
+        '403':
+          description: No autorizado para consulta de padrón central
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponseDto'
+
+  /institutions/{id}:
+    get:
+      summary: Obtener detalle completo de una Unidad Educativa
+      operationId: getInstitutionById
+      security:
+        - BearerAuth: []
+      tags:
+        - Administración Central de Unidades Educativas
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '200':
+          description: Ficha completa de la institución
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/InstitutionDetailDto'
+        '404':
+          description: Institución no encontrada
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponseDto'
+
+  /institutions/{id}/status:
+    patch:
+      summary: Cambiar estado operativo de una institución (Activar / Suspender)
+      operationId: updateInstitutionStatus
+      security:
+        - BearerAuth: []
+      tags:
+        - Administración Central de Unidades Educativas
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/UpdateInstitutionStatusDto'
+      responses:
+        '200':
+          description: Estado actualizado exitosamente
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/InstitutionDetailDto'
+        '404':
+          description: Institución no encontrada
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponseDto'
+
+  /institutions/{id}/authorities:
+    post:
+      summary: Asignar autoridad institucional (Director o Administrador Institucional)
+      operationId: assignAuthority
+      security:
+        - BearerAuth: []
+      tags:
+        - Administración Central de Unidades Educativas
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/AssignAuthorityDto'
+      responses:
+        '201':
+          description: Autoridad institucional asignada correctamente
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AuthorityAssignmentResponseDto'
+        '404':
+          description: Institución o usuario no encontrado
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponseDto'
+
+  /institutions/my-institution/profile:
+    get:
+      summary: Consultar ficha de la institución activa en sesión
+      operationId: getMyInstitutionProfile
+      security:
+        - BearerAuth: []
+      parameters:
+        - $ref: '#/components/parameters/TenantHeader'
+      tags:
+        - Administración Institucional Descentralizada
+      responses:
+        '200':
+          description: Datos de la propia institución
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/InstitutionDetailDto'
+        '403':
+          description: Sin vinculación activa con la institución solicitada
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponseDto'
+
+  /institutions/my-institution:
+    patch:
+      summary: Actualizar datos de contacto de la institución activa
+      operationId: updateMyInstitution
+      security:
+        - BearerAuth: []
+      parameters:
+        - $ref: '#/components/parameters/TenantHeader'
+      tags:
+        - Administración Institucional Descentralizada
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/UpdateMyInstitutionDto'
+      responses:
+        '200':
+          description: Información actualizada correctamente
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/InstitutionDetailDto'
+        '403':
+          description: Denegado
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponseDto'
+
+components:
+  securitySchemes:
+    BearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+
+  parameters:
+    TenantHeader:
+      name: X-Institution-Id
+      in: header
+      required: true
+      description: UUID de la institución activa bajo sesión
+      schema:
+        type: string
+        format: uuid
+
+  schemas:
+    CreateInstitutionDto:
+      type: object
+      required:
+        - sie
+        - nombre
+        - departamento
+        - provincia
+        - municipio
+        - tipo
+        - nivel
+      properties:
+        sie:
+          type: string
+          example: '80730047'
+          description: Código SIE único de 6 a 10 dígitos
+        nombre:
+          type: string
+          example: 'Unidad Educativa Avaroa'
+        departamento:
+          type: string
+          enum: [La Paz, Cochabamba, Santa Cruz, Potosí, Oruro, Chuquisaca, Tarija, Beni, Pando]
+          example: 'La Paz'
+        provincia:
+          type: string
+          example: 'Murillo'
+        municipio:
+          type: string
+          example: 'La Paz'
+        distrito:
+          type: string
+          example: 'La Paz 2'
+        direccion:
+          type: string
+          example: 'Zona San Pedro, Calle Colombia #220'
+        telefono:
+          type: string
+          example: '22498765'
+        tipo:
+          type: string
+          enum: [FISCAL, CONVENIO, PRIVADA]
+          default: FISCAL
+        nivel:
+          type: string
+          enum: [INICIAL, PRIMARIA, SECUNDARIA, INTEGRADO]
+          default: INTEGRADO
+
+    UpdateInstitutionStatusDto:
+      type: object
+      required:
+        - activo
+      properties:
+        activo:
+          type: boolean
+          description: true para habilitar, false para suspender
+
+    UpdateMyInstitutionDto:
+      type: object
+      properties:
+        direccion:
+          type: string
+          example: 'Av. 6 de Agosto #1500'
+        telefono:
+          type: string
+          example: '22441122'
+
+    AssignAuthorityDto:
+      type: object
+      required:
+        - identifier
+        - rolInstitucional
+      properties:
+        identifier:
+          type: string
+          description: CI o Correo electrónico del usuario a designar
+          example: '7214589'
+        rolInstitucional:
+          type: string
+          enum: [DIRECTOR, ADMIN_INSTITUCIONAL]
+          example: 'DIRECTOR'
+        cargoOficial:
+          type: string
+          example: 'Directora Titular'
+
+    InstitutionDetailDto:
+      type: object
+      required:
+        - id
+        - sie
+        - nombre
+        - departamento
+        - provincia
+        - municipio
+        - tipo
+        - nivel
+        - activo
+      properties:
+        id:
+          type: string
+          format: uuid
+        sie:
+          type: string
+        nombre:
+          type: string
+        departamento:
+          type: string
+        provincia:
+          type: string
+        municipio:
+          type: string
+        distrito:
+          type: string
+          nullable: true
+        direccion:
+          type: string
+          nullable: true
+        telefono:
+          type: string
+          nullable: true
+        tipo:
+          type: string
+        nivel:
+          type: string
+        activo:
+          type: boolean
+        totalMaestrosVinculados:
+          type: integer
+          example: 24
+        autoridades:
+          type: array
+          items:
+            type: object
+            properties:
+              vinculacionId:
+                type: string
+              rolInstitucional:
+                type: string
+              cargoOficial:
+                type: string
+                nullable: true
+              persona:
+                type: object
+                properties:
+                  ci:
+                    type: string
+                  nombres:
+                    type: string
+                  primerApellido:
+                    type: string
+                  segundoApellido:
+                    type: string
+                    nullable: true
+
+    PaginatedInstitutionsDto:
+      type: object
+      required:
+        - data
+        - meta
+      properties:
+        data:
+          type: array
+          items:
+            $ref: '#/components/schemas/InstitutionDetailDto'
+        meta:
+          type: object
+          properties:
+            total:
+              type: integer
+            page:
+              type: integer
+            limit:
+              type: integer
+            totalPages:
+              type: integer
+
+    AuthorityAssignmentResponseDto:
+      type: object
+      required:
+        - message
+        - vinculacionId
+        - rolInstitucional
+      properties:
+        message:
+          type: string
+          example: 'Autoridad asignada exitosamente.'
+        vinculacionId:
+          type: string
+          format: uuid
+        rolInstitucional:
+          type: string
+
+    ErrorResponseDto:
+      type: object
+      required:
+        - statusCode
+        - message
+        - timestamp
+      properties:
+        statusCode:
+          type: integer
+        message:
+          type: string
+        error:
+          type: string
+        timestamp:
+          type: string
+          format: date-time

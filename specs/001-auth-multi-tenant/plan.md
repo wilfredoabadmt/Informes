@@ -84,3 +84,4 @@ Antes de autorizar las tareas de implementación, se valida el cumplimiento de l
    - Usuario envía UUID malformado o cabecera vacía ➔ Responde `400 Bad Request`.
 3. **Prueba de Aislamiento PostgreSQL RLS:**
    - Comprobar mediante consulta directa que `SET LOCAL app.current_institution_id = 'A'` impide ver registros con `institution_id = 'B'`.
+

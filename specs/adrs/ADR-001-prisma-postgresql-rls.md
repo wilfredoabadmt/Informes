@@ -69,3 +69,4 @@ export function getTenantPrismaClient(prisma: PrismaClient, institutionId: strin
 - Todo servicio o repositorio en NestJS que opere sobre entidades con alcance institucional debe inyectar el cliente Prisma contextualizado a través del `TenantContextService`.
 - Las entidades globales (`Persona`, `Usuario`, `UnidadEducativa`) quedan exentas de la política de `institution_id` mediante políticas RLS específicas para administración central.
 - Para operaciones masivas o migraciones, el rol `superadmin` o el usuario de mantenimiento de base de datos utilizará la directiva de bypass `BYPASSRLS` debidamente auditada.
+
