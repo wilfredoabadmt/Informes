@@ -1,0 +1,224 @@
+{
+  "skills": {
+    "analyze": {
+      "files": [
+        "F:\\Documentos\\GitHub\\Informes\\.antigravity\\rsc\\analyze"
+      ],
+      "base": "F:\\Documentos\\GitHub\\Informes\\.rsc\\skills\\analyze"
+    },
+    "automation-strategy": {
+      "files": [
+        "F:\\Documentos\\GitHub\\Informes\\.antigravity\\rsc\\automation-strategy"
+      ],
+      "base": "F:\\Documentos\\GitHub\\Informes\\.rsc\\skills\\automation-strategy"
+    },
+    "clarify": {
+      "files": [
+        "F:\\Documentos\\GitHub\\Informes\\.antigravity\\rsc\\clarify"
+      ],
+      "base": "F:\\Documentos\\GitHub\\Informes\\.rsc\\skills\\clarify"
+    },
+    "connect-tool": {
+      "files": [
+        "F:\\Documentos\\GitHub\\Informes\\.antigravity\\rsc\\connect-tool"
+      ],
+      "base": "F:\\Documentos\\GitHub\\Informes\\.rsc\\skills\\connect-tool"
+    },
+    "constitution": {
+      "files": [
+        "F:\\Documentos\\GitHub\\Informes\\.antigravity\\rsc\\constitution"
+      ],
+      "base": "F:\\Documentos\\GitHub\\Informes\\.rsc\\skills\\constitution"
+    },
+    "debug": {
+      "files": [
+        "F:\\Documentos\\GitHub\\Informes\\.antigravity\\rsc\\debug"
+      ],
+      "base": "F:\\Documentos\\GitHub\\Informes\\.rsc\\skills\\debug"
+    },
+    "decision-challenge": {
+      "files": [
+        "F:\\Documentos\\GitHub\\Informes\\.antigravity\\rsc\\decision-challenge"
+      ],
+      "base": "F:\\Documentos\\GitHub\\Informes\\.rsc\\skills\\decision-challenge"
+    },
+    "deprecation": {
+      "files": [
+        "F:\\Documentos\\GitHub\\Informes\\.antigravity\\rsc\\deprecation"
+      ],
+      "base": "F:\\Documentos\\GitHub\\Informes\\.rsc\\skills\\deprecation"
+    },
+    "design": {
+      "files": [
+        "F:\\Documentos\\GitHub\\Informes\\.antigravity\\rsc\\design"
+      ],
+      "base": "F:\\Documentos\\GitHub\\Informes\\.rsc\\skills\\design"
+    },
+    "fable-operator": {
+      "files": [
+        "F:\\Documentos\\GitHub\\Informes\\.antigravity\\rsc\\fable-operator"
+      ],
+      "base": "F:\\Documentos\\GitHub\\Informes\\.rsc\\skills\\fable-operator"
+    },
+    "ftd": {
+      "files": [
+        "F:\\Documentos\\GitHub\\Informes\\.antigravity\\rsc\\ftd"
+      ],
+      "base": "F:\\Documentos\\GitHub\\Informes\\.rsc\\skills\\ftd"
+    },
+    "harness": {
+      "files": [
+        "F:\\Documentos\\GitHub\\Informes\\.antigravity\\rsc\\harness"
+      ],
+      "base": "F:\\Documentos\\GitHub\\Informes\\.rsc\\skills\\harness"
+    },
+    "idea-refinement": {
+      "files": [
+        "F:\\Documentos\\GitHub\\Informes\\.antigravity\\rsc\\idea-refinement"
+      ],
+      "base": "F:\\Documentos\\GitHub\\Informes\\.rsc\\skills\\idea-refinement"
+    },
+    "implement": {
+      "files": [
+        "F:\\Documentos\\GitHub\\Informes\\.antigravity\\rsc\\implement"
+      ],
+      "base": "F:\\Documentos\\GitHub\\Informes\\.rsc\\skills\\implement"
+    },
+    "init": {
+      "files": [
+        "F:\\Documentos\\GitHub\\Informes\\.antigravity\\rsc\\init"
+      ],
+      "base": "F:\\Documentos\\GitHub\\Informes\\.rsc\\skills\\init"
+    },
+    "orient": {
+      "files": [
+        "F:\\Documentos\\GitHub\\Informes\\.antigravity\\rsc\\orient"
+      ],
+      "base": "F:\\Documentos\\GitHub\\Informes\\.rsc\\skills\\orient"
+    },
+    "parallel": {
+      "files": [
+        "F:\\Documentos\\GitHub\\Informes\\.antigravity\\rsc\\parallel"
+      ],
+      "base": "F:\\Documentos\\GitHub\\Informes\\.rsc\\skills\\parallel"
+    },
+    "plan": {
+      "files": [
+        "F:\\Documentos\\GitHub\\Informes\\.antigravity\\rsc\\plan"
+      ],
+      "base": "F:\\Documentos\\GitHub\\Informes\\.rsc\\skills\\plan"
+    },
+    "review": {
+      "files": [
+        "F:\\Documentos\\GitHub\\Informes\\.antigravity\\rsc\\review"
+      ],
+      "base": "F:\\Documentos\\GitHub\\Informes\\.rsc\\skills\\review"
+    },
+    "sdd": {
+      "files": [
+        "F:\\Documentos\\GitHub\\Informes\\.antigravity\\rsc\\sdd"
+      ],
+      "base": "F:\\Documentos\\GitHub\\Informes\\.rsc\\skills\\sdd"
+    },
+    "sdd-init": {
+      "files": [
+        "F:\\Documentos\\GitHub\\Informes\\.antigravity\\rsc\\sdd-init"
+      ],
+      "base": "F:\\Documentos\\GitHub\\Informes\\.rsc\\skills\\sdd-init"
+    },
+    "ship": {
+      "files": [
+        "F:\\Documentos\\GitHub\\Informes\\.antigravity\\rsc\\ship"
+      ],
+      "base": "F:\\Documentos\\GitHub\\Informes\\.rsc\\skills\\ship"
+    },
+    "simplify-code": {
+      "files": [
+        "F:\\Documentos\\GitHub\\Informes\\.antigravity\\rsc\\simplify-code"
+      ],
+      "base": "F:\\Documentos\\GitHub\\Informes\\.rsc\\skills\\simplify-code"
+    },
+    "source-grounded-development": {
+      "files": [
+        "F:\\Documentos\\GitHub\\Informes\\.antigravity\\rsc\\source-grounded-development"
+      ],
+      "base": "F:\\Documentos\\GitHub\\Informes\\.rsc\\skills\\source-grounded-development"
+    },
+    "specify": {
+      "files": [
+        "F:\\Documentos\\GitHub\\Informes\\.antigravity\\rsc\\specify"
+      ],
+      "base": "F:\\Documentos\\GitHub\\Informes\\.rsc\\skills\\specify"
+    },
+    "suggest": {
+      "files": [
+        "F:\\Documentos\\GitHub\\Informes\\.antigravity\\rsc\\suggest"
+      ],
+      "base": "F:\\Documentos\\GitHub\\Informes\\.rsc\\skills\\suggest"
+    },
+    "tasks": {
+      "files": [
+        "F:\\Documentos\\GitHub\\Informes\\.antigravity\\rsc\\tasks"
+      ],
+      "base": "F:\\Documentos\\GitHub\\Informes\\.rsc\\skills\\tasks"
+    },
+    "unslop": {
+      "files": [
+        "F:\\Documentos\\GitHub\\Informes\\.antigravity\\rsc\\unslop"
+      ],
+      "base": "F:\\Documentos\\GitHub\\Informes\\.rsc\\skills\\unslop"
+    },
+    "ux": {
+      "files": [
+        "F:\\Documentos\\GitHub\\Informes\\.antigravity\\rsc\\ux"
+      ],
+      "base": "F:\\Documentos\\GitHub\\Informes\\.rsc\\skills\\ux"
+    },
+    "verify": {
+      "files": [
+        "F:\\Documentos\\GitHub\\Informes\\.antigravity\\rsc\\verify"
+      ],
+      "base": "F:\\Documentos\\GitHub\\Informes\\.rsc\\skills\\verify"
+    },
+    "worktrees": {
+      "files": [
+        "F:\\Documentos\\GitHub\\Informes\\.antigravity\\rsc\\worktrees"
+      ],
+      "base": "F:\\Documentos\\GitHub\\Informes\\.rsc\\skills\\worktrees"
+    }
+  },
+  "agents": [],
+  "agentCollisions": [],
+  "agentsKept": [],
+  "explicitAgents": [],
+  "memory": {
+    "mode": "unsupported",
+    "reason": "no-local-lifecycle",
+    "paths": []
+  },
+  "update": {
+    "mode": "agent"
+  },
+  "knowledge": {
+    "mode": "unsupported",
+    "reason": null,
+    "paths": []
+  },
+  "gitPermissions": {
+    "mode": "unsupported",
+    "path": null
+  },
+  "policy": {
+    "baseAgents": true,
+    "alwaysOn": true,
+    "codeHooks": true,
+    "dangerGuard": true,
+    "laneGate": true,
+    "gitmojiGuard": false,
+    "memory": true,
+    "context7": false
+  },
+  "commands": [],
+  "commandCollisions": [],
+  "version": "3.6.0"
+}

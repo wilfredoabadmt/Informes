@@ -1,0 +1,429 @@
+openapi: 3.0.3
+info:
+  title: Sistema Integral de Registro y Gestión de Maestros - API de Autenticación y Contexto Multi-Tenant
+  description: |
+    Contrato formal de API para la Feature 001: Autenticación, Gestión de Identidad Centralizada
+    y Validación de Contexto Institucional Multi-Tenant.
+    
+    Alineado a la Constitución V1.1.0 (Decisiones 001, 004, 005) y ADR-001 / ADR-002.
+  version: 1.0.0
+servers:
+  - url: http://localhost:3000/api/v1
+    description: Servidor de desarrollo local
+
+paths:
+  /auth/login:
+    post:
+      summary: Iniciar sesión en la plataforma
+      description: |
+        Autentica a un usuario global mediante correo electrónico o CI y contraseña (Argon2id).
+        Retorna tokens JWT globales y la lista de vinculaciones institucionales activas.
+      operationId: login
+      tags:
+        - Autenticación
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/LoginRequestDto'
+      responses:
+        '200':
+          description: Autenticación exitosa
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/LoginResponseDto'
+        '401':
+          description: Credenciales inválidas o cuenta inactiva
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponseDto'
+        '429':
+          description: Demasiados intentos fallidos (Rate limit)
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponseDto'
+
+  /auth/me:
+    get:
+      summary: Obtener perfil del usuario autenticado
+      description: Retorna la información de identidad (Persona, Usuario y datos de Maestro si aplica).
+      operationId: getProfile
+      security:
+        - BearerAuth: []
+      tags:
+        - Autenticación
+      responses:
+        '200':
+          description: Perfil obtenido exitosamente
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/UserProfileDto'
+        '401':
+          description: Token no válido o expirado
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponseDto'
+
+  /auth/institutions:
+    get:
+      summary: Listar unidades educativas vinculadas
+      description: |
+        Retorna todas las instituciones a las cuales el usuario autenticado tiene vinculación activa,
+        incluyendo el rol asignado en cada una (Director, Secretario, Maestro, etc.).
+      operationId: getLinkedInstitutions
+      security:
+        - BearerAuth: []
+      tags:
+        - Multi-Tenant
+      responses:
+        '200':
+          description: Lista de instituciones vinculadas
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/LinkedInstitutionDto'
+        '401':
+          description: Token no válido o expirado
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponseDto'
+
+  /auth/context:
+    post:
+      summary: Seleccionar y validar contexto institucional activo
+      description: |
+        Valida que el usuario tenga vinculación ACTIVA con la institución seleccionada.
+        Registra la auditoría de cambio de contexto institucional y emite un token con claims de contexto.
+      operationId: setInstitutionalContext
+      security:
+        - BearerAuth: []
+      tags:
+        - Multi-Tenant
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/SelectContextRequestDto'
+      responses:
+        '200':
+          description: Contexto institucional validado y activado
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ContextResponseDto'
+        '401':
+          description: No autenticado
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponseDto'
+        '403':
+          description: Acceso denegado. No existe vinculación activa con la institución solicitada
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponseDto'
+        '404':
+          description: Institución no encontrada o inactiva
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponseDto'
+
+  /auth/refresh:
+    post:
+      summary: Renovar token de acceso
+      description: Emite un nuevo access token utilizando un refresh token válido y no revocado.
+      operationId: refreshToken
+      tags:
+        - Autenticación
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/RefreshTokenRequestDto'
+      responses:
+        '200':
+          description: Token renovado con éxito
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/TokenPairDto'
+        '401':
+          description: Refresh token inválido o expirado
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponseDto'
+
+  /auth/logout:
+    post:
+      summary: Cerrar sesión
+      description: Revoca el refresh token activo del usuario.
+      operationId: logout
+      security:
+        - BearerAuth: []
+      tags:
+        - Autenticación
+      responses:
+        '200':
+          description: Sesión cerrada exitosamente
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: Sesión finalizada correctamente.
+        '401':
+          description: No autenticado
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponseDto'
+
+components:
+  securitySchemes:
+    BearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+      description: Token JWT global obtenido en /login o /refresh.
+
+  parameters:
+    TenantHeader:
+      name: X-Institution-Id
+      in: header
+      required: true
+      description: UUID de la Unidad Educativa para alcance institucional.
+      schema:
+        type: string
+        format: uuid
+
+  schemas:
+    LoginRequestDto:
+      type: object
+      required:
+        - identifier
+        - password
+      properties:
+        identifier:
+          type: string
+          description: Correo electrónico o Cédula de Identidad (CI) del usuario
+          example: maestro.perez@minedu.gob.bo
+        password:
+          type: string
+          format: password
+          description: Contraseña en texto plano para verificar con Argon2id
+          example: P@ssw0rdSegura2026!
+
+    TokenPairDto:
+      type: object
+      required:
+        - accessToken
+        - refreshToken
+        - expiresIn
+      properties:
+        accessToken:
+          type: string
+          description: JWT firmado para autorización de peticiones
+        refreshToken:
+          type: string
+          description: Token seguro para rotación de sesión
+        expiresIn:
+          type: integer
+          description: Segundos de vigencia del accessToken
+          example: 900
+
+    LoginResponseDto:
+      type: object
+      required:
+        - tokens
+        - user
+        - institutions
+      properties:
+        tokens:
+          $ref: '#/components/schemas/TokenPairDto'
+        user:
+          $ref: '#/components/schemas/UserProfileDto'
+        institutions:
+          type: array
+          items:
+            $ref: '#/components/schemas/LinkedInstitutionDto'
+
+    UserProfileDto:
+      type: object
+      required:
+        - id
+        - email
+        - globalRole
+        - persona
+      properties:
+        id:
+          type: string
+          format: uuid
+        email:
+          type: string
+          format: email
+        globalRole:
+          type: string
+          enum: [SUPERADMIN, CENTRAL_ADMIN, INSTITUTIONAL_USER]
+        persona:
+          type: object
+          required:
+            - ci
+            - complement
+            - nombres
+            - primerApellido
+          properties:
+            ci:
+              type: string
+              example: '6849302'
+            complement:
+              type: string
+              nullable: true
+              example: '1B'
+            nombres:
+              type: string
+              example: 'Carlos'
+            primerApellido:
+              type: string
+              example: 'Mamani'
+            segundoApellido:
+              type: string
+              nullable: true
+              example: 'Condori'
+            fechaNacimiento:
+              type: string
+              format: date
+              nullable: true
+        maestro:
+          type: object
+          nullable: true
+          properties:
+            rda:
+              type: string
+              example: 'RDA-98321'
+            tituloProfesional:
+              type: string
+              nullable: true
+              example: 'Licenciado en Educación Primaria Comunitaria Vocacional'
+            especialidad:
+              type: string
+              nullable: true
+              example: 'Matemática y Ciencias Naturales'
+
+    LinkedInstitutionDto:
+      type: object
+      required:
+        - institutionId
+        - sie
+        - nombre
+        - departamento
+        - role
+        - status
+      properties:
+        institutionId:
+          type: string
+          format: uuid
+        sie:
+          type: string
+          description: Código SIE oficial de la Unidad Educativa
+          example: '80730045'
+        nombre:
+          type: string
+          example: 'Unidad Educativa Franz Tamayo'
+        departamento:
+          type: string
+          example: 'La Paz'
+        role:
+          type: string
+          enum: [ADMIN_INSTITUCIONAL, DIRECTOR, SECRETARIO, MAESTRO, COMISION_PEDAGOGICA]
+          example: 'MAESTRO'
+        cargoOficial:
+          type: string
+          nullable: true
+          example: 'Profesor de Matemáticas de Secundaria'
+        status:
+          type: string
+          enum: [ACTIVO, INACTIVO, LICENCIA, TRASLADADO]
+          example: 'ACTIVO'
+
+    SelectContextRequestDto:
+      type: object
+      required:
+        - institutionId
+      properties:
+        institutionId:
+          type: string
+          format: uuid
+          description: UUID de la institución a seleccionar
+
+    ContextResponseDto:
+      type: object
+      required:
+        - institutionId
+        - sie
+        - nombre
+        - role
+        - permissions
+        - contextToken
+      properties:
+        institutionId:
+          type: string
+          format: uuid
+        sie:
+          type: string
+        nombre:
+          type: string
+        role:
+          type: string
+        permissions:
+          type: array
+          items:
+            type: string
+          example: ['academic:read', 'grades:write', 'attendance:write']
+        contextToken:
+          type: string
+          description: JWT actualizado con el claim institutionId incluido
+
+    RefreshTokenRequestDto:
+      type: object
+      required:
+        - refreshToken
+      properties:
+        refreshToken:
+          type: string
+
+    ErrorResponseDto:
+      type: object
+      required:
+        - statusCode
+        - message
+        - timestamp
+      properties:
+        statusCode:
+          type: integer
+          example: 403
+        message:
+          type: string
+          example: 'Acceso denegado: el usuario no tiene vinculación activa con la institución solicitada'
+        error:
+          type: string
+          example: 'Forbidden'
+        timestamp:
+          type: string
+          format: date-time
+          example: '2026-10-31T21:30:00.000Z'
