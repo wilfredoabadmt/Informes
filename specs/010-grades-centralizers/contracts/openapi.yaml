@@ -1,0 +1,298 @@
+openapi: 3.0.3
+info:
+  title: API de Centralizadores de Calificaciones y Promedios Anuales (Feature 010)
+  description: Servicios para la emisión de centralizadores trimestrales y anuales, cálculo de promedios de curso, estadísticas de rendimiento y determinación oficial de la situación final (Promovido/Retenido) en el SEP de Bolivia.
+  version: 1.0.0
+servers:
+  - url: /api/v1
+    description: Servidor Backend Local / Staging
+
+paths:
+  /centralizers/trimester:
+    get:
+      summary: Consultar centralizador trimestral de un paralelo (Nivel 2 y Nivel 3)
+      operationId: getTrimesterCentralizer
+      security:
+        - BearerAuth: []
+      parameters:
+        - $ref: '#/components/parameters/TenantHeader'
+        - name: paraleloId
+          in: query
+          required: true
+          schema:
+            type: string
+            format: uuid
+        - name: periodoId
+          in: query
+          required: true
+          schema:
+            type: string
+            format: uuid
+      tags:
+        - Centralizadores de Calificaciones
+      responses:
+        '200':
+          description: Centralizador trimestral completo con matriz de notas y estadísticas
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/TrimesterCentralizerResponseDto'
+        '404':
+          description: Paralelo o periodo no encontrado
+
+  /centralizers/annual:
+    get:
+      summary: Consultar centralizador anual de gestión de un paralelo (Nivel 2 y Nivel 3)
+      operationId: getAnnualCentralizer
+      security:
+        - BearerAuth: []
+      parameters:
+        - $ref: '#/components/parameters/TenantHeader'
+        - name: paraleloId
+          in: query
+          required: true
+          schema:
+            type: string
+            format: uuid
+      tags:
+        - Centralizadores de Calificaciones
+      responses:
+        '200':
+          description: Centralizador anual consolidado con promedios y situación final
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AnnualCentralizerResponseDto'
+        '404':
+          description: Paralelo no encontrado
+
+  /centralizers/annual/finalize:
+    post:
+      summary: Cerrar y asentar oficialmente la situación final del paralelo (Nivel 2)
+      operationId: finalizeAnnualCentralizer
+      security:
+        - BearerAuth: []
+      parameters:
+        - $ref: '#/components/parameters/TenantHeader'
+      tags:
+        - Centralizadores de Calificaciones
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - paraleloId
+              properties:
+                paraleloId:
+                  type: string
+                  format: uuid
+      responses:
+        '200':
+          description: Centralizador anual finalizado y situaciones finales persistidas
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/FinalizeCentralizerResponseDto'
+        '400':
+          description: Existen trimestres no cerrados o materias sin calificar
+        '403':
+          description: Requiere rol directivo de Nivel 2
+        '404':
+          description: Paralelo no encontrado
+
+components:
+  securitySchemes:
+    BearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+
+  parameters:
+    TenantHeader:
+      name: X-Institution-Id
+      in: header
+      required: true
+      description: UUID de la institución activa bajo sesión
+      schema:
+        type: string
+        format: uuid
+
+  schemas:
+    SubjectItemDto:
+      type: object
+      properties:
+        materiaId:
+          type: string
+          format: uuid
+        codigo:
+          type: string
+        nombre:
+          type: string
+
+    SubjectGradeDto:
+      type: object
+      properties:
+        materiaId:
+          type: string
+          format: uuid
+        codigo:
+          type: string
+        nombre:
+          type: string
+        nota:
+          type: integer
+          example: 85
+        estado:
+          type: string
+          enum: [APROBADO, REPROBADO]
+          example: APROBADO
+
+    TrimesterStudentRowDto:
+      type: object
+      properties:
+        estudianteId:
+          type: string
+          format: uuid
+        codigoRude:
+          type: string
+        nombreCompleto:
+          type: string
+        calificaciones:
+          type: array
+          items:
+            $ref: '#/components/schemas/SubjectGradeDto'
+        promedioTrimestral:
+          type: number
+          example: 78.4
+        materiasReprobadas:
+          type: integer
+          example: 0
+
+    TrimesterCentralizerResponseDto:
+      type: object
+      properties:
+        paraleloId:
+          type: string
+          format: uuid
+        curso:
+          type: string
+        paralelo:
+          type: string
+        periodoId:
+          type: string
+          format: uuid
+        trimestre:
+          type: string
+        materias:
+          type: array
+          items:
+            $ref: '#/components/schemas/SubjectItemDto'
+        estudiantes:
+          type: array
+          items:
+            $ref: '#/components/schemas/TrimesterStudentRowDto'
+        estadisticas:
+          type: object
+          properties:
+            totalEstudiantes:
+              type: integer
+            aprobadosEnTodo:
+              type: integer
+            conReprobadas:
+              type: integer
+            promedioGeneralAula:
+              type: number
+              example: 74.2
+
+    AnnualSubjectGradeDto:
+      type: object
+      properties:
+        materiaId:
+          type: string
+          format: uuid
+        nombre:
+          type: string
+        nota1T:
+          type: integer
+        nota2T:
+          type: integer
+        nota3T:
+          type: integer
+        promedioAnual:
+          type: number
+          example: 68.3
+        estado:
+          type: string
+          enum: [APROBADO, REPROBADO]
+
+    AnnualStudentRowDto:
+      type: object
+      properties:
+        estudianteId:
+          type: string
+          format: uuid
+        codigoRude:
+          type: string
+        nombreCompleto:
+          type: string
+        materias:
+          type: array
+          items:
+            $ref: '#/components/schemas/AnnualSubjectGradeDto'
+        promedioGeneralAnual:
+          type: number
+          example: 76.5
+        situacionFinal:
+          type: string
+          enum: [PROMOVIDO, RETENIDO]
+          example: PROMOVIDO
+
+    AnnualCentralizerResponseDto:
+      type: object
+      properties:
+        paraleloId:
+          type: string
+          format: uuid
+        curso:
+          type: string
+        paralelo:
+          type: string
+        gestion:
+          type: integer
+        materias:
+          type: array
+          items:
+            $ref: '#/components/schemas/SubjectItemDto'
+        estudiantes:
+          type: array
+          items:
+            $ref: '#/components/schemas/AnnualStudentRowDto'
+        estadisticas:
+          type: object
+          properties:
+            totalEstudiantes:
+              type: integer
+            promovidos:
+              type: integer
+            retenidos:
+              type: integer
+            promedioGeneralGestion:
+              type: number
+              example: 75.1
+
+    FinalizeCentralizerResponseDto:
+      type: object
+      properties:
+        paraleloId:
+          type: string
+          format: uuid
+        totalProcesados:
+          type: integer
+        promovidos:
+          type: integer
+        retenidos:
+          type: integer
+        mensaje:
+          type: string
