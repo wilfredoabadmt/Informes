@@ -226,6 +226,7 @@ model UnidadEducativa {
   asistencias        RegistroAsistencia[]
   periodosEvaluacion PeriodoEvaluacion[]
   evaluaciones       Evaluacion[]
+  calificaciones     Calificacion[]
   auditorias         RegistroAuditoria[]
 
   @@index([sie])
@@ -393,6 +394,7 @@ model Estudiante {
   persona            Persona             @relation(fields: [personaId], references: [id], onDelete: Cascade)
   inscripciones      Inscripcion[]
   detallesAsistencia DetalleAsistencia[]
+  calificaciones     Calificacion[]
 
   @@index([codigoRude])
   @@map("estudiantes")
@@ -549,9 +551,10 @@ model Evaluacion {
   createdAt       DateTime            @default(now()) @map("created_at")
   updatedAt       DateTime            @updatedAt @map("updated_at")
 
-  institucion UnidadEducativa     @relation(fields: [institucionId], references: [id], onDelete: Cascade)
-  asignacion  AsignacionAcademica @relation(fields: [asignacionId], references: [id], onDelete: Cascade)
-  periodo     PeriodoEvaluacion   @relation(fields: [periodoId], references: [id], onDelete: Cascade)
+  institucion    UnidadEducativa     @relation(fields: [institucionId], references: [id], onDelete: Cascade)
+  asignacion     AsignacionAcademica @relation(fields: [asignacionId], references: [id], onDelete: Cascade)
+  periodo        PeriodoEvaluacion   @relation(fields: [periodoId], references: [id], onDelete: Cascade)
+  calificaciones Calificacion[]
 
   @@index([institucionId])
   @@index([asignacionId])
@@ -559,4 +562,29 @@ model Evaluacion {
   @@index([dimension])
   @@index([fechaEvaluacion])
   @@map("evaluaciones")
+}
+
+// -------------------------------------------------------------
+// REGISTRO DE CALIFICACIONES (FEATURE 009)
+// -------------------------------------------------------------
+
+model Calificacion {
+  id            String   @id @default(uuid()) @db.Uuid
+  institucionId String   @map("institucion_id") @db.Uuid
+  evaluacionId  String   @map("evaluacion_id") @db.Uuid
+  estudianteId  String   @map("estudiante_id") @db.Uuid
+  nota          Int
+  observacion   String?  @db.VarChar(255)
+  createdAt     DateTime @default(now()) @map("created_at")
+  updatedAt     DateTime @updatedAt @map("updated_at")
+
+  institucion UnidadEducativa @relation(fields: [institucionId], references: [id], onDelete: Cascade)
+  evaluacion  Evaluacion      @relation(fields: [evaluacionId], references: [id], onDelete: Cascade)
+  estudiante  Estudiante      @relation(fields: [estudianteId], references: [id], onDelete: Cascade)
+
+  @@unique([evaluacionId, estudianteId])
+  @@index([institucionId])
+  @@index([evaluacionId])
+  @@index([estudianteId])
+  @@map("calificaciones")
 }

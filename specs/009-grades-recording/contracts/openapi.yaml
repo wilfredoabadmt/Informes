@@ -1,0 +1,304 @@
+openapi: 3.0.3
+info:
+  title: API de Registro de Calificaciones Cuantitativas y Cualitativas (Feature 009)
+  description: Servicios para el asentamiento ágil de notas en bloque, planillas centralizadas por dimensión y consolidación de notas trimestrales (1-100 pts) en el SEP de Bolivia.
+  version: 1.0.0
+servers:
+  - url: /api/v1
+    description: Servidor Backend Local / Staging
+
+paths:
+  /grades/batch:
+    post:
+      summary: Asentar calificaciones en bloque para un instrumento de evaluación (Nivel 3)
+      operationId: recordGradesBatch
+      security:
+        - BearerAuth: []
+      parameters:
+        - $ref: '#/components/parameters/TenantHeader'
+      tags:
+        - Calificaciones
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/RecordGradesBatchDto'
+      responses:
+        '201':
+          description: Calificaciones asentadas exitosamente
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/GradesBatchResponseDto'
+        '400':
+          description: Nota fuera de rango, periodo cerrado o alumno no matriculado
+        '403':
+          description: El maestro no tiene asignación pedagógica activa para esta evaluación
+        '404':
+          description: Evaluación no encontrada
+
+  /grades/evaluations/{evaluacionId}:
+    get:
+      summary: Consultar planilla de notas de un instrumento de evaluación (Nivel 2 y Nivel 3)
+      operationId: getGradesByEvaluation
+      security:
+        - BearerAuth: []
+      parameters:
+        - $ref: '#/components/parameters/TenantHeader'
+        - name: evaluacionId
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      tags:
+        - Calificaciones
+      responses:
+        '200':
+          description: Planilla de notas del instrumento de evaluación
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/EvaluationGradesSheetResponseDto'
+        '404':
+          description: Evaluación no encontrada
+
+  /grades/sheet:
+    get:
+      summary: Consultar planilla trimestral consolidada de notas (Nivel 2 y Nivel 3)
+      operationId: getTrimesterGradesSheet
+      security:
+        - BearerAuth: []
+      parameters:
+        - $ref: '#/components/parameters/TenantHeader'
+        - name: asignacionId
+          in: query
+          required: true
+          schema:
+            type: string
+            format: uuid
+        - name: periodoId
+          in: query
+          required: true
+          schema:
+            type: string
+            format: uuid
+      tags:
+        - Calificaciones
+      responses:
+        '200':
+          description: Planilla consolidada con dimensiones y nota final sobre 100
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/TrimesterGradesSheetResponseDto'
+        '404':
+          description: Asignación o periodo no encontrado
+
+  /grades/{id}:
+    patch:
+      summary: Modificar la calificación individual de un estudiante (Nivel 2 y Nivel 3)
+      operationId: updateGrade
+      security:
+        - BearerAuth: []
+      parameters:
+        - $ref: '#/components/parameters/TenantHeader'
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      tags:
+        - Calificaciones
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/UpdateGradeDto'
+      responses:
+        '200':
+          description: Calificación modificada exitosamente
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/GradeItemDto'
+        '400':
+          description: Trimestre cerrado o nota excede el puntaje máximo
+        '403':
+          description: No autorizado para modificar esta nota
+        '404':
+          description: Calificación no encontrada
+
+components:
+  securitySchemes:
+    BearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+
+  parameters:
+    TenantHeader:
+      name: X-Institution-Id
+      in: header
+      required: true
+      description: UUID de la institución activa bajo sesión
+      schema:
+        type: string
+        format: uuid
+
+  schemas:
+    GradeInputItemDto:
+      type: object
+      required:
+        - estudianteId
+        - nota
+      properties:
+        estudianteId:
+          type: string
+          format: uuid
+        nota:
+          type: integer
+          minimum: 0
+          example: 32
+        observacion:
+          type: string
+          example: 'Excelente resolución de ejercicios prácticos'
+
+    RecordGradesBatchDto:
+      type: object
+      required:
+        - evaluacionId
+        - calificaciones
+      properties:
+        evaluacionId:
+          type: string
+          format: uuid
+        calificaciones:
+          type: array
+          items:
+            $ref: '#/components/schemas/GradeInputItemDto'
+
+    UpdateGradeDto:
+      type: object
+      required:
+        - nota
+      properties:
+        nota:
+          type: integer
+          minimum: 0
+          example: 35
+        observacion:
+          type: string
+          example: 'Apreciación cualitativa actualizada'
+        motivoRectificacion:
+          type: string
+          example: 'Recalificación autorizada tras revisión de cuaderno'
+
+    GradeItemDto:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        evaluacionId:
+          type: string
+          format: uuid
+        estudianteId:
+          type: string
+          format: uuid
+        codigoRude:
+          type: string
+        nombreCompleto:
+          type: string
+        nota:
+          type: integer
+        observacion:
+          type: string
+
+    GradesBatchResponseDto:
+      type: object
+      properties:
+        evaluacionId:
+          type: string
+          format: uuid
+        totalCalificados:
+          type: integer
+        puntajeMaximo:
+          type: integer
+        promedioGrupo:
+          type: number
+          example: 28.5
+
+    EvaluationGradesSheetResponseDto:
+      type: object
+      properties:
+        evaluacion:
+          type: object
+          properties:
+            id:
+              type: string
+              format: uuid
+            nombre:
+              type: string
+            dimension:
+              type: string
+            puntajeMaximo:
+              type: integer
+        calificaciones:
+          type: array
+          items:
+            $ref: '#/components/schemas/GradeItemDto'
+
+    TrimesterStudentSummaryDto:
+      type: object
+      properties:
+        estudianteId:
+          type: string
+          format: uuid
+        codigoRude:
+          type: string
+        nombreCompleto:
+          type: string
+        subtotalSer:
+          type: integer
+          example: 9
+        subtotalSaber:
+          type: integer
+          example: 30
+        subtotalHacer:
+          type: integer
+          example: 32
+        subtotalDecidir:
+          type: integer
+          example: 9
+        subtotalAutoevaluacion:
+          type: integer
+          example: 9
+        notaFinal:
+          type: integer
+          example: 89
+        estadoAprobacion:
+          type: string
+          enum: [APROBADO, EN_DESARROLLO]
+          example: APROBADO
+
+    TrimesterGradesSheetResponseDto:
+      type: object
+      properties:
+        asignacionId:
+          type: string
+          format: uuid
+        periodoId:
+          type: string
+          format: uuid
+        materia:
+          type: string
+        paralelo:
+          type: string
+        estudiantes:
+          type: array
+          items:
+            $ref: '#/components/schemas/TrimesterStudentSummaryDto'
