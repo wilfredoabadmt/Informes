@@ -73,3 +73,4 @@ sequenceDiagram
 5. Directora Elena ejecuta la finalización oficial del paralelo (`POST /centralizers/annual/finalize`) -> `200 OK` (1 promovido, 1 retenido).
 6. Ficha del estudiante (`GET /students/:id`) refleja la `situacionFinal: PROMOVIDO` para Mateo y `RETENIDO` para Lucia.
 7. Aislamiento PostgreSQL RLS: consulta desde colegio ajeno -> `404 Not Found`.
+

@@ -86,3 +86,4 @@ $$\text{Situación Final}(e) = \begin{cases}
 \text{PROMOVIDO} & \text{si } \forall m \in M: \overline{\text{Anual}}(e, m) \ge 51 \\
 \text{RETENIDO} & \text{si } \exists m \in M: \overline{\text{Anual}}(e, m) < 51
 \end{cases}$$
+

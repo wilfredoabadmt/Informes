@@ -38,3 +38,4 @@ export class UpdateGradeDto {
   @MaxLength(255, { message: 'motivoRectificacion no puede exceder 255 caracteres' })
   motivoRectificacion?: string;
 }
+

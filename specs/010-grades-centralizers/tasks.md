@@ -11,8 +11,8 @@
 
 | ID | Fase | Tarea | Dependencias | Estado |
 |---|---|---|---|---|
-| `T01-CENT-PRISMA`   | Base de Datos | Agregar `SituacionFinalEstudiante` y campos a `Inscripcion` en `schema.prisma` | Ninguna | PENDIENTE |
-| `T02-CENT-MIGRATION`| Base de Datos | Generar migración y verificar esquema en PostgreSQL | T01-CENT-PRISMA | PENDIENTE |
+| `T01-CENT-PRISMA`   | Base de Datos | Agregar `SituacionFinalEstudiante` y campos a `Inscripcion` en `schema.prisma` | Ninguna | COMPLETADO |
+| `T02-CENT-MIGRATION`| Base de Datos | Generar migración y verificar esquema en PostgreSQL | T01-CENT-PRISMA | COMPLETADO |
 | `T03-CENT-DTO`      | Contratos | Implementar DTOs para centralizadores trimestrales, anuales y cierre | Ninguna | PENDIENTE |
 | `T04-CENT-SVC`      | Backend Core | Implementar `CentralizersService` (matriz trimestral, promedios anuales y promoción) | T02-CENT-MIGRATION, T03-CENT-DTO | PENDIENTE |
 | `T05-CENT-CTRL`     | Endpoints | Implementar `CentralizersController` y registrar en `CentralizersModule` y `AppModule` | T04-CENT-SVC | PENDIENTE |
@@ -58,3 +58,4 @@
 
 #### `T07-CENT-E2E`: Pruebas de Integración E2E
 - Escenario completo con 3 trimestres, centralizador trimestral, centralizador anual, cierre formal con promovidos/retenidos y aislamiento RLS.
+

@@ -81,3 +81,4 @@ sequenceDiagram
 8. Directora Elena cierra el trimestre escolar -> `200 OK`.
 9. Intento de modificar notas en trimestre cerrado -> `400 Bad Request`.
 10. Aislamiento PostgreSQL RLS: consulta desde tenant ajeno -> `404 Not Found`.
+

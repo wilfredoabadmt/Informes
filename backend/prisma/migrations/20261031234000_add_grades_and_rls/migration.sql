@@ -49,3 +49,4 @@ USING (
 WITH CHECK (
   institucion_id = NULLIF(current_setting('app.current_institution_id', true), '')::uuid
 );
+

@@ -76,3 +76,4 @@ En el Sistema Educativo Plurinacional (SEP) de Bolivia (Ley 070 y Resoluciones M
 1. **Aislamiento Multi-Tenant (PostgreSQL RLS):** La tabla `calificaciones` debe implementar `ENABLE ROW LEVEL SECURITY; FORCE ROW LEVEL SECURITY;` vinculada a `institucion_id`.
 2. **Inmutabilidad Post-Cierre:** Bajo ninguna circunstancia un maestro puede asentar o alterar notas en un trimestre con estado `CERRADO`.
 3. **Atomicidad:** La carga en bloque de calificaciones para 35-45 estudiantes se ejecuta dentro de `$transaction`.
+

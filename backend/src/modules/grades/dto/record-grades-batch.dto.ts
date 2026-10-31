@@ -56,3 +56,4 @@ export class RecordGradesBatchDto {
   @Type(() => GradeInputItemDto)
   calificaciones: GradeInputItemDto[];
 }
+

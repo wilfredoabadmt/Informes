@@ -88,3 +88,4 @@ $$\text{Estado Aprobación} = \begin{cases}
 \text{APROBADO} & \text{si } \text{Nota Trimestral} \ge 51 \\ 
 \text{EN\_DESARROLLO} & \text{si } \text{Nota Trimestral} < 51 
 \end{cases}$$
+

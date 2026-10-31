@@ -73,3 +73,4 @@ En el Sistema Educativo Plurinacional (SEP) de Bolivia, conforme a las Resolucio
 1. **Aislamiento Multi-Tenant (PostgreSQL RLS):** Las consultas y actualizaciones de centralizadores deben ejecutarse bajo `app.current_institution_id`, garantizando que ninguna autoridad escolar acceda a notas o centralizadores de otra unidad educativa.
 2. **Determinismo y Rendimiento:** La agregación matricial para cursos de hasta 45 alumnos y 12 asignaturas debe procesarse y responder en menos de 100 ms.
 3. **Compatibilidad SEP Bolivia:** Preservar la escala vigesimal/centesimal oficial boliviana (1-100, umbral de aprobación 51).
+

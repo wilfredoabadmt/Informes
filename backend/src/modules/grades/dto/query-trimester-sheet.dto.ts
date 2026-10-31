@@ -12,3 +12,4 @@ export class QueryTrimesterSheetDto {
   @IsNotEmpty({ message: 'periodoId es obligatorio' })
   periodoId: string;
 }
+

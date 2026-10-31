@@ -296,3 +296,4 @@ components:
           type: integer
         mensaje:
           type: string
+
