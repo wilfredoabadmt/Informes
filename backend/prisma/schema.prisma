@@ -113,6 +113,26 @@ enum EstadoAsistencia {
   ATRASO
 }
 
+enum TipoPeriodo {
+  PRIMER_TRIMESTRE
+  SEGUNDO_TRIMESTRE
+  TERCER_TRIMESTRE
+}
+
+enum EstadoPeriodo {
+  PROGRAMADO
+  ABIERTO
+  CERRADO
+}
+
+enum DimensionEvaluacion {
+  SER
+  SABER
+  HACER
+  DECIDIR
+  AUTOEVALUACION
+}
+
 // -------------------------------------------------------------
 // MODELO DE IDENTIDAD CENTRALIZADA
 // -------------------------------------------------------------
@@ -202,9 +222,11 @@ model UnidadEducativa {
   gestiones     GestionEscolar[]
   paralelos     Paralelo[]
   asignaciones  AsignacionAcademica[]
-  inscripciones Inscripcion[]
-  asistencias   RegistroAsistencia[]
-  auditorias    RegistroAuditoria[]
+  inscripciones      Inscripcion[]
+  asistencias        RegistroAsistencia[]
+  periodosEvaluacion PeriodoEvaluacion[]
+  evaluaciones       Evaluacion[]
+  auditorias         RegistroAuditoria[]
 
   @@index([sie])
   @@index([departamento])
@@ -251,10 +273,11 @@ model GestionEscolar {
   createdAt     DateTime      @default(now()) @map("created_at")
   updatedAt     DateTime      @updatedAt @map("updated_at")
 
-  institucion UnidadEducativa @relation(fields: [institucionId], references: [id], onDelete: Cascade)
-  paralelos   Paralelo[]
-  asignaciones AsignacionAcademica[]
+  institucion   UnidadEducativa       @relation(fields: [institucionId], references: [id], onDelete: Cascade)
+  paralelos     Paralelo[]
+  asignaciones  AsignacionAcademica[]
   inscripciones Inscripcion[]
+  periodos      PeriodoEvaluacion[]
 
   @@unique([institucionId, anio])
   @@index([institucionId])
@@ -341,6 +364,7 @@ model AsignacionAcademica {
   paralelo     Paralelo                 @relation(fields: [paraleloId], references: [id], onDelete: Cascade)
   materia      Materia                  @relation(fields: [materiaId], references: [id], onDelete: Cascade)
   asistencias  RegistroAsistencia[]
+  evaluaciones Evaluacion[]
 
   @@unique([gestionId, paraleloId, materiaId, vinculacionId])
   @@index([institucionId])
@@ -481,4 +505,58 @@ model RegistroAuditoria {
   @@index([tipo])
   @@index([timestamp])
   @@map("registros_auditoria")
+}
+
+// -------------------------------------------------------------
+// EVALUACIONES Y PERIODOS EVALUATIVOS (FEATURE 008)
+// -------------------------------------------------------------
+
+model PeriodoEvaluacion {
+  id               String        @id @default(uuid()) @db.Uuid
+  institucionId    String        @map("institucion_id") @db.Uuid
+  gestionId        String        @map("gestion_id") @db.Uuid
+  periodo          TipoPeriodo
+  fechaInicio      DateTime      @map("fecha_inicio") @db.Date
+  fechaFin         DateTime      @map("fecha_fin") @db.Date
+  fechaLimiteNotas DateTime      @map("fecha_limite_notas") @db.Date
+  estado           EstadoPeriodo @default(PROGRAMADO)
+  activo           Boolean       @default(true)
+  createdAt        DateTime      @default(now()) @map("created_at")
+  updatedAt        DateTime      @updatedAt @map("updated_at")
+
+  institucion  UnidadEducativa @relation(fields: [institucionId], references: [id], onDelete: Cascade)
+  gestion      GestionEscolar  @relation(fields: [gestionId], references: [id], onDelete: Cascade)
+  evaluaciones Evaluacion[]
+
+  @@unique([gestionId, periodo])
+  @@index([institucionId])
+  @@index([gestionId])
+  @@index([estado])
+  @@map("periodos_evaluacion")
+}
+
+model Evaluacion {
+  id              String              @id @default(uuid()) @db.Uuid
+  institucionId   String              @map("institucion_id") @db.Uuid
+  asignacionId    String              @map("asignacion_id") @db.Uuid
+  periodoId       String              @map("periodo_id") @db.Uuid
+  dimension       DimensionEvaluacion
+  nombre          String              @db.VarChar(150)
+  descripcion     String?             @db.VarChar(255)
+  puntajeMaximo   Int                 @map("puntaje_maximo")
+  fechaEvaluacion DateTime            @map("fecha_evaluacion") @db.Date
+  activo          Boolean             @default(true)
+  createdAt       DateTime            @default(now()) @map("created_at")
+  updatedAt       DateTime            @updatedAt @map("updated_at")
+
+  institucion UnidadEducativa     @relation(fields: [institucionId], references: [id], onDelete: Cascade)
+  asignacion  AsignacionAcademica @relation(fields: [asignacionId], references: [id], onDelete: Cascade)
+  periodo     PeriodoEvaluacion   @relation(fields: [periodoId], references: [id], onDelete: Cascade)
+
+  @@index([institucionId])
+  @@index([asignacionId])
+  @@index([periodoId])
+  @@index([dimension])
+  @@index([fechaEvaluacion])
+  @@map("evaluaciones")
 }

@@ -1,7 +1,7 @@
 # Tareas de Implementación — Feature 008: Periodos de Evaluación y Configuración de Dimensiones SEP
 
 **Feature:** `008-evaluation-periods`  
-**Estado:** PROPUESTO  
+**Estado:** COMPLETADO  
 **Constitución Referencia:** V1.1.0 (Decisiones 001, 002-B, 005; Sección 4 - Entidades 7 y 13; Sección 6 - RBAC Contextual; Sección 7 - Módulo 12)  
 **DoD:** Código compilado sin errores + Linter aprobado + Pruebas unitarias + Pruebas de integración E2E contra PostgreSQL con RLS + Documentación sincronizada.
 
@@ -11,13 +11,13 @@
 
 | ID | Fase | Tarea | Dependencias | Estado |
 |---|---|---|---|---|
-| `T01-EVAL-PRISMA`   | Base de Datos | Agregar `TipoPeriodo`, `EstadoPeriodo`, `DimensionEvaluacion`, `PeriodoEvaluacion` y `Evaluacion` a `schema.prisma` | Ninguna | PENDIENTE |
-| `T02-EVAL-MIGRATION`| Base de Datos | Generar migración y aplicar PostgreSQL RLS a `periodos_evaluacion` y `evaluaciones` | T01-EVAL-PRISMA | PENDIENTE |
-| `T03-EVAL-DTO`      | Contratos | Implementar DTOs de periodos y evaluaciones con validación de dimensiones | Ninguna | PENDIENTE |
-| `T04-EVAL-SVC`      | Backend Core | Implementar `EvaluationsService` (gestión de trimestres, apertura/cierre, instrumentos y topes SEP) | T02-EVAL-MIGRATION, T03-EVAL-DTO | PENDIENTE |
-| `T05-EVAL-CTRL`     | Endpoints | Implementar `EvaluationsController` y registrar en `EvaluationsModule` y `AppModule` | T04-EVAL-SVC | PENDIENTE |
-| `T06-EVAL-UNIT`     | Verificación | Pruebas unitarias en `evaluations.service.spec.ts` | T04-EVAL-SVC | PENDIENTE |
-| `T07-EVAL-E2E`      | Verificación | Pruebas E2E en `test/evaluations.e2e-spec.ts` con ciclo de trimestres, topes de dimensión y RLS | T05-EVAL-CTRL | PENDIENTE |
+| `T01-EVAL-PRISMA`   | Base de Datos | Agregar `TipoPeriodo`, `EstadoPeriodo`, `DimensionEvaluacion`, `PeriodoEvaluacion` y `Evaluacion` a `schema.prisma` | Ninguna | COMPLETADO Y VERIFICADO |
+| `T02-EVAL-MIGRATION`| Base de Datos | Generar migración y aplicar PostgreSQL RLS a `periodos_evaluacion` y `evaluaciones` | T01-EVAL-PRISMA | COMPLETADO Y VERIFICADO |
+| `T03-EVAL-DTO`      | Contratos | Implementar DTOs de periodos y evaluaciones con validación de dimensiones | Ninguna | COMPLETADO Y VERIFICADO |
+| `T04-EVAL-SVC`      | Backend Core | Implementar `EvaluationsService` (gestión de trimestres, apertura/cierre, instrumentos y topes SEP) | T02-EVAL-MIGRATION, T03-EVAL-DTO | COMPLETADO Y VERIFICADO |
+| `T05-EVAL-CTRL`     | Endpoints | Implementar `EvaluationsController` y registrar en `EvaluationsModule` y `AppModule` | T04-EVAL-SVC | COMPLETADO Y VERIFICADO |
+| `T06-EVAL-UNIT`     | Verificación | Pruebas unitarias en `evaluations.service.spec.ts` | T04-EVAL-SVC | COMPLETADO Y VERIFICADO |
+| `T07-EVAL-E2E`      | Verificación | Pruebas E2E en `test/evaluations.e2e-spec.ts` con ciclo de trimestres, topes de dimensión y RLS | T05-EVAL-CTRL | COMPLETADO Y VERIFICADO |
 
 ---
 
