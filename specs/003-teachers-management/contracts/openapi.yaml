@@ -1,0 +1,537 @@
+openapi: 3.0.3
+info:
+  title: Sistema Integral de Registro y Gestión de Maestros - API de Expediente y Gestión Docente
+  description: |
+    Contrato formal de API para la Feature 003: Expediente Profesional Docente, Padrón Centralizado
+    y Vinculación Multi-Institucional Independiente.
+    
+    Alineado a la Constitución V1.1.0 (Decisiones 002, 004, 005) y Niveles 1, 2 y 3 de Arquitectura.
+  version: 1.0.0
+servers:
+  - url: http://localhost:3000/api/v1
+    description: Servidor de desarrollo local
+
+paths:
+  /teachers:
+    post:
+      summary: Alta de Maestro en el Padrón Nacional (Nivel 1)
+      description: Registra a un nuevo docente con identidad biográfica, cuenta de acceso y perfil RDA.
+      operationId: createTeacher
+      security:
+        - BearerAuth: []
+      tags:
+        - Padrón Nacional de Maestros (Nivel 1)
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CreateTeacherDto'
+      responses:
+        '201':
+          description: Maestro registrado exitosamente en el padrón nacional
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/TeacherSummaryDto'
+        '400':
+          description: Formato inválido en campos obligatorios o RDA
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponseDto'
+        '403':
+          description: Denegado. Solo administradores centrales pueden registrar docentes en el padrón nacional.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponseDto'
+        '409':
+          description: Conflicto. El RDA ya se encuentra registrado.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponseDto'
+
+  /teachers/search:
+    get:
+      summary: Buscar docentes por CI o RDA para vinculación (Niveles 1 y 2)
+      description: Retorna información profesional pública de maestros registrados para facilitar su incorporación a un colegio.
+      operationId: searchTeachers
+      security:
+        - BearerAuth: []
+      tags:
+        - Búsqueda y Vinculación Docente
+      parameters:
+        - name: q
+          in: query
+          required: true
+          description: Cédula de Identidad o código RDA a buscar
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Resultados de búsqueda
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/TeacherSearchResultDto'
+
+  /teachers/link:
+    post:
+      summary: Vincular docente a la Unidad Educativa en sesión (Nivel 2)
+      description: Incorpora a un maestro registrado a la nómina del colegio activo.
+      operationId: linkTeacher
+      security:
+        - BearerAuth: []
+      parameters:
+        - $ref: '#/components/parameters/TenantHeader'
+      tags:
+        - Gestión Institucional de Plantilla Docente (Nivel 2)
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/LinkTeacherDto'
+      responses:
+        '201':
+          description: Docente vinculado exitosamente
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/LinkResponseDto'
+        '404':
+          description: Maestro o usuario no encontrado en el padrón nacional
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponseDto'
+        '409':
+          description: El maestro ya se encuentra activamente vinculado a esta institución
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponseDto'
+
+  /teachers/my-institution:
+    get:
+      summary: Consultar la nómina docente del colegio en sesión (Nivel 2)
+      description: Lista exclusivamente los maestros vinculados a la Unidad Educativa identificada por X-Institution-Id.
+      operationId: getMyInstitutionTeachers
+      security:
+        - BearerAuth: []
+      parameters:
+        - $ref: '#/components/parameters/TenantHeader'
+        - name: estado
+          in: query
+          schema:
+            type: string
+            enum: [ACTIVO, LICENCIA, TRASLADADO, INACTIVO]
+        - name: q
+          in: query
+          schema:
+            type: string
+      tags:
+        - Gestión Institucional de Plantilla Docente (Nivel 2)
+      responses:
+        '200':
+          description: Lista de docentes del colegio
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/InstitutionTeacherItemDto'
+
+  /teachers/link/{vinculacionId}/status:
+    patch:
+      summary: Modificar estado de vinculación (Licencia / Traslado / Baja) (Nivel 2)
+      operationId: updateLinkStatus
+      security:
+        - BearerAuth: []
+      parameters:
+        - $ref: '#/components/parameters/TenantHeader'
+        - name: vinculacionId
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      tags:
+        - Gestión Institucional de Plantilla Docente (Nivel 2)
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/UpdateLinkStatusDto'
+      responses:
+        '200':
+          description: Estado de vinculación actualizado exitosamente
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/LinkResponseDto'
+        '403':
+          description: La vinculación no pertenece a la institución activa
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponseDto'
+
+  /teachers/me/dossier:
+    get:
+      summary: Consultar el propio expediente profesional e historial institucional (Nivel 3)
+      description: Retorna hoja de vida, RDA, títulos y el historial de todos los colegios donde presta o prestó servicios.
+      operationId: getMyDossier
+      security:
+        - BearerAuth: []
+      tags:
+        - Expediente Docente (Nivel 3)
+      responses:
+        '200':
+          description: Expediente profesional completo
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/TeacherDossierDto'
+        '404':
+          description: El usuario autenticado no posee perfil de maestro registrado
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponseDto'
+
+  /teachers/{id}/dossier:
+    get:
+      summary: Consultar expediente completo de cualquier maestro (Nivel 1)
+      operationId: getTeacherDossierById
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          description: UUID del registro Maestro
+          schema:
+            type: string
+            format: uuid
+      tags:
+        - Padrón Nacional de Maestros (Nivel 1)
+      responses:
+        '200':
+          description: Expediente profesional completo
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/TeacherDossierDto'
+        '403':
+          description: Requiere rol de administración central
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponseDto'
+        '404':
+          description: Maestro no encontrado
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponseDto'
+
+components:
+  securitySchemes:
+    BearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+
+  parameters:
+    TenantHeader:
+      name: X-Institution-Id
+      in: header
+      required: true
+      description: UUID de la institución activa bajo sesión
+      schema:
+        type: string
+        format: uuid
+
+  schemas:
+    CreateTeacherDto:
+      type: object
+      required:
+        - ci
+        - nombres
+        - primerApellido
+        - email
+        - rda
+      properties:
+        ci:
+          type: string
+          example: '6849302'
+        complemento:
+          type: string
+          nullable: true
+          example: '1B'
+        nombres:
+          type: string
+          example: 'Carlos'
+        primerApellido:
+          type: string
+          example: 'Mamani'
+        segundoApellido:
+          type: string
+          nullable: true
+          example: 'Condori'
+        email:
+          type: string
+          format: email
+          example: 'carlos.mamani@minedu.gob.bo'
+        telefono:
+          type: string
+          nullable: true
+          example: '71542389'
+        rda:
+          type: string
+          example: 'RDA-98321'
+        tituloProfesional:
+          type: string
+          example: 'Licenciado en Ciencias de la Educación'
+        especialidad:
+          type: string
+          example: 'Matemática y Ciencias Naturales'
+        anioEgreso:
+          type: integer
+          example: 2015
+        normalista:
+          type: boolean
+          default: true
+        passwordInicial:
+          type: string
+          nullable: true
+          description: Contraseña inicial opcional (si no se envía, se genera por defecto)
+
+    LinkTeacherDto:
+      type: object
+      required:
+        - identifier
+        - rolInstitucional
+      properties:
+        identifier:
+          type: string
+          description: CI o código RDA del maestro a vincular
+          example: 'RDA-98321'
+        rolInstitucional:
+          type: string
+          enum: [MAESTRO, COMISION_PEDAGOGICA]
+          default: MAESTRO
+        cargoOficial:
+          type: string
+          example: 'Profesor de Matemáticas y Física'
+        fechaInicio:
+          type: string
+          format: date
+          example: '2026-02-01'
+
+    UpdateLinkStatusDto:
+      type: object
+      required:
+        - estado
+      properties:
+        estado:
+          type: string
+          enum: [ACTIVO, LICENCIA, TRASLADADO, INACTIVO]
+          example: LICENCIA
+        fechaFin:
+          type: string
+          format: date
+          nullable: true
+        motivo:
+          type: string
+          nullable: true
+          example: 'Licencia por maternidad/estudios'
+
+    TeacherSummaryDto:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        rda:
+          type: string
+        persona:
+          type: object
+          properties:
+            ci:
+              type: string
+            nombres:
+              type: string
+            primerApellido:
+              type: string
+            segundoApellido:
+              type: string
+              nullable: true
+        email:
+          type: string
+
+    TeacherSearchResultDto:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        rda:
+          type: string
+        ci:
+          type: string
+        nombreCompleto:
+          type: string
+        especialidad:
+          type: string
+          nullable: true
+        tituloProfesional:
+          type: string
+          nullable: true
+        normalista:
+          type: boolean
+
+    InstitutionTeacherItemDto:
+      type: object
+      properties:
+        vinculacionId:
+          type: string
+          format: uuid
+        maestroId:
+          type: string
+          format: uuid
+        rda:
+          type: string
+        ci:
+          type: string
+        nombres:
+          type: string
+        primerApellido:
+          type: string
+        segundoApellido:
+          type: string
+          nullable: true
+        email:
+          type: string
+        especialidad:
+          type: string
+          nullable: true
+        tituloProfesional:
+          type: string
+          nullable: true
+        cargoOficial:
+          type: string
+          nullable: true
+        rolInstitucional:
+          type: string
+        estado:
+          type: string
+        fechaInicio:
+          type: string
+          format: date
+        fechaFin:
+          type: string
+          format: date
+          nullable: true
+
+    TeacherDossierDto:
+      type: object
+      properties:
+        maestroId:
+          type: string
+          format: uuid
+        rda:
+          type: string
+        tituloProfesional:
+          type: string
+          nullable: true
+        especialidad:
+          type: string
+          nullable: true
+        anioEgreso:
+          type: integer
+          nullable: true
+        normalista:
+          type: boolean
+        persona:
+          type: object
+          properties:
+            ci:
+              type: string
+            complemento:
+              type: string
+              nullable: true
+            nombres:
+              type: string
+            primerApellido:
+              type: string
+            segundoApellido:
+              type: string
+              nullable: true
+            email:
+              type: string
+            telefono:
+              type: string
+              nullable: true
+        historialVinculaciones:
+          type: array
+          items:
+            type: object
+            properties:
+              vinculacionId:
+                type: string
+              institucionId:
+                type: string
+              sie:
+                type: string
+              nombreInstitucion:
+                type: string
+              departamento:
+                type: string
+              rolInstitucional:
+                type: string
+              cargoOficial:
+                type: string
+                nullable: true
+              estado:
+                type: string
+              fechaInicio:
+                type: string
+                format: date
+              fechaFin:
+                type: string
+                format: date
+                nullable: true
+
+    LinkResponseDto:
+      type: object
+      properties:
+        message:
+          type: string
+        vinculacionId:
+          type: string
+          format: uuid
+        estado:
+          type: string
+        rolInstitucional:
+          type: string
+
+    ErrorResponseDto:
+      type: object
+      properties:
+        statusCode:
+          type: integer
+        message:
+          type: string
+        error:
+          type: string
+        timestamp:
+          type: string
+          format: date-time
+

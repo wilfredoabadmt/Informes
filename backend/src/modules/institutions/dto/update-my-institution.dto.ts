@@ -20,3 +20,4 @@ export class UpdateMyInstitutionDto {
   @MaxLength(20)
   telefono?: string;
 }
+

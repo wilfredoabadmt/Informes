@@ -31,3 +31,4 @@ export class AssignAuthorityDto {
   @MaxLength(150)
   cargoOficial?: string;
 }
+

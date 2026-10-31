@@ -262,3 +262,4 @@ describe('Feature 002: Gestión Centralizada y Descentralizada de Unidades Educa
     });
   });
 });
+

@@ -156,3 +156,4 @@ export class InstitutionsController {
     return this.institutionsService.assignAuthority(id, dto, adminUserId, ip, userAgent);
   }
 }
+

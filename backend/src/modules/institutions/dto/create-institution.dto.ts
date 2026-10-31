@@ -106,3 +106,4 @@ export class CreateInstitutionDto {
   @IsEnum(NivelEducativo)
   nivel: NivelEducativo;
 }
+
