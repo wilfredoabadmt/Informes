@@ -1,0 +1,222 @@
+// Prisma Schema para Sistema Integral de Gestión de Maestros
+// Bolivia - Multi-Tenant con PostgreSQL Row-Level Security (RLS)
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+// -------------------------------------------------------------
+// ENUMS GLOBALES E INSTITUCIONALES
+// -------------------------------------------------------------
+
+enum RolGlobal {
+  SUPERADMIN
+  CENTRAL_ADMIN
+  INSTITUTIONAL_USER
+}
+
+enum RolInstitucional {
+  ADMIN_INSTITUCIONAL
+  DIRECTOR
+  SECRETARIO
+  MAESTRO
+  COMISION_PEDAGOGICA
+}
+
+enum EstadoUsuario {
+  ACTIVO
+  INACTIVO
+  BLOQUEADO
+}
+
+enum EstadoVinculacion {
+  ACTIVO
+  INACTIVO
+  LICENCIA
+  TRASLADADO
+}
+
+enum TipoInstitucion {
+  FISCAL
+  CONVENIO
+  PRIVADA
+}
+
+enum NivelEducativo {
+  INICIAL
+  PRIMARIA
+  SECUNDARIA
+  INTEGRADO
+}
+
+enum TipoAuditoria {
+  LOGIN_SUCCESS
+  LOGIN_FAILED
+  CONTEXT_SWITCH
+  SECURITY_VIOLATION
+  USER_CREATE
+  USER_UPDATE
+  TEACHER_LINK
+  TEACHER_UNLINK
+}
+
+// -------------------------------------------------------------
+// MODELO DE IDENTIDAD CENTRALIZADA
+// -------------------------------------------------------------
+
+model Persona {
+  id              String    @id @default(uuid()) @db.Uuid
+  ci              String    @unique @db.VarChar(20)
+  complemento     String?   @db.VarChar(10)
+  nombres         String    @db.VarChar(100)
+  primerApellido  String    @db.VarChar(100)
+  segundoApellido String?   @db.VarChar(100)
+  fechaNacimiento DateTime? @db.Date
+  genero          String?   @db.VarChar(10)
+  direccion       String?   @db.VarChar(255)
+  telefono        String?   @db.VarChar(20)
+  createdAt       DateTime  @default(now()) @map("created_at")
+  updatedAt       DateTime  @updatedAt @map("updated_at")
+
+  usuario Usuario?
+  maestro Maestro?
+
+  @@index([ci])
+  @@map("personas")
+}
+
+model Usuario {
+  id           String        @id @default(uuid()) @db.Uuid
+  personaId    String        @unique @map("persona_id") @db.Uuid
+  email        String        @unique @db.VarChar(255)
+  passwordHash String        @map("password_hash") @db.VarChar(255)
+  rolGlobal    RolGlobal     @default(INSTITUTIONAL_USER) @map("rol_global")
+  estado       EstadoUsuario @default(ACTIVO)
+  ultimoAcceso DateTime?     @map("ultimo_acceso")
+  createdAt    DateTime      @default(now()) @map("created_at")
+  updatedAt    DateTime      @updatedAt @map("updated_at")
+
+  persona       Persona                   @relation(fields: [personaId], references: [id], onDelete: Cascade)
+  vinculaciones VinculacionInstitucional[]
+  refreshTokens RefreshToken[]
+  auditorias    RegistroAuditoria[]
+
+  @@index([email])
+  @@map("usuarios")
+}
+
+model Maestro {
+  id                String   @id @default(uuid()) @db.Uuid
+  personaId         String   @unique @map("persona_id") @db.Uuid
+  rda               String   @unique @db.VarChar(50)
+  tituloProfesional String?  @map("titulo_profesional") @db.VarChar(255)
+  especialidad      String?  @db.VarChar(255)
+  anioEgreso        Int?     @map("anio_egreso")
+  normalista        Boolean  @default(true)
+  createdAt         DateTime @default(now()) @map("created_at")
+  updatedAt         DateTime @updatedAt @map("updated_at")
+
+  persona       Persona                   @relation(fields: [personaId], references: [id], onDelete: Cascade)
+  vinculaciones VinculacionInstitucional[]
+
+  @@index([rda])
+  @@map("maestros")
+}
+
+// -------------------------------------------------------------
+// MODELO INSTITUCIONAL Y MULTI-TENANT
+// -------------------------------------------------------------
+
+model UnidadEducativa {
+  id           String          @id @default(uuid()) @db.Uuid
+  sie          String          @unique @db.VarChar(20)
+  nombre       String          @db.VarChar(255)
+  departamento String          @db.VarChar(50)
+  provincia    String          @db.VarChar(100)
+  municipio    String          @db.VarChar(100)
+  distrito     String?         @db.VarChar(100)
+  direccion    String?         @db.VarChar(255)
+  telefono     String?         @db.VarChar(20)
+  tipo         TipoInstitucion @default(FISCAL)
+  nivel        NivelEducativo  @default(INTEGRADO)
+  activo       Boolean         @default(true)
+  createdAt    DateTime        @default(now()) @map("created_at")
+  updatedAt    DateTime        @updatedAt @map("updated_at")
+
+  vinculaciones VinculacionInstitucional[]
+  auditorias    RegistroAuditoria[]
+
+  @@index([sie])
+  @@index([departamento])
+  @@map("unidades_educativas")
+}
+
+model VinculacionInstitucional {
+  id               String            @id @default(uuid()) @db.Uuid
+  institucionId    String            @map("institucion_id") @db.Uuid
+  maestroId        String?           @map("maestro_id") @db.Uuid
+  usuarioId        String            @map("usuario_id") @db.Uuid
+  rolInstitucional RolInstitucional  @map("rol_institucional")
+  cargoOficial     String?           @map("cargo_oficial") @db.VarChar(150)
+  fechaInicio      DateTime          @default(now()) @map("fecha_inicio") @db.Date
+  fechaFin         DateTime?         @map("fecha_fin") @db.Date
+  estado           EstadoVinculacion @default(ACTIVO)
+  createdAt        DateTime          @default(now()) @map("created_at")
+  updatedAt        DateTime          @updatedAt @map("updated_at")
+
+  institucion UnidadEducativa @relation(fields: [institucionId], references: [id], onDelete: Cascade)
+  maestro     Maestro?        @relation(fields: [maestroId], references: [id], onDelete: SetNull)
+  usuario     Usuario         @relation(fields: [usuarioId], references: [id], onDelete: Cascade)
+
+  @@unique([institucionId, usuarioId, rolInstitucional])
+  @@index([institucionId])
+  @@index([usuarioId])
+  @@index([maestroId])
+  @@map("vinculaciones_institucionales")
+}
+
+// -------------------------------------------------------------
+// SESIONES, TOKENS Y AUDITORÍA
+// -------------------------------------------------------------
+
+model RefreshToken {
+  id               String    @id @default(uuid()) @db.Uuid
+  usuarioId        String    @map("usuario_id") @db.Uuid
+  tokenHash        String    @map("token_hash") @db.VarChar(255)
+  expiresAt        DateTime  @map("expires_at")
+  revoked          Boolean   @default(false)
+  createdAt        DateTime  @default(now()) @map("created_at")
+  replacedByToken  String?   @map("replaced_by_token") @db.VarChar(255)
+
+  usuario Usuario @relation(fields: [usuarioId], references: [id], onDelete: Cascade)
+
+  @@index([usuarioId])
+  @@index([tokenHash])
+  @@map("refresh_tokens")
+}
+
+model RegistroAuditoria {
+  id            String        @id @default(uuid()) @db.Uuid
+  usuarioId     String?       @map("usuario_id") @db.Uuid
+  institucionId String?       @map("institucion_id") @db.Uuid
+  tipo          TipoAuditoria
+  accion        String        @db.VarChar(100)
+  detalle       Json?
+  ip            String?       @db.VarChar(45)
+  userAgent     String?       @map("user_agent") @db.VarChar(255)
+  timestamp     DateTime      @default(now())
+
+  usuario     Usuario?         @relation(fields: [usuarioId], references: [id], onDelete: SetNull)
+  institucion UnidadEducativa? @relation(fields: [institucionId], references: [id], onDelete: SetNull)
+
+  @@index([usuarioId])
+  @@index([institucionId])
+  @@index([tipo])
+  @@index([timestamp])
+  @@map("registros_auditoria")
+}

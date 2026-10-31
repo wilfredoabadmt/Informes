@@ -1,7 +1,7 @@
 # Tareas de Implementación — Feature 001: Autenticación y Multi-Tenant
 
 **Feature:** `001-auth-multi-tenant`  
-**Estado:** PLANIFICADO  
+**Estado:** COMPLETADO Y VERIFICADO  
 **Constitución Referencia:** V1.1.0 (Decisiones 001 a 005)  
 **ADRs Aplicables:** ADR-001 (PostgreSQL RLS), ADR-002 (Auth & Tenant Context), ADR-003 (Monolito Modular)  
 **DoD:** Código compilado + Linter aprobado + Pruebas unitarias + Pruebas de integración E2E con PostgreSQL RLS + Documentación sincronizada.
@@ -12,19 +12,19 @@
 
 | ID | Fase | Tarea | Dependencias | Estado |
 |---|---|---|---|---|
-| `T01-ENV` | Infraestructura | Configurar variables de entorno y conexión a PostgreSQL | Ninguna | PENDIENTE |
-| `T02-PRISMA` | Base de Datos | Definir `schema.prisma` completo con modelos de identidad, multi-tenant y auditoría | T01-ENV | PENDIENTE |
-| `T03-MIGRATION` | Base de Datos | Generar migración inicial y aplicar DDL de PostgreSQL RLS (`ENABLE ROW LEVEL SECURITY`) | T02-PRISMA | PENDIENTE |
-| `T04-SEED` | Base de Datos | Implementar seed con Superadmin, 2 Unidades Educativas y 1 Maestro multi-institución | T03-MIGRATION | PENDIENTE |
-| `T05-PRISMA-RLS` | Backend Core | Implementar `PrismaService` con extensión de contexto tenant (`SET LOCAL app.current_institution_id`) | T03-MIGRATION | PENDIENTE |
-| `T06-HASH` | Backend Core | Implementar servicio de hashing seguro de contraseñas con Argon2id | Ninguna | PENDIENTE |
-| `T07-AUTH-JWT` | Backend Core | Configurar módulo JWT (`JwtModule`, `JwtStrategy`, `JwtAuthGuard`) | T05-PRISMA-RLS | PENDIENTE |
-| `T08-TENANT-GUARD`| Backend Core | Implementar `TenantContextGuard` y decorador `@TenantContext()` para validación de acceso institucional | T07-AUTH-JWT | PENDIENTE |
-| `T09-AUTH-SERVICE`| Endpoints | Implementar `AuthService` (login, me, institutions, selectContext, refresh, logout) | T06-HASH, T08-TENANT-GUARD | PENDIENTE |
-| `T10-AUTH-CTRL`   | Endpoints | Implementar `AuthController` con validación DTO (`class-validator`) según OpenAPI | T09-AUTH-SERVICE | PENDIENTE |
-| `T11-AUDIT-LOG`   | Seguridad | Implementar servicio de auditoría para registro de accesos y violaciones de aislamiento | T05-PRISMA-RLS | PENDIENTE |
-| `T12-TEST-UNIT`   | Verificación | Pruebas unitarias de Argon2, validación de credenciales y lógica de tokens | T10-AUTH-CTRL | PENDIENTE |
-| `T13-TEST-RLS`    | Verificación | Pruebas de integración E2E de PostgreSQL RLS y aislamiento estricto multi-tenant | T10-AUTH-CTRL, T04-SEED | PENDIENTE |
+| `T01-ENV` | Infraestructura | Configurar variables de entorno y conexión a PostgreSQL | Ninguna | COMPLETADO |
+| `T02-PRISMA` | Base de Datos | Definir `schema.prisma` completo con modelos de identidad, multi-tenant y auditoría | T01-ENV | COMPLETADO |
+| `T03-MIGRATION` | Base de Datos | Generar migración inicial y aplicar DDL de PostgreSQL RLS (`ENABLE ROW LEVEL SECURITY`) | T02-PRISMA | COMPLETADO |
+| `T04-SEED` | Base de Datos | Implementar seed con Superadmin, 2 Unidades Educativas y 1 Maestro multi-institución | T03-MIGRATION | COMPLETADO |
+| `T05-PRISMA-RLS` | Backend Core | Implementar `PrismaService` con extensión de contexto tenant (`SET LOCAL app.current_institution_id`) | T03-MIGRATION | COMPLETADO |
+| `T06-HASH` | Backend Core | Implementar servicio de hashing seguro de contraseñas con Argon2id | Ninguna | COMPLETADO |
+| `T07-AUTH-JWT` | Backend Core | Configurar módulo JWT (`JwtModule`, `JwtStrategy`, `JwtAuthGuard`) | T05-PRISMA-RLS | COMPLETADO |
+| `T08-TENANT-GUARD`| Backend Core | Implementar `TenantContextGuard` y decorador `@TenantContext()` para validación de acceso institucional | T07-AUTH-JWT | COMPLETADO |
+| `T09-AUTH-SERVICE`| Endpoints | Implementar `AuthService` (login, me, institutions, selectContext, refresh, logout) | T06-HASH, T08-TENANT-GUARD | COMPLETADO |
+| `T10-AUTH-CTRL`   | Endpoints | Implementar `AuthController` con validación DTO (`class-validator`) según OpenAPI | T09-AUTH-SERVICE | COMPLETADO |
+| `T11-AUDIT-LOG`   | Seguridad | Implementar servicio de auditoría para registro de accesos y violaciones de aislamiento | T05-PRISMA-RLS | COMPLETADO |
+| `T12-TEST-UNIT`   | Verificación | Pruebas unitarias de Argon2, validación de credenciales y lógica de tokens | T10-AUTH-CTRL | COMPLETADO |
+| `T13-TEST-RLS`    | Verificación | Pruebas de integración E2E de PostgreSQL RLS y aislamiento estricto multi-tenant | T10-AUTH-CTRL, T04-SEED | COMPLETADO |
 
 ---
 
