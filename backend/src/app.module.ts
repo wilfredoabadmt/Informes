@@ -5,6 +5,7 @@ import { AuditModule } from './modules/audit/audit.module';
 import { AuthModule } from './modules/auth/auth.module';
 import { InstitutionsModule } from './modules/institutions/institutions.module';
 import { TeachersModule } from './modules/teachers/teachers.module';
+import { AcademicModule } from './modules/academic/academic.module';
 
 @Module({
   imports: [
@@ -17,6 +18,7 @@ import { TeachersModule } from './modules/teachers/teachers.module';
     AuthModule,
     InstitutionsModule,
     TeachersModule,
+    AcademicModule,
   ],
 })
 export class AppModule {}

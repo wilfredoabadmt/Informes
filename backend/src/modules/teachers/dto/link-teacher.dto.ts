@@ -39,3 +39,4 @@ export class LinkTeacherDto {
   @IsDateString({}, { message: 'La fecha de inicio debe tener formato ISO YYYY-MM-DD.' })
   fechaInicio?: string;
 }
+

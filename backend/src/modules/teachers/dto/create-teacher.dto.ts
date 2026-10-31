@@ -91,3 +91,4 @@ export class CreateTeacherDto {
   @MinLength(6, { message: 'La contraseña inicial debe tener al menos 6 caracteres.' })
   passwordInicial?: string;
 }
+

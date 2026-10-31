@@ -42,3 +42,4 @@ export class UpdateLinkStatusDto {
   @MaxLength(255)
   motivo?: string;
 }
+
