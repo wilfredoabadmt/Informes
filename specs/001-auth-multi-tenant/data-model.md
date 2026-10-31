@@ -369,3 +369,4 @@ model Auditoria {
   @@map("auditoria")
 }
 ```
+

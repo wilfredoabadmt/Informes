@@ -10,3 +10,4 @@ export class SelectContextDto {
   @IsUUID('4', { message: 'El identificador de la institución debe ser un UUID válido.' })
   institutionId: string;
 }
+

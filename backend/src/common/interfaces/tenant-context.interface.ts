@@ -8,3 +8,4 @@ export interface TenantContext {
   cargoOficial?: string | null;
   maestroId?: string | null;
 }
+

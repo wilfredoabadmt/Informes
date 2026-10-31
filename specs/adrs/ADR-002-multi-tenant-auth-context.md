@@ -79,3 +79,4 @@ sequenceDiagram
 1. **Conmutación Instantánea:** El usuario puede cambiar de colegio en la interfaz con un solo clic sin reautenticación ni refresco de tokens.
 2. **Defensa contra Manipulación:** Si un usuario altera maliciosamente el valor del encabezado `X-Institution-Id` enviando el UUID de un colegio ajeno, el `TenantContextGuard` rechaza la petición de inmediato con un error `403 Forbidden: No tiene vinculación activa con la institución solicitada`.
 3. **Auditoría Transparente:** Cada llamada registra automáticamente la tupla `(user_id, institution_id)` en los logs de auditoría.
+

@@ -64,3 +64,4 @@ Se adopta una estructura de **Monorepo Limpio** con separación en dos aplicacio
 1. **Desacoplamiento Estricto:** Frontend y backend mantienen dependencias limpias y aisladas.
 2. **Desarrollo Guiado por Especificaciones (SDD):** Las especificaciones en `specs/` definen contratos OpenAPI que el backend implementa y el frontend consume sin ambigüedades.
 3. **Escalabilidad y Despliegue Soberano:** Se puede desplegar todo en un único servidor dedicado o contenedor VPS mediante Docker Compose, cumpliendo con la soberanía de datos del Estado Plurinacional de Bolivia.
+
