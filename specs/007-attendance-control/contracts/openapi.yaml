@@ -1,0 +1,313 @@
+openapi: 3.0.3
+info:
+  title: API de Control de Asistencia y Justificaciones (Feature 007)
+  description: Servicios para la toma de asistencia en bloque, justificación de inasistencias y reportes consolidados de ausentismo escolar (SEP Bolivia).
+  version: 1.0.0
+servers:
+  - url: /api/v1
+    description: Servidor Backend Local / Staging
+
+paths:
+  /attendance:
+    post:
+      summary: Registrar asistencia de aula en bloque para una fecha (Nivel 2 y Nivel 3)
+      operationId: recordAttendance
+      security:
+        - BearerAuth: []
+      parameters:
+        - $ref: '#/components/parameters/TenantHeader'
+      tags:
+        - Control de Asistencia
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/RecordAttendanceDto'
+      responses:
+        '201':
+          description: Asistencia registrada exitosamente
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AttendanceRecordResponseDto'
+        '400':
+          description: Fecha futura, paralelo inválido o estudiantes no matriculados
+        '403':
+          description: El maestro no tiene asignación pedagógica en este paralelo
+        '409':
+          description: Ya existe un registro de asistencia para este paralelo y fecha
+
+    get:
+      summary: Consultar planilla de asistencia de un paralelo por fecha (Nivel 2 y Nivel 3)
+      operationId: getAttendanceByDate
+      security:
+        - BearerAuth: []
+      parameters:
+        - $ref: '#/components/parameters/TenantHeader'
+        - name: paraleloId
+          in: query
+          required: true
+          schema:
+            type: string
+            format: uuid
+        - name: fecha
+          in: query
+          required: true
+          schema:
+            type: string
+            format: date
+          example: '2026-03-02'
+        - name: asignacionId
+          in: query
+          schema:
+            type: string
+            format: uuid
+      tags:
+        - Control de Asistencia
+      responses:
+        '200':
+          description: Planilla de asistencia detallada
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AttendanceSheetResponseDto'
+        '404':
+          description: Registro de asistencia no encontrado
+
+  /attendance/details/{detalleId}/justify:
+    patch:
+      summary: Justificar inasistencia o modificar estado individual (Nivel 2)
+      operationId: justifyAbsence
+      security:
+        - BearerAuth: []
+      parameters:
+        - $ref: '#/components/parameters/TenantHeader'
+        - name: detalleId
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      tags:
+        - Control de Asistencia
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/JustifyAbsenceDto'
+      responses:
+        '200':
+          description: Inasistencia justificada exitosamente
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AttendanceDetailItemDto'
+        '404':
+          description: Detalle de asistencia no encontrado
+
+  /attendance/stats:
+    get:
+      summary: Consultar estadísticas consolidadas de asistencia de un paralelo (Nivel 2 y Nivel 3)
+      operationId: getAttendanceStats
+      security:
+        - BearerAuth: []
+      parameters:
+        - $ref: '#/components/parameters/TenantHeader'
+        - name: paraleloId
+          in: query
+          required: true
+          schema:
+            type: string
+            format: uuid
+        - name: fechaInicio
+          in: query
+          required: true
+          schema:
+            type: string
+            format: date
+        - name: fechaFin
+          in: query
+          required: true
+          schema:
+            type: string
+            format: date
+      tags:
+        - Control de Asistencia
+      responses:
+        '200':
+          description: Métricas y desglose de asistencia por estudiante
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AttendanceStatsResponseDto'
+
+components:
+  securitySchemes:
+    BearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+
+  parameters:
+    TenantHeader:
+      name: X-Institution-Id
+      in: header
+      required: true
+      description: UUID de la institución activa bajo sesión
+      schema:
+        type: string
+        format: uuid
+
+  schemas:
+    RecordAttendanceItemDto:
+      type: object
+      required:
+        - estudianteId
+        - estado
+      properties:
+        estudianteId:
+          type: string
+          format: uuid
+        estado:
+          type: string
+          enum: [PRESENTE, FALTA, LICENCIA, ATRASO]
+          example: PRESENTE
+        observacion:
+          type: string
+          example: 'Llegó con 10 min de atraso'
+
+    RecordAttendanceDto:
+      type: object
+      required:
+        - paraleloId
+        - fecha
+        - asistencia
+      properties:
+        paraleloId:
+          type: string
+          format: uuid
+        asignacionId:
+          type: string
+          format: uuid
+          description: Opcional si es asistencia por materia pedagógica
+        fecha:
+          type: string
+          format: date
+          example: '2026-03-02'
+        observaciones:
+          type: string
+          example: 'Toma de asistencia primer periodo'
+        asistencia:
+          type: array
+          items:
+            $ref: '#/components/schemas/RecordAttendanceItemDto'
+
+    JustifyAbsenceDto:
+      type: object
+      required:
+        - estado
+        - observacion
+      properties:
+        estado:
+          type: string
+          enum: [LICENCIA, PRESENTE, FALTA, ATRASO]
+          example: LICENCIA
+        justificado:
+          type: boolean
+          default: true
+        observacion:
+          type: string
+          example: 'Certificado médico presentado por el tutor'
+
+    AttendanceDetailItemDto:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        estudianteId:
+          type: string
+          format: uuid
+        codigoRude:
+          type: string
+        ci:
+          type: string
+        nombreCompleto:
+          type: string
+        estado:
+          type: string
+        justificado:
+          type: boolean
+        observacion:
+          type: string
+
+    AttendanceRecordResponseDto:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        institucionId:
+          type: string
+          format: uuid
+        paraleloId:
+          type: string
+          format: uuid
+        fecha:
+          type: string
+        totalEstudiantes:
+          type: integer
+        presentes:
+          type: integer
+        faltas:
+          type: integer
+        licencias:
+          type: integer
+        atrasos:
+          type: integer
+
+    AttendanceSheetResponseDto:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        fecha:
+          type: string
+        paralelo:
+          type: object
+        detalles:
+          type: array
+          items:
+            $ref: '#/components/schemas/AttendanceDetailItemDto'
+
+    AttendanceStatsResponseDto:
+      type: object
+      properties:
+        totalSesiones:
+          type: integer
+        porcentajeGlobal:
+          type: number
+          example: 94.5
+        estudiantes:
+          type: array
+          items:
+            type: object
+            properties:
+              estudianteId:
+                type: string
+              nombreCompleto:
+                type: string
+              presentes:
+                type: integer
+              faltas:
+                type: integer
+              licencias:
+                type: integer
+              atrasos:
+                type: integer
+              porcentajeAsistencia:
+                type: number
+                example: 95.0
