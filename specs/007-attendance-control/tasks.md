@@ -1,7 +1,7 @@
 # Tareas de Implementación — Feature 007: Control de Asistencia y Justificaciones
 
 **Feature:** `007-attendance-control`  
-**Estado:** PROPUESTO  
+**Estado:** COMPLETADO  
 **Constitución Referencia:** V1.1.0 (Decisiones 001, 002-B, 005; Sección 4 - Entidad 15; Sección 6 - RBAC Contextual)  
 **DoD:** Código compilado sin errores + Linter aprobado + Pruebas unitarias + Pruebas de integración E2E contra PostgreSQL con RLS + Documentación sincronizada.
 
@@ -11,13 +11,13 @@
 
 | ID | Fase | Tarea | Dependencias | Estado |
 |---|---|---|---|---|
-| `T01-ATT-PRISMA`   | Base de Datos | Agregar `RegistroAsistencia`, `DetalleAsistencia` y `EstadoAsistencia` a `schema.prisma` | Ninguna | PENDIENTE |
-| `T02-ATT-MIGRATION`| Base de Datos | Generar migración y aplicar PostgreSQL RLS a `registros_asistencia` | T01-ATT-PRISMA | PENDIENTE |
-| `T03-ATT-DTO`      | Contratos | Implementar DTOs (`record-attendance`, `justify-absence`, `query-stats`) | Ninguna | PENDIENTE |
-| `T04-ATT-SVC`      | Backend Core | Implementar `AttendanceService` (toma en bloque, planilla, justificaciones, estadísticas) | T02-ATT-MIGRATION, T03-ATT-DTO | PENDIENTE |
-| `T05-ATT-CTRL`     | Endpoints | Implementar `AttendanceController` y registrar en `AttendanceModule` y `AppModule` | T04-ATT-SVC | PENDIENTE |
-| `T06-ATT-UNIT`     | Verificación | Pruebas unitarias en `attendance.service.spec.ts` | T04-ATT-SVC | PENDIENTE |
-| `T07-ATT-E2E`      | Verificación | Pruebas E2E en `test/attendance.e2e-spec.ts` con toma de lista, justificación y reportes | T05-ATT-CTRL | PENDIENTE |
+| `T01-ATT-PRISMA`   | Base de Datos | Agregar `RegistroAsistencia`, `DetalleAsistencia` y `EstadoAsistencia` a `schema.prisma` | Ninguna | COMPLETADO Y VERIFICADO |
+| `T02-ATT-MIGRATION`| Base de Datos | Generar migración y aplicar PostgreSQL RLS a `registros_asistencia` | T01-ATT-PRISMA | COMPLETADO Y VERIFICADO |
+| `T03-ATT-DTO`      | Contratos | Implementar DTOs (`record-attendance`, `justify-absence`, `query-stats`) | Ninguna | COMPLETADO Y VERIFICADO |
+| `T04-ATT-SVC`      | Backend Core | Implementar `AttendanceService` (toma en bloque, planilla, justificaciones, estadísticas) | T02-ATT-MIGRATION, T03-ATT-DTO | COMPLETADO Y VERIFICADO |
+| `T05-ATT-CTRL`     | Endpoints | Implementar `AttendanceController` y registrar en `AttendanceModule` y `AppModule` | T04-ATT-SVC | COMPLETADO Y VERIFICADO |
+| `T06-ATT-UNIT`     | Verificación | Pruebas unitarias en `attendance.service.spec.ts` | T04-ATT-SVC | COMPLETADO Y VERIFICADO |
+| `T07-ATT-E2E`      | Verificación | Pruebas E2E en `test/attendance.e2e-spec.ts` con toma de lista, justificación y reportes | T05-ATT-CTRL | COMPLETADO Y VERIFICADO |
 
 ---
 
