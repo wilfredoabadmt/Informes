@@ -1,7 +1,7 @@
 # Tareas de Implementación — Feature 009: Registro de Calificaciones Cuantitativas y Cualitativas
 
 **Feature:** `009-grades-recording`  
-**Estado:** PROPUESTO  
+**Estado:** COMPLETADO  
 **Constitución Referencia:** V1.1.0 (Decisiones 001, 002-B, 005; Sección 4 - Entidad 14; Sección 6 - RBAC Contextual; Sección 7 - Módulo 13)  
 **DoD:** Código compilado sin errores + Linter aprobado + Pruebas unitarias + Pruebas de integración E2E contra PostgreSQL con RLS + Documentación sincronizada.
 
@@ -11,13 +11,13 @@
 
 | ID | Fase | Tarea | Dependencias | Estado |
 |---|---|---|---|---|
-| `T01-GRAD-PRISMA`   | Base de Datos | Agregar modelo `Calificacion` y relaciones en `schema.prisma` | Ninguna | PENDIENTE |
-| `T02-GRAD-MIGRATION`| Base de Datos | Generar migración y aplicar PostgreSQL RLS a `calificaciones` | T01-GRAD-PRISMA | PENDIENTE |
-| `T03-GRAD-DTO`      | Contratos | Implementar DTOs de carga en bloque, planilla y modificación de notas | Ninguna | PENDIENTE |
-| `T04-GRAD-SVC`      | Backend Core | Implementar `GradesService` (carga ágil en bloque, consolidación trimestral y auditoría) | T02-GRAD-MIGRATION, T03-GRAD-DTO | PENDIENTE |
-| `T05-GRAD-CTRL`     | Endpoints | Implementar `GradesController` y registrar en `GradesModule` y `AppModule` | T04-GRAD-SVC | PENDIENTE |
-| `T06-GRAD-UNIT`     | Verificación | Pruebas unitarias en `grades.service.spec.ts` | T04-GRAD-SVC | PENDIENTE |
-| `T07-GRAD-E2E`      | Verificación | Pruebas E2E en `test/grades.e2e-spec.ts` con carga de notas, consolidación y RLS | T05-GRAD-CTRL | PENDIENTE |
+| `T01-GRAD-PRISMA`   | Base de Datos | Agregar modelo `Calificacion` y relaciones en `schema.prisma` | Ninguna | COMPLETADO Y VERIFICADO |
+| `T02-GRAD-MIGRATION`| Base de Datos | Generar migración y aplicar PostgreSQL RLS a `calificaciones` | T01-GRAD-PRISMA | COMPLETADO Y VERIFICADO |
+| `T03-GRAD-DTO`      | Contratos | Implementar DTOs de carga en bloque, planilla y modificación de notas | Ninguna | COMPLETADO Y VERIFICADO |
+| `T04-GRAD-SVC`      | Backend Core | Implementar `GradesService` (carga ágil en bloque, consolidación trimestral y auditoría) | T02-GRAD-MIGRATION, T03-GRAD-DTO | COMPLETADO Y VERIFICADO |
+| `T05-GRAD-CTRL`     | Endpoints | Implementar `GradesController` y registrar en `GradesModule` y `AppModule` | T04-GRAD-SVC | COMPLETADO Y VERIFICADO |
+| `T06-GRAD-UNIT`     | Verificación | Pruebas unitarias en `grades.service.spec.ts` | T04-GRAD-SVC | COMPLETADO Y VERIFICADO |
+| `T07-GRAD-E2E`      | Verificación | Pruebas E2E en `test/grades.e2e-spec.ts` con carga de notas, consolidación y RLS | T05-GRAD-CTRL | COMPLETADO Y VERIFICADO |
 
 ---
 
