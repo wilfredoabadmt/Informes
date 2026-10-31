@@ -1,0 +1,332 @@
+openapi: 3.0.3
+info:
+  title: API de Asignaciones Académicas Docentes y Carga Horaria (Feature 005)
+  description: Contrato de servicios REST para la asignación de materias, cursos y carga horaria a maestros en Unidades Educativas de Bolivia.
+  version: 1.0.0
+servers:
+  - url: /api/v1
+    description: Servidor Backend Local / Staging
+
+paths:
+  /academic/assignments:
+    post:
+      summary: Crear una asignación académica de materia y paralelo a un docente vinculado (Nivel 2)
+      operationId: createAssignment
+      security:
+        - BearerAuth: []
+      parameters:
+        - $ref: '#/components/parameters/TenantHeader'
+      tags:
+        - Asignaciones Académicas (Nivel 2)
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CreateAssignmentDto'
+      responses:
+        '201':
+          description: Asignación académica creada exitosamente
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AssignmentResponseDto'
+        '400':
+          description: Datos inválidos, gestión cerrada o incoherencia de nivel educativo
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponseDto'
+        '404':
+          description: Docente, materia, gestión o paralelo no encontrado en este colegio
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponseDto'
+        '409':
+          description: Conflicto - el docente ya tiene esta asignación o ya existe titular asignado
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponseDto'
+
+    get:
+      summary: Consultar matriz institucional de asignaciones docentes (Nivel 2)
+      operationId: getAssignments
+      security:
+        - BearerAuth: []
+      parameters:
+        - $ref: '#/components/parameters/TenantHeader'
+        - name: gestionId
+          in: query
+          required: true
+          schema:
+            type: string
+            format: uuid
+        - name: paraleloId
+          in: query
+          schema:
+            type: string
+            format: uuid
+        - name: maestroId
+          in: query
+          schema:
+            type: string
+            format: uuid
+      tags:
+        - Asignaciones Académicas (Nivel 2)
+      responses:
+        '200':
+          description: Matriz de asignaciones docentes de la gestión escolar
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/AssignmentResponseDto'
+
+  /academic/assignments/my-assignments:
+    get:
+      summary: Consultar asignaciones académicas del maestro en sesión en el colegio activo (Nivel 3)
+      operationId: getMyAssignments
+      security:
+        - BearerAuth: []
+      parameters:
+        - $ref: '#/components/parameters/TenantHeader'
+        - name: gestionId
+          in: query
+          schema:
+            type: string
+            format: uuid
+            description: Opcional. Si no se envía, toma la gestión escolar actualmente ABIERTA.
+      tags:
+        - Gestión Docente (Nivel 3)
+      responses:
+        '200':
+          description: Lista de asignaciones académicas del maestro en el colegio activo
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/AssignmentResponseDto'
+
+  /academic/assignments/{id}/status:
+    patch:
+      summary: Modificar estado de la asignación académica (Nivel 2)
+      operationId: updateAssignmentStatus
+      security:
+        - BearerAuth: []
+      parameters:
+        - $ref: '#/components/parameters/TenantHeader'
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      tags:
+        - Asignaciones Académicas (Nivel 2)
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/UpdateAssignmentStatusDto'
+      responses:
+        '200':
+          description: Estado de asignación actualizado exitosamente
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AssignmentResponseDto'
+        '404':
+          description: Asignación no encontrada en este colegio
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponseDto'
+
+  /academic/assignments/{id}:
+    delete:
+      summary: Revocar o dar de baja una asignación docente (Nivel 2)
+      operationId: deleteAssignment
+      security:
+        - BearerAuth: []
+      parameters:
+        - $ref: '#/components/parameters/TenantHeader'
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      tags:
+        - Asignaciones Académicas (Nivel 2)
+      responses:
+        '200':
+          description: Asignación dada de baja exitosamente
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    example: true
+                  message:
+                    type: string
+                    example: Asignación académica finalizada exitosamente.
+
+components:
+  securitySchemes:
+    BearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+
+  parameters:
+    TenantHeader:
+      name: X-Institution-Id
+      in: header
+      required: true
+      description: UUID de la institución activa bajo sesión
+      schema:
+        type: string
+        format: uuid
+
+  schemas:
+    CreateAssignmentDto:
+      type: object
+      required:
+        - gestionId
+        - vinculacionId
+        - paraleloId
+        - materiaId
+      properties:
+        gestionId:
+          type: string
+          format: uuid
+        vinculacionId:
+          type: string
+          format: uuid
+          description: Vinculación institucional activa del docente en este colegio
+        paraleloId:
+          type: string
+          format: uuid
+        materiaId:
+          type: string
+          format: uuid
+        horasSemanales:
+          type: integer
+          minimum: 1
+          maximum: 20
+          default: 4
+          example: 6
+        esTitular:
+          type: boolean
+          default: true
+          example: true
+        esTutor:
+          type: boolean
+          default: false
+          example: false
+
+    UpdateAssignmentStatusDto:
+      type: object
+      required:
+        - estado
+      properties:
+        estado:
+          type: string
+          enum: [ACTIVA, SUSPENDIDA, FINALIZADA]
+          example: SUSPENDIDA
+        motivo:
+          type: string
+          example: Licencia médica temporal
+
+    AssignmentResponseDto:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        institucionId:
+          type: string
+          format: uuid
+        gestionId:
+          type: string
+          format: uuid
+        horasSemanales:
+          type: integer
+          example: 6
+        esTitular:
+          type: boolean
+          example: true
+        esTutor:
+          type: boolean
+          example: false
+        estado:
+          type: string
+          example: ACTIVA
+        docente:
+          type: object
+          properties:
+            maestroId:
+              type: string
+              format: uuid
+            rda:
+              type: string
+              example: RDA-55667
+            nombreCompleto:
+              type: string
+              example: Raúl Condori Apaza
+        curso:
+          type: object
+          properties:
+            nombre:
+              type: string
+              example: 1º de Secundaria Comunitaria Productiva
+            nivel:
+              type: string
+              example: SECUNDARIA
+        paralelo:
+          type: object
+          properties:
+            id:
+              type: string
+              format: uuid
+            letra:
+              type: string
+              example: A
+            turno:
+              type: string
+              example: MANANA
+        materia:
+          type: object
+          properties:
+            id:
+              type: string
+              format: uuid
+            codigo:
+              type: string
+              example: BIO-SEC-1
+            nombre:
+              type: string
+              example: Biología y Geografía
+            campo:
+              type: string
+              example: VIDA_TIERRA_TERRITORIO
+
+    ErrorResponseDto:
+      type: object
+      properties:
+        statusCode:
+          type: integer
+          example: 409
+        message:
+          type: string
+          example: Ya existe un docente titular asignado para esta materia en el paralelo seleccionado.
+        error:
+          type: string
+          example: Conflict
