@@ -1,0 +1,415 @@
+openapi: 3.0.3
+info:
+  title: Sistema Integral de Registro y Gestión de Maestros - API de Estructura Académica Institucional
+  description: |
+    Contrato formal de API para la Feature 004: Gestiones Escolares, Cursos, Paralelos
+    y Catálogo Curricular del Sistema Educativo Plurinacional (SEP).
+    
+    Alineado a la Constitución V1.1.0 (Decisiones 001, 002-B, 005) y Sección 4.
+  version: 1.0.0
+servers:
+  - url: http://localhost:3000/api/v1
+    description: Servidor de desarrollo local
+
+paths:
+  /academic/school-years:
+    post:
+      summary: Aperturar una Gestión Escolar (Nivel 2)
+      description: Registra un nuevo ciclo lectivo anual para la institución activa en sesión.
+      operationId: createSchoolYear
+      security:
+        - BearerAuth: []
+      parameters:
+        - $ref: '#/components/parameters/TenantHeader'
+      tags:
+        - Gestiones Escolares (Nivel 2)
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CreateSchoolYearDto'
+      responses:
+        '201':
+          description: Gestión escolar aperturada exitosamente
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SchoolYearDto'
+        '409':
+          description: La gestión escolar para ese año ya se encuentra registrada en la institución
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponseDto'
+
+    get:
+      summary: Listar Gestiones Escolares del colegio activo (Nivel 2)
+      description: Retorna el historial de años lectivos de la institución identificada por X-Institution-Id.
+      operationId: getSchoolYears
+      security:
+        - BearerAuth: []
+      parameters:
+        - $ref: '#/components/parameters/TenantHeader'
+      tags:
+        - Gestiones Escolares (Nivel 2)
+      responses:
+        '200':
+          description: Listado de gestiones escolares
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/SchoolYearDto'
+
+  /academic/school-years/{id}/status:
+    patch:
+      summary: Cambiar estado de la Gestión Escolar (Nivel 2)
+      description: Modifica el estado a EN_PLANIFICACION, ABIERTA o CERRADA.
+      operationId: updateSchoolYearStatus
+      security:
+        - BearerAuth: []
+      parameters:
+        - $ref: '#/components/parameters/TenantHeader'
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      tags:
+        - Gestiones Escolares (Nivel 2)
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/UpdateSchoolYearStatusDto'
+      responses:
+        '200':
+          description: Estado actualizado exitosamente
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SchoolYearDto'
+        '403':
+          description: La gestión no pertenece a la institución activa
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponseDto'
+
+  /academic/subjects:
+    get:
+      summary: Consultar catálogo curricular nacional de materias del SEP
+      operationId: getSubjects
+      security:
+        - BearerAuth: []
+      tags:
+        - Catálogo Curricular Nacional
+      parameters:
+        - name: nivel
+          in: query
+          schema:
+            type: string
+            enum: [INICIAL, PRIMARIA, SECUNDARIA]
+        - name: campo
+          in: query
+          schema:
+            type: string
+            enum: [COSMOS_Y_PENSAMIENTO, COMUNIDAD_Y_SOCIEDAD, VIDA_TIERRA_TERRITORIO, CIENCIA_TECNOLOGIA_PRODUCCION]
+      responses:
+        '200':
+          description: Lista de materias oficiales
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/SubjectDto'
+
+  /academic/courses:
+    get:
+      summary: Consultar catálogo de grados escolares oficiales
+      operationId: getCourses
+      security:
+        - BearerAuth: []
+      tags:
+        - Catálogo Curricular Nacional
+      parameters:
+        - name: nivel
+          in: query
+          schema:
+            type: string
+            enum: [INICIAL, PRIMARIA, SECUNDARIA]
+      responses:
+        '200':
+          description: Lista de cursos base
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/CourseDto'
+
+  /academic/sections:
+    post:
+      summary: Crear un paralelo (aula/sección) para la gestión escolar (Nivel 2)
+      operationId: createSection
+      security:
+        - BearerAuth: []
+      parameters:
+        - $ref: '#/components/parameters/TenantHeader'
+      tags:
+        - Cursos y Paralelos Institucionales (Nivel 2)
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CreateSectionDto'
+      responses:
+        '201':
+          description: Paralelo creado exitosamente
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SectionDto'
+        '400':
+          description: La gestión escolar indicada está cerrada
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponseDto'
+        '409':
+          description: El paralelo ya existe para ese grado, turno y gestión en este colegio
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponseDto'
+
+  /academic/sections/tree:
+    get:
+      summary: Consultar el árbol académico estructurado del colegio (Nivel 2)
+      operationId: getAcademicTree
+      security:
+        - BearerAuth: []
+      parameters:
+        - $ref: '#/components/parameters/TenantHeader'
+        - name: gestionId
+          in: query
+          required: true
+          schema:
+            type: string
+            format: uuid
+      tags:
+        - Cursos y Paralelos Institucionales (Nivel 2)
+      responses:
+        '200':
+          description: Árbol académico jerárquico (Nivel ➔ Grado ➔ Paralelos)
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/AcademicTreeNodeDto'
+
+components:
+  securitySchemes:
+    BearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+
+  parameters:
+    TenantHeader:
+      name: X-Institution-Id
+      in: header
+      required: true
+      description: UUID de la institución activa bajo sesión
+      schema:
+        type: string
+        format: uuid
+
+  schemas:
+    CreateSchoolYearDto:
+      type: object
+      required:
+        - anio
+        - fechaInicio
+      properties:
+        anio:
+          type: integer
+          example: 2026
+        fechaInicio:
+          type: string
+          format: date
+          example: '2026-02-02'
+        fechaFin:
+          type: string
+          format: date
+          nullable: true
+          example: '2026-11-30'
+        estado:
+          type: string
+          enum: [EN_PLANIFICACION, ABIERTA]
+          default: ABIERTA
+
+    UpdateSchoolYearStatusDto:
+      type: object
+      required:
+        - estado
+      properties:
+        estado:
+          type: string
+          enum: [EN_PLANIFICACION, ABIERTA, CERRADA]
+          example: CERRADA
+
+    CreateSectionDto:
+      type: object
+      required:
+        - gestionId
+        - cursoId
+        - letra
+        - turno
+      properties:
+        gestionId:
+          type: string
+          format: uuid
+        cursoId:
+          type: string
+          format: uuid
+        letra:
+          type: string
+          example: 'A'
+        turno:
+          type: string
+          enum: [MANANA, TARDE, NOCHE]
+          default: MANANA
+        cupoMaximo:
+          type: integer
+          default: 35
+          example: 35
+
+    SchoolYearDto:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        institucionId:
+          type: string
+          format: uuid
+        anio:
+          type: integer
+        fechaInicio:
+          type: string
+          format: date
+        fechaFin:
+          type: string
+          format: date
+          nullable: true
+        estado:
+          type: string
+        activo:
+          type: boolean
+
+    SubjectDto:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        codigo:
+          type: string
+        nombre:
+          type: string
+        campo:
+          type: string
+        nivel:
+          type: string
+        esTroncal:
+          type: boolean
+        orden:
+          type: integer
+
+    CourseDto:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        nivel:
+          type: string
+        grado:
+          type: integer
+        nombre:
+          type: string
+        orden:
+          type: integer
+
+    SectionDto:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        institucionId:
+          type: string
+          format: uuid
+        gestionId:
+          type: string
+          format: uuid
+        cursoId:
+          type: string
+          format: uuid
+        letra:
+          type: string
+        turno:
+          type: string
+        cupoMaximo:
+          type: integer
+        activo:
+          type: boolean
+
+    AcademicTreeNodeDto:
+      type: object
+      properties:
+        cursoId:
+          type: string
+        nombreCurso:
+          type: string
+        nivel:
+          type: string
+        grado:
+          type: integer
+        paralelos:
+          type: array
+          items:
+            type: object
+            properties:
+              paraleloId:
+                type: string
+              letra:
+                type: string
+              turno:
+                type: string
+              cupoMaximo:
+                type: integer
+              totalEstudiantes:
+                type: integer
+                default: 0
+
+    ErrorResponseDto:
+      type: object
+      properties:
+        statusCode:
+          type: integer
+        message:
+          type: string
+        error:
+          type: string
+        timestamp:
+          type: string
+          format: date-time
