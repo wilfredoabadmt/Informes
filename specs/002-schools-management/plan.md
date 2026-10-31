@@ -78,3 +78,4 @@ backend/src/modules/institutions/
    - Paginación y filtrado por departamento (ej: "La Paz", "Cochabamba").
    - Suspensión institucional y comprobación de que el `TenantContextGuard` deniega el acceso a sus usuarios.
    - Edición descentralizada desde cuenta de Director -> 200 OK.
+

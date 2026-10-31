@@ -71,3 +71,4 @@ Cuando se asigna un Director o Administrador Institucional a través de `POST /a
   - `rol_institucional` = `DIRECTOR` | `ADMIN_INSTITUCIONAL`
   - `estado` = `ACTIVO`
   - `fecha_inicio` = Fecha actual
+

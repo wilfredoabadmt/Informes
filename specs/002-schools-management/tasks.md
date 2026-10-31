@@ -1,7 +1,7 @@
 # Tareas de Implementación — Feature 002: Gestión Centralizada de Unidades Educativas
 
 **Feature:** `002-schools-management`  
-**Estado:** PROPUESTO  
+**Estado:** COMPLETADO Y VERIFICADO  
 **Constitución Referencia:** V1.1.0 (Decisiones 001, 003, 005)  
 **DoD:** Código TypeScript compilado sin errores + Linter aprobado + Pruebas unitarias + Pruebas de integración E2E contra PostgreSQL + Documentación sincronizada.
 
@@ -11,13 +11,13 @@
 
 | ID | Fase | Tarea | Dependencias | Estado |
 |---|---|---|---|---|
-| `T01-SCH-DTO` | Contratos | Implementar DTOs (`create`, `query`, `status`, `authority`, `update-my-institution`) con validaciones bolivianas | Ninguna | PENDIENTE |
-| `T02-SCH-GUARD` | Seguridad | Implementar `CentralAdminGuard` para restringir endpoints al Nivel 1 (`SUPERADMIN`, `CENTRAL_ADMIN`) | Ninguna | PENDIENTE |
-| `T03-SCH-SVC` | Backend Core | Implementar `InstitutionsService` (crear, listar paginado con filtros, buscar por ID, activar/suspender, asignar autoridad) | T01-SCH-DTO | PENDIENTE |
-| `T04-SCH-CTRL` | Endpoints | Implementar `InstitutionsController` y registrar en `InstitutionsModule` | T02-SCH-GUARD, T03-SCH-SVC | PENDIENTE |
-| `T05-SCH-AUDIT`| Auditoría | Integrar eventos de auditoría (`INSTITUTION_CREATE`, `STATUS_CHANGE`, `TEACHER_LINK`) en `AuditService` | T03-SCH-SVC | PENDIENTE |
-| `T06-SCH-TEST-UNIT` | Verificación | Pruebas unitarias de validación de departamentos, filtros y asignación de directores | T03-SCH-SVC | PENDIENTE |
-| `T07-SCH-TEST-E2E` | Verificación | Pruebas E2E de ciclo completo: alta central, suspensión y bloqueo en guard, edición local | T04-SCH-CTRL | PENDIENTE |
+| `T01-SCH-DTO` | Contratos | Implementar DTOs (`create`, `query`, `status`, `authority`, `update-my-institution`) con validaciones bolivianas | Ninguna | COMPLETADO |
+| `T02-SCH-GUARD` | Seguridad | Implementar `CentralAdminGuard` para restringir endpoints al Nivel 1 (`SUPERADMIN`, `CENTRAL_ADMIN`) | Ninguna | COMPLETADO |
+| `T03-SCH-SVC` | Backend Core | Implementar `InstitutionsService` (crear, listar paginado con filtros, buscar por ID, activar/suspender, asignar autoridad) | T01-SCH-DTO | COMPLETADO |
+| `T04-SCH-CTRL` | Endpoints | Implementar `InstitutionsController` y registrar en `InstitutionsModule` | T02-SCH-GUARD, T03-SCH-SVC | COMPLETADO |
+| `T05-SCH-AUDIT`| Auditoría | Integrar eventos de auditoría (`INSTITUTION_CREATE`, `STATUS_CHANGE`, `TEACHER_LINK`) en `AuditService` | T03-SCH-SVC | COMPLETADO |
+| `T06-SCH-TEST-UNIT` | Verificación | Pruebas unitarias de validación de departamentos, filtros y asignación de directores | T03-SCH-SVC | COMPLETADO |
+| `T07-SCH-TEST-E2E` | Verificación | Pruebas E2E de ciclo completo: alta central, suspensión y bloqueo en guard, edición local | T04-SCH-CTRL | COMPLETADO |
 
 ---
 
@@ -79,3 +79,4 @@
   - Asignación de directora Elena Flores a un nuevo colegio.
   - Suspensión institucional (`activo = false`) y verificación de que el usuario bloqueado recibe 403 en endpoints con `TenantContextGuard`.
   - Modificación descentralizada de dirección por la Directora activa (200 OK).
+
