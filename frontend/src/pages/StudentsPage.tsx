@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import * as XLSX from 'xlsx';
 import { apiClient } from '../api/client';
 import { useAuth } from '../context/AuthContext';
 import { formatEstadoInscripcion } from '../utils/formatters';
@@ -122,6 +123,14 @@ export const StudentsPage: React.FC = () => {
   const [showImportModal, setShowImportModal] = useState(false);
   const [feedbackMessage, setFeedbackMessage] = useState<string | null>(null);
 
+  // Import RUDE Modal State
+  const [importFile, setImportFile] = useState<File | null>(null);
+  const [importTargetCurso, setImportTargetCurso] = useState<string>('AUTO');
+  const [importPreviewRows, setImportPreviewRows] = useState<any[]>([]);
+  const [importStats, setImportStats] = useState<{ total: number; validos: number; invalidos: number } | null>(null);
+  const [importError, setImportError] = useState<string | null>(null);
+  const [isImporting, setIsImporting] = useState(false);
+
   // Form State
   const [formData, setFormData] = useState<Omit<StudentItem, 'id'>>({
     rude: '',
@@ -211,19 +220,209 @@ export const StudentsPage: React.FC = () => {
     setTimeout(() => setFeedbackMessage(null), 3000);
   };
 
-  const handleDownloadTemplate = async () => {
+  const handleDownloadTemplate = () => {
     try {
-      const res = await apiClient.get('/data-exchange/templates/students', {
-        responseType: 'blob',
-      });
-      const url = window.URL.createObjectURL(new Blob([res.data]));
-      const link = document.createElement('a');
-      link.href = url;
-      link.setAttribute('download', 'Plantilla_Oficial_Matricula_Estudiantes_Bolivia.xlsx');
-      document.body.appendChild(link);
-      link.click();
+      const templateData = [
+        {
+          NRO: 1,
+          CODIGO_RUDE: `${activeSie || '80730045'}2026001`,
+          CI: '10928371',
+          PRIMER_APELLIDO: 'Morales',
+          SEGUNDO_APELLIDO: 'Vargas',
+          NOMBRES: 'Joaquin',
+          GENERO: 'M',
+          FECHA_NACIMIENTO: '2012-03-11',
+          CURSO: availableCourses.length > 0 ? `${availableCourses[0].cursoNombre} - Paralelo ${availableCourses[0].letra}` : '1° de Primaria - Paralelo A',
+          NOMBRE_TUTOR: 'Hernan Morales',
+          PARENTESCO: 'Padre',
+          TELEFONO_TUTOR: '72019284',
+          ESTADO: 'EFECTIVO',
+        },
+        {
+          NRO: 2,
+          CODIGO_RUDE: `${activeSie || '80730045'}2026002`,
+          CI: '11029482',
+          PRIMER_APELLIDO: 'Gutierrez',
+          SEGUNDO_APELLIDO: 'Quisbert',
+          NOMBRES: 'Adriana',
+          GENERO: 'F',
+          FECHA_NACIMIENTO: '2012-07-19',
+          CURSO: availableCourses.length > 0 ? `${availableCourses[0].cursoNombre} - Paralelo ${availableCourses[0].letra}` : '1° de Primaria - Paralelo A',
+          NOMBRE_TUTOR: 'Patricia Quisbert',
+          PARENTESCO: 'Madre',
+          TELEFONO_TUTOR: '71548291',
+          ESTADO: 'EFECTIVO',
+        },
+      ];
+
+      const ws = XLSX.utils.json_to_sheet(templateData);
+      const wb = XLSX.utils.book_new();
+      XLSX.utils.book_append_sheet(wb, ws, 'RUDE_ESTUDIANTES');
+      XLSX.writeFile(wb, `Plantilla_Oficial_RUDE_Matricula_${activeSie || 'SEP'}.xlsx`);
+
+      setFeedbackMessage('✅ Plantilla Excel oficial descargada. Llénala y súbela con "Importar RUDE".');
+      setTimeout(() => setFeedbackMessage(null), 3500);
     } catch (e) {
-      alert('Descargando plantilla oficial de estudiantes en Excel...');
+      console.error('Error generating template', e);
+    }
+  };
+
+  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    setImportFile(file);
+    setImportError(null);
+
+    const reader = new FileReader();
+    reader.onload = (evt) => {
+      try {
+        const data = new Uint8Array(evt.target?.result as ArrayBuffer);
+        const workbook = XLSX.read(data, { type: 'array' });
+        const firstSheetName = workbook.SheetNames[0];
+        const worksheet = workbook.Sheets[firstSheetName];
+        const rawRows: any[] = XLSX.utils.sheet_to_json(worksheet, { defval: '' });
+
+        if (rawRows.length === 0) {
+          setImportError('El archivo no contiene filas o datos legibles.');
+          setImportPreviewRows([]);
+          setImportStats(null);
+          return;
+        }
+
+        const parsed = rawRows.map((raw, idx) => {
+          const norm: Record<string, any> = {};
+          Object.keys(raw).forEach((k) => {
+            norm[k.trim().toLowerCase().replace(/[\s_-]+/g, '')] = String(raw[k]).trim();
+          });
+
+          const rude = norm['codigorude'] || norm['rude'] || norm['codigo'] || `${activeSie || '80730045'}2026${String(students.length + idx + 1).padStart(3, '0')}`;
+          const ci = norm['ci'] || norm['carnet'] || norm['cedula'] || '';
+          const nombres = norm['nombres'] || norm['nombre'] || '';
+          const primerApellido = norm['primerapellido'] || norm['paterno'] || norm['apellidopaterno'] || '';
+          const segundoApellido = norm['segundoapellido'] || norm['materno'] || norm['apellidomaterno'] || '';
+          const rawGenero = (norm['genero'] || norm['sexo'] || 'M').toUpperCase();
+          const genero: 'M' | 'F' = rawGenero.startsWith('F') ? 'F' : 'M';
+          const fileCurso = norm['curso'] || norm['grado'] || norm['paralelo'] || '';
+
+          return {
+            rude,
+            ci,
+            nombres,
+            primerApellido,
+            segundoApellido,
+            genero,
+            curso: fileCurso,
+          };
+        });
+
+        const validRows = parsed.filter((r) => r.nombres || r.primerApellido || r.rude);
+        setImportPreviewRows(validRows.slice(0, 5));
+        setImportStats({
+          total: rawRows.length,
+          validos: validRows.length,
+          invalidos: rawRows.length - validRows.length,
+        });
+      } catch (err: any) {
+        setImportError('Error al procesar el archivo Excel. Asegúrate de que sea un formato .xlsx, .xls o .csv válido.');
+      }
+    };
+    reader.readAsArrayBuffer(file);
+  };
+
+  const handleExecuteImport = async () => {
+    if (!importFile) return;
+    setIsImporting(true);
+    setImportError(null);
+
+    try {
+      const reader = new FileReader();
+      reader.onload = async (evt) => {
+        try {
+          const data = new Uint8Array(evt.target?.result as ArrayBuffer);
+          const workbook = XLSX.read(data, { type: 'array' });
+          const firstSheetName = workbook.SheetNames[0];
+          const worksheet = workbook.Sheets[firstSheetName];
+          const rawRows: any[] = XLSX.utils.sheet_to_json(worksheet, { defval: '' });
+
+          const defaultCourse = availableCourses.length > 0
+            ? `${availableCourses[0].cursoNombre} - Paralelo ${availableCourses[0].letra}`
+            : '1° de Primaria - Paralelo A';
+
+          const importedStudents: StudentItem[] = rawRows
+            .map((raw, idx) => {
+              const norm: Record<string, any> = {};
+              Object.keys(raw).forEach((k) => {
+                norm[k.trim().toLowerCase().replace(/[\s_-]+/g, '')] = String(raw[k]).trim();
+              });
+
+              const nombres = norm['nombres'] || norm['nombre'] || '';
+              const primerApellido = norm['primerapellido'] || norm['paterno'] || norm['apellidopaterno'] || '';
+              const segundoApellido = norm['segundoapellido'] || norm['materno'] || norm['apellidomaterno'] || '';
+
+              if (!nombres && !primerApellido) return null;
+
+              const rude = norm['codigorude'] || norm['rude'] || norm['codigo'] || `${activeSie || '80730045'}2026${String(students.length + idx + 1).padStart(3, '0')}`;
+              const ci = norm['ci'] || norm['carnet'] || norm['cedula'] || '';
+              const rawGen = (norm['genero'] || norm['sexo'] || 'M').toUpperCase();
+              const genero: 'M' | 'F' = rawGen.startsWith('F') ? 'F' : 'M';
+              const fechaNacimiento = norm['fechanacimiento'] || norm['fechanac'] || '2012-01-01';
+
+              let finalCurso = defaultCourse;
+              if (importTargetCurso !== 'AUTO') {
+                finalCurso = importTargetCurso;
+              } else if (norm['curso']) {
+                finalCurso = norm['curso'];
+              }
+
+              return {
+                id: `st-${activeSie}-${Date.now()}-${idx}`,
+                rude,
+                ci,
+                nombres,
+                primerApellido,
+                segundoApellido,
+                genero,
+                fechaNacimiento,
+                curso: finalCurso,
+                nombreTutor: norm['nombretutor'] || norm['tutor'] || 'Padre de Familia',
+                parentescoTutor: norm['parentesco'] || 'Padre',
+                telefonoTutor: norm['telefono'] || norm['celular'] || '',
+                estado: 'EFECTIVO',
+              };
+            })
+            .filter((s): s is StudentItem => s !== null);
+
+          if (importedStudents.length === 0) {
+            setImportError('No se encontraron estudiantes con nombres o apellidos válidos en el archivo.');
+            setIsImporting(false);
+            return;
+          }
+
+          // Evitar duplicados por RUDE
+          const existingRudes = new Set(students.map((s) => s.rude));
+          const newOnes = importedStudents.filter((s) => !existingRudes.has(s.rude));
+          const updated = [...students, ...newOnes];
+
+          saveStudentsForInstitution(activeSie, updated);
+          setStudents(updated);
+
+          setFeedbackMessage(`✅ Se importaron con éxito ${newOnes.length} estudiantes del archivo a la nómina oficial.`);
+          setTimeout(() => setFeedbackMessage(null), 4000);
+
+          setShowImportModal(false);
+          setImportFile(null);
+          setImportPreviewRows([]);
+          setImportStats(null);
+        } catch (err: any) {
+          setImportError('Ocurrió un error al procesar la importación: ' + (err?.message || 'Error desconocido'));
+        } finally {
+          setIsImporting(false);
+        }
+      };
+      reader.readAsArrayBuffer(importFile);
+    } catch (e: any) {
+      setImportError('Error al leer el archivo.');
+      setIsImporting(false);
     }
   };
 
@@ -761,6 +960,197 @@ export const StudentsPage: React.FC = () => {
               >
                 Confirmar Baja
               </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Modal de Importación Masiva RUDE / SIGED */}
+      {showImportModal && (
+        <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-50 flex items-center justify-center p-4 overflow-y-auto">
+          <div className="bg-white rounded-3xl max-w-2xl w-full p-6 sm:p-8 shadow-2xl border border-slate-200 animate-in fade-in zoom-in-95 duration-200">
+            <div className="flex items-center justify-between pb-4 border-b border-slate-100">
+              <div className="flex items-center space-x-3">
+                <div className="p-2.5 bg-emerald-50 text-emerald-600 rounded-2xl">
+                  <Upload className="w-6 h-6" />
+                </div>
+                <div>
+                  <h3 className="text-base font-bold text-slate-900">
+                    Importar Nómina Escolar RUDE (SIGED / Excel)
+                  </h3>
+                  <p className="text-xs text-slate-500">
+                    Unidad Educativa: <strong className="text-slate-800">{currentInst?.nombre}</strong> (SIE: {activeSie})
+                  </p>
+                </div>
+              </div>
+              <button
+                type="button"
+                onClick={() => {
+                  setShowImportModal(false);
+                  setImportFile(null);
+                  setImportPreviewRows([]);
+                  setImportStats(null);
+                  setImportError(null);
+                }}
+                className="text-slate-400 hover:text-slate-600 p-1.5 rounded-lg hover:bg-slate-100 transition cursor-pointer"
+              >
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+
+            <div className="mt-5 space-y-5">
+              {/* Selector de Curso de Destino */}
+              <div className="bg-slate-50 p-4 rounded-2xl border border-slate-200">
+                <label className="text-xs font-bold text-slate-700 block mb-1.5">
+                  Curso de Asignación para los Estudiantes:
+                </label>
+                <select
+                  value={importTargetCurso}
+                  onChange={(e) => setImportTargetCurso(e.target.value)}
+                  className="w-full bg-white border border-slate-300 rounded-xl px-3 py-2 text-xs font-medium text-slate-800 focus:outline-none focus:ring-2 focus:ring-emerald-500"
+                >
+                  <option value="AUTO">🔍 Detectar automáticamente por columna "Curso" del archivo</option>
+                  {availableCourses.map((c) => {
+                    const cLabel = `${c.cursoNombre} - Paralelo ${c.letra}`;
+                    return (
+                      <option key={c.id} value={cLabel}>
+                        Asignar todo a: {cLabel} ({c.turno})
+                      </option>
+                    );
+                  })}
+                </select>
+                <p className="text-[11px] text-slate-500 mt-1.5">
+                  💡 Si el archivo Excel ya contiene una columna llamada "Curso" o "Grado", déjalo en automático.
+                </p>
+              </div>
+
+              {/* Zona de Selección / Arrastre de Archivo */}
+              <div className="border-2 border-dashed border-slate-300 hover:border-emerald-500 rounded-2xl p-6 text-center transition bg-slate-50/50">
+                <input
+                  type="file"
+                  id="rude-file-input"
+                  accept=".xlsx, .xls, .xlsm, .csv"
+                  onChange={handleFileChange}
+                  className="hidden"
+                />
+                <label
+                  htmlFor="rude-file-input"
+                  className="cursor-pointer flex flex-col items-center justify-center space-y-2"
+                >
+                  <div className="w-12 h-12 bg-emerald-100 text-emerald-700 rounded-full flex items-center justify-center">
+                    <FileSpreadsheet className="w-6 h-6" />
+                  </div>
+                  <div className="text-xs">
+                    <span className="font-bold text-emerald-700 hover:underline">
+                      {importFile ? importFile.name : 'Haz clic para seleccionar el archivo'}
+                    </span>
+                    <span className="text-slate-500"> o arrastra aquí tu planilla</span>
+                  </div>
+                  <p className="text-[10px] text-slate-400">
+                    Formatos soportados: Excel (.xlsx, .xls, .xlsm) o CSV oficial del SIGED
+                  </p>
+                </label>
+              </div>
+
+              {/* Mensaje de error si falla la lectura */}
+              {importError && (
+                <div className="p-3 bg-rose-50 border border-rose-200 rounded-xl text-xs text-rose-700 flex items-center space-x-2">
+                  <AlertCircle className="w-4 h-4 flex-shrink-0" />
+                  <span>{importError}</span>
+                </div>
+              )}
+
+              {/* Estadísticas y Previsualización */}
+              {importStats && (
+                <div className="space-y-3">
+                  <div className="flex items-center justify-between text-xs bg-emerald-50 border border-emerald-200 px-3.5 py-2 rounded-xl text-emerald-900 font-medium">
+                    <span>
+                      📊 <strong>{importStats.validos}</strong> estudiantes listos para importar (de {importStats.total} filas detectadas).
+                    </span>
+                    <span className="text-[11px] text-emerald-700">Listo para matricular</span>
+                  </div>
+
+                  {importPreviewRows.length > 0 && (
+                    <div className="border border-slate-200 rounded-xl overflow-hidden">
+                      <div className="bg-slate-100 px-3 py-1.5 text-[11px] font-bold text-slate-700 border-b border-slate-200">
+                        Vista Previa (Primeros 5 Registros):
+                      </div>
+                      <div className="overflow-x-auto max-h-40 text-xs">
+                        <table className="w-full text-left">
+                          <thead className="bg-slate-50 text-[10px] text-slate-500 uppercase border-b border-slate-200">
+                            <tr>
+                              <th className="px-2.5 py-1.5">RUDE</th>
+                              <th className="px-2.5 py-1.5">Apellidos y Nombres</th>
+                              <th className="px-2.5 py-1.5">CI</th>
+                              <th className="px-2.5 py-1.5">Género</th>
+                              <th className="px-2.5 py-1.5">Curso</th>
+                            </tr>
+                          </thead>
+                          <tbody className="divide-y divide-slate-100 font-mono text-[11px]">
+                            {importPreviewRows.map((r, i) => (
+                              <tr key={i} className="hover:bg-slate-50">
+                                <td className="px-2.5 py-1 text-slate-700 font-bold">{r.rude}</td>
+                                <td className="px-2.5 py-1 font-sans text-slate-900">
+                                  {r.primerApellido} {r.segundoApellido} {r.nombres}
+                                </td>
+                                <td className="px-2.5 py-1 text-slate-600">{r.ci || 'S/CI'}</td>
+                                <td className="px-2.5 py-1 text-slate-600">{r.genero}</td>
+                                <td className="px-2.5 py-1 font-sans text-slate-600 truncate max-w-[120px]">
+                                  {importTargetCurso !== 'AUTO' ? importTargetCurso : (r.curso || availableCourses[0]?.cursoNombre || 'Por Asignar')}
+                                </td>
+                              </tr>
+                            ))}
+                          </tbody>
+                        </table>
+                      </div>
+                    </div>
+                  )}
+                </div>
+              )}
+
+              {/* Botón para descargar plantilla si no tienen el formato */}
+              <div className="flex items-center justify-between pt-2 text-xs">
+                <button
+                  type="button"
+                  onClick={handleDownloadTemplate}
+                  className="text-slate-500 hover:text-emerald-700 hover:underline flex items-center space-x-1 cursor-pointer"
+                >
+                  <Download className="w-3.5 h-3.5" />
+                  <span>Descargar Plantilla Oficial RUDE (.xlsx)</span>
+                </button>
+              </div>
+
+              {/* Acciones */}
+              <div className="flex justify-end space-x-2.5 pt-4 border-t border-slate-100">
+                <button
+                  type="button"
+                  onClick={() => {
+                    setShowImportModal(false);
+                    setImportFile(null);
+                    setImportPreviewRows([]);
+                    setImportStats(null);
+                    setImportError(null);
+                  }}
+                  className="px-4 py-2 text-xs font-semibold text-slate-600 hover:bg-slate-100 rounded-xl transition cursor-pointer"
+                >
+                  Cancelar
+                </button>
+                <button
+                  type="button"
+                  onClick={handleExecuteImport}
+                  disabled={!importFile || isImporting || (importStats?.validos || 0) === 0}
+                  className="px-5 py-2 text-xs font-bold bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl shadow-md shadow-emerald-200 transition cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed flex items-center space-x-1.5"
+                >
+                  {isImporting ? (
+                    <span>Importando nómina...</span>
+                  ) : (
+                    <>
+                      <CheckCircle2 className="w-4 h-4" />
+                      <span>Completar Importación RUDE</span>
+                    </>
+                  )}
+                </button>
+              </div>
             </div>
           </div>
         </div>

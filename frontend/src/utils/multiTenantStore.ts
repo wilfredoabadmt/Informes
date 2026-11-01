@@ -557,4 +557,7 @@ export function getStudentsForInstitution(idOrSie: string): TenantStudent[] {
 export function saveStudentsForInstitution(idOrSie: string, students: TenantStudent[]): void {
   const sie = resolveTenantKey(idOrSie);
   localStorage.setItem(`sigma_students_${sie}`, JSON.stringify(students));
+  if (typeof window !== 'undefined') {
+    window.dispatchEvent(new CustomEvent('sigma_students_updated', { detail: { sie, students } }));
+  }
 }
