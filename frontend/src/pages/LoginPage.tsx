@@ -150,6 +150,9 @@ export const LoginPage: React.FC = () => {
                 Maestro
               </button>
             </div>
+            <div className="mt-2 text-[10px] text-slate-400 text-center">
+              Credenciales oficiales verificadas (Gestión 2026) • Clave demo: <span className="font-mono font-semibold text-slate-600">Bolivia2026!</span>
+            </div>
           </div>
         </div>
 

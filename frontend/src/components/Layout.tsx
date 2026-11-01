@@ -13,6 +13,9 @@ import {
   LogOut,
   School,
   ChevronDown,
+  CalendarCheck,
+  ClipboardList,
+  Clock,
 } from 'lucide-react';
 
 export const Layout: React.FC = () => {
@@ -44,6 +47,9 @@ export const Layout: React.FC = () => {
       { label: 'Cursos & Docentes', path: '/academic', icon: GraduationCap },
       { label: 'Estudiantes & Matrícula', path: '/students', icon: Users },
       { label: 'Supervisión de Calificaciones', path: '/grades', icon: BookOpenCheck },
+      { label: 'Control de Asistencia', path: '/attendance', icon: CalendarCheck },
+      { label: 'Kardex Disciplinario', path: '/kardex', icon: ClipboardList },
+      { label: 'Horario Institucional', path: '/schedule', icon: Clock },
       { label: 'Centralizadores & Boletines', path: '/reports', icon: FileSpreadsheet },
       { label: 'Trazabilidad de Colegio', path: '/audit', icon: ShieldCheck },
     ];
@@ -51,8 +57,11 @@ export const Layout: React.FC = () => {
     navItems = [
       { label: 'Mis Asignaciones', path: '/', icon: LayoutDashboard },
       { label: 'Planilla de Calificaciones (Ley 070)', path: '/grades', icon: BookOpenCheck },
-      { label: 'Nómina de Mis Cursos', path: '/students', icon: Users },
-      { label: 'Boletines & Listas Oficiales', path: '/reports', icon: FileSpreadsheet },
+      { label: 'Control de Asistencia Mensual', path: '/attendance', icon: CalendarCheck },
+      { label: 'Kardex Escolar de Seguimiento', path: '/kardex', icon: ClipboardList },
+      { label: 'Mi Horario Semanal', path: '/schedule', icon: Clock },
+      { label: 'Nómina y Filiación de Alumnos', path: '/students', icon: Users },
+      { label: 'Centralizadores & Boletines', path: '/reports', icon: FileSpreadsheet },
     ];
   } else {
     navItems = [

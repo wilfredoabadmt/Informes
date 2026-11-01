@@ -8,6 +8,9 @@ import { InstitutionsPage } from './pages/InstitutionsPage';
 import { AcademicPage } from './pages/AcademicPage';
 import { StudentsPage } from './pages/StudentsPage';
 import { GradesPage } from './pages/GradesPage';
+import { AttendancePage } from './pages/AttendancePage';
+import { KardexPage } from './pages/KardexPage';
+import { SchedulePage } from './pages/SchedulePage';
 import { CentralizerReportsPage } from './pages/CentralizerReportsPage';
 import { AuditPage } from './pages/AuditPage';
 
@@ -50,6 +53,9 @@ export const App: React.FC = () => {
             <Route path="academic" element={<AcademicPage />} />
             <Route path="students" element={<StudentsPage />} />
             <Route path="grades" element={<GradesPage />} />
+            <Route path="attendance" element={<AttendancePage />} />
+            <Route path="kardex" element={<KardexPage />} />
+            <Route path="schedule" element={<SchedulePage />} />
             <Route path="reports" element={<CentralizerReportsPage />} />
             <Route path="audit" element={<AuditPage />} />
           </Route>
