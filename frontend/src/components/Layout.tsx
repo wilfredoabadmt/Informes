@@ -37,8 +37,14 @@ export const Layout: React.FC = () => {
   if (isSuperAdmin) {
     navItems = [
       { label: 'Panel Nacional', path: '/', icon: LayoutDashboard },
-      { label: 'Unidades Educativas (Tenants)', path: '/institutions', icon: Building2 },
-      { label: 'Currículo & Estructura Base', path: '/academic', icon: GraduationCap },
+      { label: 'Unidades Educativas (Colegios)', path: '/institutions', icon: Building2 },
+      { label: 'Cursos, Docentes & Materias', path: '/academic', icon: GraduationCap },
+      { label: 'Estudiantes & Matrícula RUDE', path: '/students', icon: Users },
+      { label: 'Supervisión de Calificaciones', path: '/grades', icon: BookOpenCheck },
+      { label: 'Control de Asistencia', path: '/attendance', icon: CalendarCheck },
+      { label: 'Kardex Disciplinario', path: '/kardex', icon: ClipboardList },
+      { label: 'Horarios & Aulas', path: '/schedule', icon: Clock },
+      { label: 'Centralizadores & Reportes', path: '/reports', icon: FileSpreadsheet },
       { label: 'Auditoría del Sistema', path: '/audit', icon: ShieldCheck },
     ];
   } else if (isDirector) {
@@ -100,25 +106,33 @@ export const Layout: React.FC = () => {
           </div>
 
           <div className="flex items-center space-x-4">
-            {/* Institution Switcher (Only if user has institutions linked) */}
-            {user?.institutions && user.institutions.length > 0 && (
+            {/* Institution Switcher (Superadmin o usuarios vinculados a múltiples colegios) */}
+            {(isSuperAdmin || (user?.institutions && user.institutions.length > 0)) && (
               <div className="relative hidden md:block">
                 <div className="flex items-center space-x-2 bg-slate-100 hover:bg-slate-200 py-1.5 px-3 rounded-lg text-xs font-medium text-slate-700 transition">
                   <Building2 className="w-4 h-4 text-emerald-600" />
                   <select
-                    value={currentInstitutionId || ''}
+                    value={currentInstitutionId || 'inst-80730045'}
                     onChange={(e) => setCurrentInstitutionId(e.target.value)}
-                    className="bg-transparent border-none text-slate-800 text-xs font-semibold focus:outline-none cursor-pointer"
+                    className="bg-transparent border-none text-slate-800 text-xs font-bold focus:outline-none cursor-pointer"
                   >
-                    {user.institutions.map((inst) => {
-                      const instId = inst.institutionId || inst.id;
-                      const instRol = formatRol(inst.role || inst.rol);
-                      return (
-                        <option key={instId} value={instId}>
-                          SIE: {inst.sie} - {inst.nombre} ({instRol})
-                        </option>
-                      );
-                    })}
+                    {isSuperAdmin && (!user?.institutions || user.institutions.length === 0) ? (
+                      <>
+                        <option value="inst-80730045">SIE: 80730045 - U.E. Franz Tamayo (Colegio Activo)</option>
+                        <option value="inst-80730046">SIE: 80730046 - U.E. Mariscal Sucre</option>
+                        <option value="inst-80730047">SIE: 80730047 - U.E. Emborozú</option>
+                      </>
+                    ) : (
+                      user?.institutions?.map((inst) => {
+                        const instId = inst.institutionId || inst.id;
+                        const instRol = formatRol(inst.role || inst.rol);
+                        return (
+                          <option key={instId} value={instId}>
+                            SIE: {inst.sie} - {inst.nombre} ({instRol})
+                          </option>
+                        );
+                      })
+                    )}
                   </select>
                   <ChevronDown className="w-3.5 h-3.5 text-slate-500 pointer-events-none" />
                 </div>
