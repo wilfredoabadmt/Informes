@@ -28,7 +28,7 @@ WORKDIR /app
 ENV NODE_ENV=production
 ENV PORT=3000
 
-RUN apk add --no-cache openssl
+RUN apk add --no-cache openssl curl
 
 COPY package*.json ./
 COPY prisma ./prisma/
@@ -40,4 +40,4 @@ COPY --from=builder /app/dist ./dist
 
 EXPOSE 3000
 
-CMD ["sh", "-c", "npx prisma migrate resolve --rolled-back 20261031221500_add_academic_structure_and_rls 2>/dev/null || true; npx prisma migrate deploy && node dist/prisma/seed.js && node dist/main"]
+CMD ["sh", "-c", "npx prisma migrate deploy && node dist/prisma/seed.js && (node dist/src/main.js || node dist/main.js)"]

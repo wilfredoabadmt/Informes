@@ -36,6 +36,17 @@ async function bootstrap() {
   const document = SwaggerModule.createDocument(app, swaggerConfig);
   SwaggerModule.setup('docs', app, document);
 
+  // Endpoint raíz de salud para balanceadores y Coolify (retorna 200 OK)
+  const httpAdapter = app.getHttpAdapter();
+  httpAdapter.get('/', (_req: any, res: any) => {
+    res.status(200).json({
+      status: 'ok',
+      service: 'Sistema Integral de Registro y Gestión de Maestros - Bolivia',
+      version: '1.0.0',
+      timestamp: new Date().toISOString(),
+    });
+  });
+
   const port = process.env.PORT || 3000;
   await app.listen(port, '0.0.0.0');
   logger.log(`🚀 Servidor backend ejecutándose en: http://localhost:${port}/api/v1`);
