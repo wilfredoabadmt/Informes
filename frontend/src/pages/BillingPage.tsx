@@ -18,6 +18,7 @@ import {
   RefreshCw,
   ExternalLink,
 } from 'lucide-react';
+import qrImg from '../assets/qr.png';
 
 export const BillingPage: React.FC = () => {
   const { user } = useAuth();
@@ -99,9 +100,12 @@ export const BillingPage: React.FC = () => {
         { planCodigo: plan, periodo: selectedPeriod },
         { headers: { 'X-Institution-Id': currentInstitutionId } }
       );
-      setQrIntent(res.data);
+      setQrIntent({
+        ...res.data,
+        qrImageUrl: res.data?.qrImageUrl || qrImg,
+      });
     } catch (err) {
-      // Fallback local QR intent
+      // Intent local con QR Simple oficial proporcionado
       const monto = selectedPeriod === 'ANUAL' ? (plan === 'PLAN_PRO' ? 2400 : 5800) : (plan === 'PLAN_PRO' ? 250 : 600);
       const codigo = `SIGMA-${Date.now().toString().slice(-6)}`;
       const qrPayload = JSON.stringify({
@@ -119,7 +123,7 @@ export const BillingPage: React.FC = () => {
         planNombre: plan === 'PLAN_PRO' ? 'Colegio Profesional' : 'Red Educativa / Distrito',
         periodo: selectedPeriod,
         qrPayload,
-        qrImageUrl: `https://api.qrserver.com/v1/create-qr-code/?size=300x300&data=${encodeURIComponent(qrPayload)}`,
+        qrImageUrl: qrImg,
         beneficiario: 'SIGMA Plataforma Educativa Bolivia',
         cuentaDestino: 'Banco Unión Cta Cte: 10000049281726',
       });
@@ -393,27 +397,40 @@ export const BillingPage: React.FC = () => {
                   </button>
                 </div>
 
-                {/* QR Display */}
+                {/* QR Display Oficial */}
                 <div className="text-center p-4 bg-slate-50 rounded-2xl border border-slate-200">
-                  {qrIntent?.qrImageUrl ? (
+                  <div className="relative inline-block mx-auto group">
                     <img
-                      src={qrIntent.qrImageUrl}
-                      alt="Código QR Simple"
-                      className="w-48 h-48 mx-auto rounded-xl shadow-md border-4 border-white"
+                      src={qrIntent?.qrImageUrl || qrImg}
+                      alt="Código QR Simple Oficial"
+                      className="w-56 h-56 mx-auto rounded-2xl shadow-md border-4 border-white object-contain bg-white transition-transform duration-300 group-hover:scale-105"
                     />
-                  ) : (
-                    <div className="w-48 h-48 mx-auto bg-slate-200 rounded-xl flex items-center justify-center text-slate-400">
-                      Generando QR...
+                    <div className="absolute top-2 right-2 bg-emerald-600 text-white text-[9px] font-black px-2 py-0.5 rounded-full shadow tracking-wider uppercase">
+                      QR Simple Oficial
                     </div>
-                  )}
+                  </div>
 
                   <div className="mt-3">
                     <span className="text-2xl font-black text-slate-900">
-                      Bs. {qrIntent?.monto || (selectedPeriod === 'ANUAL' ? 2400 : 250)}
+                      Bs. {qrIntent?.monto || (selectedPeriod === 'ANUAL' ? (selectedPlan === 'PLAN_PRO' ? '2.400' : '5.800') : (selectedPlan === 'PLAN_PRO' ? '250' : '600'))}
                     </span>
                     <p className="text-[11px] text-slate-500">
                       Código de Transacción: <span className="font-mono font-bold text-slate-700">{qrIntent?.codigoTransaccion}</span>
                     </p>
+                    <p className="text-[10px] text-emerald-800 font-semibold mt-1 bg-emerald-50 py-1 px-3 rounded-lg inline-block border border-emerald-100">
+                      📱 Escanea desde tu Banca Móvil (Banco Unión, BNB, BCP, Banco FIE, Banco Sol, BMSC, etc.)
+                    </p>
+                  </div>
+
+                  <div className="mt-3 flex items-center justify-center space-x-3">
+                    <a
+                      href={qrIntent?.qrImageUrl || qrImg}
+                      download="qr-pago-sigma.png"
+                      className="inline-flex items-center space-x-1.5 text-xs text-slate-600 hover:text-emerald-700 bg-white px-3 py-1.5 rounded-xl border border-slate-200 shadow-sm font-semibold transition"
+                    >
+                      <Download className="w-3.5 h-3.5" />
+                      <span>Descargar Imagen QR</span>
+                    </a>
                   </div>
                 </div>
 

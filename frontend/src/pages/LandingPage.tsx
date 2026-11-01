@@ -16,10 +16,13 @@ import {
   QrCode,
   Building,
   HelpCircle,
+  Download,
 } from 'lucide-react';
+import qrImg from '../assets/qr.png';
 
 export const LandingPage: React.FC = () => {
   const [billingCycle, setBillingCycle] = useState<'monthly' | 'annual'>('annual');
+  const [showQrModal, setShowQrModal] = useState(false);
   const navigate = useNavigate();
 
   const handleSelectPlan = (planCodigo: string) => {
@@ -259,6 +262,18 @@ export const LandingPage: React.FC = () => {
                 </span>
               </button>
             </div>
+
+            {/* Acceso Rápido a QR Simple Oficial */}
+            <div className="mt-4">
+              <button
+                type="button"
+                onClick={() => setShowQrModal(true)}
+                className="inline-flex items-center space-x-2 text-xs font-bold text-emerald-800 bg-emerald-100/90 hover:bg-emerald-200 px-4 py-2 rounded-xl transition cursor-pointer shadow-sm border border-emerald-200"
+              >
+                <QrCode className="w-4 h-4 text-emerald-700" />
+                <span>Ver QR Simple Interoperable de Pago Directo</span>
+              </button>
+            </div>
           </div>
 
           <div className="grid grid-cols-1 md:grid-cols-3 gap-8 max-w-6xl mx-auto items-stretch">
@@ -462,7 +477,14 @@ export const LandingPage: React.FC = () => {
                 <span>¿Cómo realizo el pago de la suscripción en Bolivia?</span>
               </h4>
               <p className="mt-2 text-xs text-slate-600 leading-relaxed pl-6">
-                El sistema genera un código QR Simple interoperable oficial. Puedes escanearlo desde la aplicación de cualquier banco boliviano (Banco Unión, BMSC, BNB, BCP, Banco FIE, Banco Sol, etc.) o realizar transferencia directa.
+                El sistema genera un código QR Simple interoperable oficial. Puedes escanearlo desde la aplicación de cualquier banco boliviano (Banco Unión, BMSC, BNB, BCP, Banco FIE, Banco Sol, etc.) o realizar transferencia directa.{' '}
+                <button
+                  type="button"
+                  onClick={() => setShowQrModal(true)}
+                  className="text-emerald-700 font-bold hover:underline inline-flex items-center space-x-1 cursor-pointer"
+                >
+                  <span>[Ver Código QR de Pago Directo]</span>
+                </button>
               </p>
             </div>
 
@@ -497,6 +519,82 @@ export const LandingPage: React.FC = () => {
           </div>
         </div>
       </footer>
+
+      {/* Modal QR Oficial en Landing Page */}
+      {showQrModal && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/60 backdrop-blur-sm p-4 overflow-y-auto">
+          <div className="bg-white rounded-3xl max-w-md w-full p-6 sm:p-8 shadow-2xl border border-slate-200 animate-in fade-in zoom-in-95 duration-200">
+            <div className="flex items-center justify-between pb-4 border-b border-slate-100">
+              <div className="flex items-center space-x-2">
+                <div className="p-2 bg-emerald-50 rounded-xl text-emerald-700">
+                  <QrCode className="w-5 h-5" />
+                </div>
+                <div>
+                  <h3 className="text-base font-bold text-slate-900">Pago con QR Simple Interoperable</h3>
+                  <p className="text-[11px] text-slate-500">Banca Móvil Oficial de Bolivia</p>
+                </div>
+              </div>
+              <button
+                onClick={() => setShowQrModal(false)}
+                className="text-slate-400 hover:text-slate-600 text-sm font-bold p-1.5 cursor-pointer rounded-lg hover:bg-slate-100 transition"
+              >
+                ✕
+              </button>
+            </div>
+
+            <div className="mt-6 text-center space-y-4">
+              <div className="relative inline-block mx-auto group">
+                <img
+                  src={qrImg}
+                  alt="QR Simple Oficial SIGMA"
+                  className="w-60 h-60 mx-auto rounded-2xl shadow-lg border-4 border-white object-contain bg-white transition-transform duration-300 group-hover:scale-105"
+                />
+                <div className="absolute top-2 right-2 bg-emerald-600 text-white text-[9px] font-black px-2 py-0.5 rounded-full shadow tracking-wider uppercase">
+                  QR OFICIAL BOLIVIA
+                </div>
+              </div>
+
+              <div className="p-3 bg-slate-50 rounded-2xl border border-slate-200 text-left text-xs space-y-1.5">
+                <div className="flex justify-between items-center text-slate-700">
+                  <span>Destino / Beneficiario:</span>
+                  <strong className="text-slate-900">SIGMA SaaS Bolivia</strong>
+                </div>
+                <div className="flex justify-between items-center text-slate-700">
+                  <span>Bancos Habilitados:</span>
+                  <span className="text-[11px] font-semibold text-emerald-800">Unión, BNB, BCP, BMSC, Sol, FIE</span>
+                </div>
+                <div className="flex justify-between items-center text-slate-700">
+                  <span>Moneda:</span>
+                  <span className="font-bold text-slate-900">Bolivianos (BOB)</span>
+                </div>
+                <div className="flex justify-between items-center text-slate-700">
+                  <span>Glosa Sugerida:</span>
+                  <span className="font-mono font-bold text-slate-900 bg-white px-2 py-0.5 rounded border border-slate-200 text-[11px]">Suscripción - [Nombre Colegio]</span>
+                </div>
+              </div>
+
+              <div className="pt-2 flex flex-col sm:flex-row gap-2">
+                <a
+                  href={qrImg}
+                  download="qr-pago-sigma.png"
+                  className="flex-1 py-2.5 bg-slate-100 hover:bg-slate-200 text-slate-700 text-xs font-bold rounded-xl flex items-center justify-center space-x-1 transition"
+                >
+                  <Download className="w-3.5 h-3.5" />
+                  <span>Descargar QR</span>
+                </a>
+                <a
+                  href="https://wa.me/59170000000?text=Hola,%20acabo%20de%20realizar%20el%20pago%20con%20QR%20para%20activar%20mi%20colegio%20en%20SIGMA"
+                  target="_blank"
+                  rel="noreferrer"
+                  className="flex-1 py-2.5 bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-bold rounded-xl flex items-center justify-center space-x-1 shadow-md shadow-emerald-200 transition"
+                >
+                  <span>Enviar Comprobante WhatsApp</span>
+                </a>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 };
