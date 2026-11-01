@@ -1,14 +1,12 @@
-import React, { useState, useMemo } from 'react';
+import React, { useState, useMemo, useEffect } from 'react';
 import { useAuth } from '../context/AuthContext';
+import * as XLSX from 'xlsx';
 import {
   CalendarCheck,
   CheckCircle2,
-  AlertCircle,
   Clock,
-  FileText,
   Printer,
-  ChevronLeft,
-  ChevronRight,
+  FileSpreadsheet,
   Filter,
   Users,
   Award,
@@ -20,7 +18,7 @@ interface StudentAttendance {
   id: string;
   rude: string;
   nombreCompleto: string;
-  days: Record<number, AttendanceStatus>; // dayOfMonth -> status
+  days: Record<number, AttendanceStatus>;
 }
 
 const MONTHS = [
@@ -36,59 +34,115 @@ const MONTHS = [
   { value: 11, label: 'Noviembre' },
 ];
 
+const CURSOS_CATALOGO = [
+  { id: 'SEC_1A', nombre: '1º de Secundaria - Paralelo "A" (Turno Mañana)', nivel: 'Secundaria' },
+  { id: 'SEC_1B', nombre: '1º de Secundaria - Paralelo "B" (Turno Tarde)', nivel: 'Secundaria' },
+  { id: 'SEC_2A', nombre: '2º de Secundaria - Paralelo "A" (Turno Mañana)', nivel: 'Secundaria' },
+  { id: 'PRIM_1A', nombre: '1º de Primaria - Paralelo "A" (Turno Mañana)', nivel: 'Primaria' },
+  { id: 'PRIM_2A', nombre: '2º de Primaria - Paralelo "A" (Turno Mañana)', nivel: 'Primaria' },
+];
+
+const ESTUDIANTES_POR_CURSO: Record<string, { id: string; rude: string; nombreCompleto: string }[]> = {
+  SEC_1A: [
+    { id: 'st-1', rude: '807300452026001', nombreCompleto: 'ALANOCA CRUZ ERICK ELIAS' },
+    { id: 'st-2', rude: '807300452026002', nombreCompleto: 'ARAMAYO TOLEDO FABIOLA' },
+    { id: 'st-3', rude: '807300452026003', nombreCompleto: 'CAMACHO RENJIFO KAROL LUCERO' },
+    { id: 'st-4', rude: '807300452026004', nombreCompleto: 'CARDOZO YEVARA CARLIN YARITA' },
+    { id: 'st-5', rude: '807300452026005', nombreCompleto: 'COLQUE COLODRO JHOANNA MAYENNI' },
+    { id: 'st-6', rude: '807300452026006', nombreCompleto: 'FLORES CALLISAYA GABRIEL OMAR' },
+  ],
+  SEC_1B: [
+    { id: 'st-7', rude: '807300452026007', nombreCompleto: 'ARCE CONDORI MATEO DANIEL' },
+    { id: 'st-8', rude: '807300452026008', nombreCompleto: 'GUTIERREZ ROJAS SOFIA BELEN' },
+    { id: 'st-9', rude: '807300452026009', nombreCompleto: 'MAMANI QUISPE LUCIA VALENTINA' },
+    { id: 'st-10', rude: '807300452026010', nombreCompleto: 'TORREZ MENDOZA NICOLE ANDREA' },
+    { id: 'st-11', rude: '807300452026011', nombreCompleto: 'VARGAS PAZ ALEJANDRO JOSE' },
+    { id: 'st-12', rude: '807300452026012', nombreCompleto: 'CHOQUE HUANCA BRUNO JHOEL' },
+  ],
+  SEC_2A: [
+    { id: 'st-13', rude: '807300452026013', nombreCompleto: 'SALAZAR RAMOS DIEGO ARMANDO' },
+    { id: 'st-14', rude: '807300452026014', nombreCompleto: 'PINTO MORALES CAMILA RENATA' },
+    { id: 'st-15', rude: '807300452026015', nombreCompleto: 'FERNANDEZ LUNA RODRIGO MARTIN' },
+    { id: 'st-16', rude: '807300452026016', nombreCompleto: 'CASTRO GUZMAN VALERIA PAOLA' },
+    { id: 'st-17', rude: '807300452026017', nombreCompleto: 'ORTIZ PEREZ SEBASTIAN ANDRES' },
+  ],
+  PRIM_1A: [
+    { id: 'st-18', rude: '807300452026018', nombreCompleto: 'MAMANI LOPEZ THIAGO GAEL' },
+    { id: 'st-19', rude: '807300452026019', nombreCompleto: 'RIOS CONDORI VALENTINA PAZ' },
+    { id: 'st-20', rude: '807300452026020', nombreCompleto: 'CRUZ QUISPE LIAM SAMUEL' },
+    { id: 'st-21', rude: '807300452026021', nombreCompleto: 'FLORES ALVAREZ MIA ISABELLA' },
+    { id: 'st-22', rude: '807300452026022', nombreCompleto: 'CHOQUE HUANCA LUCAS MATEO' },
+  ],
+  PRIM_2A: [
+    { id: 'st-23', rude: '807300452026023', nombreCompleto: 'SANCHEZ NINA GAEL FACUNDO' },
+    { id: 'st-24', rude: '807300452026024', nombreCompleto: 'GUTIERREZ LUNA EMMA VICTORIA' },
+    { id: 'st-25', rude: '807300452026025', nombreCompleto: 'MENDOZA RAMOS IAN PATRICIO' },
+    { id: 'st-26', rude: '807300452026026', nombreCompleto: 'MORALES PINTO ZOE VALERIA' },
+  ],
+};
+
+function generateInitialAttendance(cursoId: string, month: number): StudentAttendance[] {
+  const lista = ESTUDIANTES_POR_CURSO[cursoId] || ESTUDIANTES_POR_CURSO.SEC_1A;
+  const daysInMonth = new Date(2026, month, 0).getDate();
+
+  return lista.map((st, idx) => {
+    const days: Record<number, AttendanceStatus> = {};
+    for (let d = 1; d <= daysInMonth; d++) {
+      const dayOfWeek = new Date(2026, month - 1, d).getDay();
+      if (dayOfWeek !== 0 && dayOfWeek !== 6) {
+        // Asignación realista: Mayoría presente, pocas faltas o atrasos
+        const rand = (d * 7 + idx * 11) % 100;
+        if (rand > 94) {
+          days[d] = 'FALTA';
+        } else if (rand > 87) {
+          days[d] = 'ATRASO';
+        } else if (rand > 83) {
+          days[d] = 'LICENCIA';
+        } else {
+          days[d] = 'PRESENTE';
+        }
+      }
+    }
+    return {
+      id: st.id,
+      rude: st.rude,
+      nombreCompleto: st.nombreCompleto,
+      days,
+    };
+  });
+}
+
 export const AttendancePage: React.FC = () => {
   const { isMaestro, isDirector, isSuperAdmin } = useAuth();
+
+  // Maestro solo ve sus cursos asignados (Secundaria 1A, 1B, 2A)
+  const isMaestroOnly = isMaestro && !isDirector && !isSuperAdmin;
+  const cursosDisponibles = isMaestroOnly
+    ? CURSOS_CATALOGO.filter((c) => ['SEC_1A', 'SEC_1B', 'SEC_2A'].includes(c.id))
+    : CURSOS_CATALOGO;
+
   const [selectedMonth, setSelectedMonth] = useState<number>(3); // Marzo default
-  const [selectedCourse, setSelectedCourse] = useState<string>('1A-SEC');
-  const [saveSuccess, setSaveSuccess] = useState(false);
+  const [selectedCourse, setSelectedCourse] = useState<string>('SEC_1A');
+  const [saveSuccess, setSaveSuccess] = useState<string | null>(null);
 
-  // Sample students based on Bolivian school roster
-  const [students, setStudents] = useState<StudentAttendance[]>([
-    {
-      id: 'st-1',
-      rude: '807300452026001',
-      nombreCompleto: 'ALANOCA CRUZ ERICK ELIAS',
-      days: { 1: 'PRESENTE', 2: 'PRESENTE', 3: 'PRESENTE', 4: 'ATRASO', 5: 'PRESENTE', 8: 'PRESENTE', 9: 'LICENCIA', 10: 'PRESENTE' },
-    },
-    {
-      id: 'st-2',
-      rude: '807300452026002',
-      nombreCompleto: 'ARAMAYO TOLEDO FABIOLA',
-      days: { 1: 'PRESENTE', 2: 'PRESENTE', 3: 'PRESENTE', 4: 'PRESENTE', 5: 'PRESENTE', 8: 'PRESENTE', 9: 'PRESENTE', 10: 'PRESENTE' },
-    },
-    {
-      id: 'st-3',
-      rude: '807300452026003',
-      nombreCompleto: 'CAMACHO RENJIFO KAROL LUCERO',
-      days: { 1: 'PRESENTE', 2: 'FALTA', 3: 'PRESENTE', 4: 'PRESENTE', 5: 'PRESENTE', 8: 'PRESENTE', 9: 'PRESENTE', 10: 'PRESENTE' },
-    },
-    {
-      id: 'st-4',
-      rude: '807300452026004',
-      nombreCompleto: 'CARDOZO YEVARA CARLIN YARITA',
-      days: { 1: 'PRESENTE', 2: 'PRESENTE', 3: 'PRESENTE', 4: 'PRESENTE', 5: 'ATRASO', 8: 'PRESENTE', 9: 'PRESENTE', 10: 'PRESENTE' },
-    },
-    {
-      id: 'st-5',
-      rude: '807300452026005',
-      nombreCompleto: 'COLQUE COLODRO JHOANNA MAYENNI',
-      days: { 1: 'PRESENTE', 2: 'PRESENTE', 3: 'LICENCIA', 4: 'PRESENTE', 5: 'PRESENTE', 8: 'PRESENTE', 9: 'PRESENTE', 10: 'PRESENTE' },
-    },
-    {
-      id: 'st-6',
-      rude: '807300452026006',
-      nombreCompleto: 'FLORES CALLISAYA GABRIEL OMAR',
-      days: { 1: 'PRESENTE', 2: 'PRESENTE', 3: 'PRESENTE', 4: 'FALTA', 5: 'PRESENTE', 8: 'PRESENTE', 9: 'ATRASO', 10: 'PRESENTE' },
-    },
-    {
-      id: 'st-7',
-      rude: '807300452026007',
-      nombreCompleto: 'QUISPE MAMANI LUCIA BEATRIZ',
-      days: { 1: 'PRESENTE', 2: 'PRESENTE', 3: 'PRESENTE', 4: 'PRESENTE', 5: 'PRESENTE', 8: 'PRESENTE', 9: 'PRESENTE', 10: 'PRESENTE' },
-    },
-  ]);
+  // Almacén persistente en memoria por clave: curso_mes
+  const [attendanceStore, setAttendanceStore] = useState<Record<string, StudentAttendance[]>>({});
+  const [students, setStudents] = useState<StudentAttendance[]>([]);
 
-  // Compute school working days (Mon-Fri) for 2026 and the selected month
+  const currentKey = `${selectedCourse}_${selectedMonth}`;
+
+  // Efecto reactivo al cambiar de curso o mes
+  useEffect(() => {
+    if (attendanceStore[currentKey]) {
+      setStudents(attendanceStore[currentKey]);
+    } else {
+      const generated = generateInitialAttendance(selectedCourse, selectedMonth);
+      setStudents(generated);
+      setAttendanceStore((prev) => ({ ...prev, [currentKey]: generated }));
+    }
+  }, [selectedCourse, selectedMonth]);
+
+  // Días laborables del mes (Lunes a Viernes)
   const workingDays = useMemo(() => {
     const days: Array<{ day: number; weekday: string }> = [];
     const year = 2026;
@@ -98,7 +152,6 @@ export const AttendancePage: React.FC = () => {
     for (let d = 1; d <= daysInMonth; d++) {
       const date = new Date(year, selectedMonth - 1, d);
       const dayOfWeek = date.getDay();
-      // Skip Saturday (6) and Sunday (0)
       if (dayOfWeek !== 0 && dayOfWeek !== 6) {
         days.push({ day: d, weekday: weekdayShort[dayOfWeek] });
       }
@@ -106,7 +159,7 @@ export const AttendancePage: React.FC = () => {
     return days;
   }, [selectedMonth]);
 
-  // Cycle status on cell click: PRESENTE -> ATRASO -> FALTA -> LICENCIA -> PRESENTE
+  // Alternar estado al hacer clic en la casilla
   const toggleAttendance = (studentIndex: number, day: number) => {
     if (!isMaestro && !isSuperAdmin) return;
     const nextStatus: Record<AttendanceStatus, AttendanceStatus> = {
@@ -126,24 +179,34 @@ export const AttendancePage: React.FC = () => {
           [day]: nextStatus[current],
         },
       };
+      setAttendanceStore((store) => ({ ...store, [currentKey]: updated }));
       return updated;
     });
   };
 
-  // Mark all students present for a specific day
+  // Marcar todos presentes hoy
   const markAllPresentToday = () => {
     const today = workingDays[0]?.day || 1;
-    setStudents((prev) =>
-      prev.map((s) => ({
+    setStudents((prev) => {
+      const updated = prev.map((s) => ({
         ...s,
-        days: { ...s.days, [today]: 'PRESENTE' },
-      }))
-    );
-    setSaveSuccess(true);
-    setTimeout(() => setSaveSuccess(false), 2500);
+        days: { ...s.days, [today]: 'PRESENTE' as AttendanceStatus },
+      }));
+      setAttendanceStore((store) => ({ ...store, [currentKey]: updated }));
+      return updated;
+    });
+    setSaveSuccess(`¡Asistencias actualizadas! Todos los estudiantes marcados Presentes para el día ${today}.`);
+    setTimeout(() => setSaveSuccess(null), 3000);
   };
 
-  // Calculate statistics per student
+  // Guardar Planilla
+  const handleSaveAttendance = () => {
+    setAttendanceStore((prev) => ({ ...prev, [currentKey]: students }));
+    setSaveSuccess(`✅ Asistencias del mes guardadas exitosamente para ${cursoActual?.nombre}.`);
+    setTimeout(() => setSaveSuccess(null), 3000);
+  };
+
+  // Calcular estadísticas del estudiante
   const getStats = (days: Record<number, AttendanceStatus>) => {
     let p = 0;
     let f = 0;
@@ -159,31 +222,70 @@ export const AttendancePage: React.FC = () => {
     });
 
     const totalDays = workingDays.length;
-    const percentage = totalDays > 0 ? Math.round(((p + a) / totalDays) * 100) : 100;
-    return { p, f, a, l, totalDays, percentage };
+    const effectivePresent = p + a * 0.5 + l;
+    const percentage = totalDays > 0 ? Math.round((effectivePresent / totalDays) * 100) : 100;
+
+    return { p, f, a, l, percentage };
   };
 
-  const getStatusBadge = (status?: AttendanceStatus) => {
-    switch (status) {
-      case 'PRESENTE':
-        return <span className="text-emerald-700 font-bold">P</span>;
-      case 'ATRASO':
-        return <span className="text-amber-600 font-bold">A</span>;
-      case 'FALTA':
-        return <span className="text-rose-600 font-bold">F</span>;
-      case 'LICENCIA':
-        return <span className="text-blue-600 font-bold">L</span>;
-      default:
-        return <span className="text-slate-300">-</span>;
-    }
-  };
+  const cursoActual = CURSOS_CATALOGO.find((c) => c.id === selectedCourse);
+  const mesActual = MONTHS.find((m) => m.value === selectedMonth);
 
-  const currentMonthLabel = MONTHS.find((m) => m.value === selectedMonth)?.label || 'Mes';
+  // Exportar Asistencia a Excel (.xlsx)
+  const handleExportExcel = () => {
+    const wb = XLSX.utils.book_new();
+
+    const header = [
+      ['ESTADO PLURINACIONAL DE BOLIVIA - MINISTERIO DE EDUCACIÓN'],
+      ['UNIDAD EDUCATIVA FRANZ TAMAYO (SIE: 80730045)'],
+      ['CONTROL MENSUAL DE ASISTENCIA ESCOLAR - GESTIÓN 2026'],
+      [''],
+      ['Curso y Paralelo:', cursoActual?.nombre || selectedCourse],
+      ['Mes Académico:', `${mesActual?.label} 2026`, 'Días Laborables:', workingDays.length],
+      [''],
+      [
+        'N°',
+        'Código RUDE',
+        'Apellidos y Nombres',
+        ...workingDays.map((wd) => `Día ${wd.day}`),
+        'Presentes (P)',
+        'Faltas (F)',
+        'Atrasos (A)',
+        'Licencias (L)',
+        '% Asistencia',
+      ],
+    ];
+
+    students.forEach((s, idx) => {
+      const stats = getStats(s.days);
+      const row = [
+        idx + 1,
+        s.rude,
+        s.nombreCompleto,
+        ...workingDays.map((wd) => {
+          const st = s.days[wd.day] || 'PRESENTE';
+          return st === 'PRESENTE' ? 'P' : st === 'FALTA' ? 'F' : st === 'ATRASO' ? 'A' : 'L';
+        }),
+        stats.p,
+        stats.f,
+        stats.a,
+        stats.l,
+        `${stats.percentage}%`,
+      ];
+      header.push(row);
+    });
+
+    const ws = XLSX.utils.aoa_to_sheet(header);
+    XLSX.utils.book_append_sheet(wb, ws, 'AsistenciaMensual');
+
+    const clean = (cursoActual?.nombre || selectedCourse).replace(/[^a-zA-Z0-9]/g, '_').substring(0, 20);
+    XLSX.writeFile(wb, `Asistencia_${clean}_${mesActual?.label}_2026.xlsx`);
+  };
 
   return (
     <div className="space-y-6">
-      {/* Header and Context */}
-      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 bg-white p-6 rounded-xl border border-slate-200 shadow-sm">
+      {/* Header */}
+      <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 bg-white p-6 rounded-2xl border border-slate-200 shadow-sm">
         <div className="flex items-center space-x-3">
           <div className="p-3 bg-emerald-50 rounded-xl text-emerald-700">
             <CalendarCheck className="w-7 h-7" />
@@ -193,193 +295,217 @@ export const AttendancePage: React.FC = () => {
               Control Mensual de Asistencia Escolar
             </h1>
             <p className="text-xs text-slate-500">
-              Registro continuo conforme al Cuaderno Pedagógico del Maestro (Ley 070)
+              {cursoActual?.nombre} • Unidad Educativa Franz Tamayo (Gestión 2026)
             </p>
           </div>
         </div>
 
-        <div className="flex flex-wrap items-center gap-3">
+        <div className="flex flex-wrap items-center gap-2">
+          {/* Excel Export */}
+          <button
+            onClick={handleExportExcel}
+            className="inline-flex items-center space-x-1.5 px-3 py-2 bg-emerald-50 hover:bg-emerald-100 text-emerald-800 border border-emerald-200 rounded-lg text-xs font-bold transition shadow-sm cursor-pointer"
+          >
+            <FileSpreadsheet className="w-4 h-4 text-emerald-600" />
+            <span>Exportar Excel</span>
+          </button>
+
           <button
             onClick={() => window.print()}
-            className="inline-flex items-center space-x-2 px-3 py-2 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-lg text-xs font-semibold transition"
+            className="inline-flex items-center space-x-1.5 px-3 py-2 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-lg text-xs font-semibold transition cursor-pointer"
           >
             <Printer className="w-4 h-4" />
-            <span>Imprimir Planilla</span>
+            <span>Imprimir</span>
           </button>
+
           {(isMaestro || isSuperAdmin) && (
-            <button
-              onClick={markAllPresentToday}
-              className="inline-flex items-center space-x-2 px-3 py-2 bg-emerald-600 hover:bg-emerald-700 text-white rounded-lg text-xs font-semibold transition shadow-sm"
-            >
-              <CheckCircle2 className="w-4 h-4" />
-              <span>Marcar Todos Presentes</span>
-            </button>
+            <>
+              <button
+                onClick={markAllPresentToday}
+                className="inline-flex items-center space-x-1.5 px-3 py-2 bg-slate-100 hover:bg-slate-200 text-slate-800 rounded-lg text-xs font-semibold transition cursor-pointer"
+              >
+                <CheckCircle2 className="w-4 h-4 text-emerald-600" />
+                <span>Marcar Presentes Hoy</span>
+              </button>
+              <button
+                onClick={handleSaveAttendance}
+                className="inline-flex items-center space-x-1.5 px-4 py-2 bg-emerald-600 hover:bg-emerald-700 text-white rounded-lg text-xs font-bold transition shadow-sm cursor-pointer"
+              >
+                <span>Guardar Asistencias</span>
+              </button>
+            </>
           )}
         </div>
       </div>
 
       {saveSuccess && (
-        <div className="flex items-center space-x-2 p-3 bg-emerald-50 border border-emerald-200 text-emerald-800 rounded-lg text-xs font-medium animate-fadeIn">
-          <CheckCircle2 className="w-4 h-4 text-emerald-600" />
-          <span>¡Asistencias actualizadas y sincronizadas correctamente en la base de datos!</span>
+        <div className="flex items-center space-x-2 p-3.5 bg-emerald-50 border border-emerald-200 text-emerald-800 rounded-xl text-xs font-medium animate-fadeIn">
+          <CheckCircle2 className="w-4 h-4 text-emerald-600 flex-shrink-0" />
+          <span>{saveSuccess}</span>
         </div>
       )}
 
       {/* Selectors and Legend */}
       <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-        {/* Month Selector */}
-        <div className="bg-white p-4 rounded-xl border border-slate-200 shadow-sm space-y-2">
-          <label className="text-xs font-bold text-slate-600 uppercase tracking-wider block">
-            Mes Académico:
-          </label>
-          <div className="flex items-center space-x-2">
-            <select
-              value={selectedMonth}
-              onChange={(e) => setSelectedMonth(Number(e.target.value))}
-              className="w-full bg-slate-50 border border-slate-200 rounded-lg px-3 py-2 text-xs font-medium text-slate-800 focus:outline-none focus:ring-2 focus:ring-emerald-500"
-            >
-              {MONTHS.map((m) => (
-                <option key={m.value} value={m.value}>
-                  {m.label} (Gestión 2026)
-                </option>
-              ))}
-            </select>
-          </div>
-        </div>
-
         {/* Course / Parallel Selector */}
-        <div className="bg-white p-4 rounded-xl border border-slate-200 shadow-sm space-y-2">
-          <label className="text-xs font-bold text-slate-600 uppercase tracking-wider block">
-            Curso y Paralelo:
+        <div className="bg-white p-4 rounded-xl border border-slate-200 shadow-sm space-y-1.5">
+          <label className="text-[11px] font-bold text-slate-600 uppercase tracking-wider block flex items-center space-x-1">
+            <Filter className="w-3.5 h-3.5 text-emerald-600" />
+            <span>Curso y Paralelo:</span>
           </label>
           <select
             value={selectedCourse}
             onChange={(e) => setSelectedCourse(e.target.value)}
-            className="w-full bg-slate-50 border border-slate-200 rounded-lg px-3 py-2 text-xs font-medium text-slate-800 focus:outline-none focus:ring-2 focus:ring-emerald-500"
+            className="w-full bg-slate-50 border border-slate-200 rounded-lg px-3 py-2 text-xs font-bold text-slate-800 focus:outline-none focus:bg-white focus:ring-2 focus:ring-emerald-500"
           >
-            <option value="1A-SEC">1º de Secundaria - Paralelo "A" (Lenguaje y Comunicación)</option>
-            <option value="1B-SEC">1º de Secundaria - Paralelo "B" (Lenguaje y Comunicación)</option>
-            <option value="2A-SEC">2º de Secundaria - Paralelo "A" (Ciencias Sociales)</option>
+            {cursosDisponibles.map((c) => (
+              <option key={c.id} value={c.id}>
+                {c.nombre}
+              </option>
+            ))}
+          </select>
+        </div>
+
+        {/* Month Selector */}
+        <div className="bg-white p-4 rounded-xl border border-slate-200 shadow-sm space-y-1.5">
+          <label className="text-[11px] font-bold text-slate-600 uppercase tracking-wider block">
+            Mes Académico:
+          </label>
+          <select
+            value={selectedMonth}
+            onChange={(e) => setSelectedMonth(Number(e.target.value))}
+            className="w-full bg-slate-50 border border-slate-200 rounded-lg px-3 py-2 text-xs font-bold text-slate-800 focus:outline-none focus:bg-white focus:ring-2 focus:ring-emerald-500"
+          >
+            {MONTHS.map((m) => (
+              <option key={m.value} value={m.value}>
+                {m.label} (Gestión 2026)
+              </option>
+            ))}
           </select>
         </div>
 
         {/* Legend */}
-        <div className="bg-white p-4 rounded-xl border border-slate-200 shadow-sm space-y-2">
-          <label className="text-xs font-bold text-slate-600 uppercase tracking-wider block">
-            Leyenda de Asistencia (SEP):
+        <div className="bg-white p-4 rounded-xl border border-slate-200 shadow-sm space-y-1.5">
+          <label className="text-[11px] font-bold text-slate-600 uppercase tracking-wider block">
+            Leyenda Interactiva (Clic para cambiar):
           </label>
-          <div className="flex items-center justify-between text-xs font-medium pt-1">
+          <div className="flex items-center justify-between text-xs font-bold pt-1">
             <span className="inline-flex items-center space-x-1">
-              <span className="w-5 h-5 rounded bg-emerald-100 text-emerald-700 flex items-center justify-center font-bold">P</span>
-              <span>Presente</span>
+              <span className="w-5 h-5 rounded bg-emerald-100 text-emerald-700 flex items-center justify-center font-black">P</span>
+              <span className="text-[11px] text-slate-600 font-medium">Presente</span>
             </span>
             <span className="inline-flex items-center space-x-1">
-              <span className="w-5 h-5 rounded bg-rose-100 text-rose-700 flex items-center justify-center font-bold">F</span>
-              <span>Falta</span>
+              <span className="w-5 h-5 rounded bg-rose-100 text-rose-700 flex items-center justify-center font-black">F</span>
+              <span className="text-[11px] text-slate-600 font-medium">Falta</span>
             </span>
             <span className="inline-flex items-center space-x-1">
-              <span className="w-5 h-5 rounded bg-amber-100 text-amber-700 flex items-center justify-center font-bold">A</span>
-              <span>Atraso</span>
+              <span className="w-5 h-5 rounded bg-amber-100 text-amber-700 flex items-center justify-center font-black">A</span>
+              <span className="text-[11px] text-slate-600 font-medium">Atraso</span>
             </span>
             <span className="inline-flex items-center space-x-1">
-              <span className="w-5 h-5 rounded bg-blue-100 text-blue-700 flex items-center justify-center font-bold">L</span>
-              <span>Licencia</span>
+              <span className="w-5 h-5 rounded bg-blue-100 text-blue-700 flex items-center justify-center font-black">L</span>
+              <span className="text-[11px] text-slate-600 font-medium">Licencia</span>
             </span>
           </div>
         </div>
       </div>
 
-      {/* Main Attendance Matrix */}
-      <div className="bg-white border border-slate-200 rounded-xl shadow-sm overflow-hidden">
-        <div className="px-6 py-4 border-b border-slate-200 bg-slate-50 flex items-center justify-between">
-          <div>
-            <h2 className="text-sm font-bold text-slate-800 uppercase tracking-wide">
-              Planilla de Asistencia - Mes de {currentMonthLabel} (Gestión 2026)
+      {/* Attendance Matrix Table */}
+      <div className="bg-white rounded-xl border border-slate-200 shadow-sm overflow-hidden">
+        <div className="p-4 border-b border-slate-200 bg-slate-50 flex items-center justify-between">
+          <div className="flex items-center space-x-2">
+            <Users className="w-4 h-4 text-emerald-600" />
+            <h2 className="text-xs font-bold text-slate-800 uppercase tracking-wider">
+              Nómina de Asistencia • {cursoActual?.nombre} ({students.length} Estudiantes)
             </h2>
-            <p className="text-xs text-slate-500">
-              Haga clic sobre cualquier casilla para rotar estado: Presente ➔ Atraso ➔ Falta ➔ Licencia
-            </p>
           </div>
-          <span className="text-xs font-bold bg-emerald-100 text-emerald-800 px-2.5 py-1 rounded-full">
-            {workingDays.length} Días Hábiles
+          <span className="text-xs text-slate-500 font-medium">
+            {mesActual?.label} 2026 • {workingDays.length} días hábiles
           </span>
         </div>
 
         <div className="overflow-x-auto">
-          <table className="w-full text-left border-collapse text-xs">
+          <table className="w-full text-xs text-left border-collapse">
             <thead>
               <tr className="bg-slate-100 border-b border-slate-200 text-slate-700 font-bold">
-                <th className="py-2.5 px-3 sticky left-0 bg-slate-100 z-10 w-8 border-r border-slate-200">Nº</th>
-                <th className="py-2.5 px-3 sticky left-8 bg-slate-100 z-10 min-w-[220px] border-r border-slate-200">
-                  Nombres y Apellidos
-                </th>
+                <th className="py-2.5 px-3 w-8 border-r border-slate-200 text-center">#</th>
+                <th className="py-2.5 px-4 min-w-[200px] border-r border-slate-200">Apellidos y Nombres</th>
                 {workingDays.map((wd) => (
-                  <th key={wd.day} className="py-1 px-1 text-center w-7 border-r border-slate-200">
-                    <div className="text-[10px] text-slate-500">{wd.weekday}</div>
-                    <div className="text-slate-800">{wd.day}</div>
+                  <th
+                    key={wd.day}
+                    className="py-1 px-1 text-center border-r border-slate-200 w-7 min-w-[28px] hover:bg-slate-200 transition"
+                  >
+                    <div className="text-[9px] text-slate-400 font-medium">{wd.weekday}</div>
+                    <div className="text-xs font-bold text-slate-700">{wd.day}</div>
                   </th>
                 ))}
-                {/* Summary columns */}
-                <th className="py-2.5 px-2 text-center bg-emerald-50 text-emerald-800 border-r border-slate-200 w-10">P</th>
-                <th className="py-2.5 px-2 text-center bg-rose-50 text-rose-800 border-r border-slate-200 w-10">F</th>
-                <th className="py-2.5 px-2 text-center bg-amber-50 text-amber-800 border-r border-slate-200 w-10">A</th>
-                <th className="py-2.5 px-2 text-center bg-blue-50 text-blue-800 border-r border-slate-200 w-10">L</th>
-                <th className="py-2.5 px-3 text-center bg-slate-100 font-extrabold text-slate-900 min-w-[65px]">% Asist.</th>
+                <th className="py-2.5 px-2 text-center bg-emerald-50 text-emerald-800 font-bold border-l border-r border-emerald-100 w-10">P</th>
+                <th className="py-2.5 px-2 text-center bg-rose-50 text-rose-800 font-bold border-r border-rose-100 w-10">F</th>
+                <th className="py-2.5 px-2 text-center bg-amber-50 text-amber-800 font-bold border-r border-amber-100 w-10">A</th>
+                <th className="py-2.5 px-2 text-center bg-blue-50 text-blue-800 font-bold border-r border-blue-100 w-10">L</th>
+                <th className="py-2.5 px-3 text-center bg-slate-200 font-black text-slate-800 w-14">%</th>
               </tr>
             </thead>
-            <tbody className="divide-y divide-slate-200">
-              {students.map((student, idx) => {
+            <tbody className="divide-y divide-slate-100">
+              {students.map((student, studentIndex) => {
                 const stats = getStats(student.days);
                 return (
                   <tr key={student.id} className="hover:bg-slate-50 transition">
-                    <td className="py-2 px-3 sticky left-0 bg-white z-10 text-slate-500 border-r border-slate-200 font-mono text-[11px]">
-                      {idx + 1}
+                    <td className="py-2 px-3 text-center font-mono text-slate-400 border-r border-slate-200 text-xs">
+                      {studentIndex + 1}
                     </td>
-                    <td className="py-2 px-3 sticky left-8 bg-white z-10 font-medium text-slate-900 border-r border-slate-200 whitespace-nowrap">
-                      {student.nombreCompleto}
+                    <td className="py-2 px-4 border-r border-slate-200">
+                      <div className="font-semibold text-slate-900">{student.nombreCompleto}</div>
+                      <div className="text-[10px] text-slate-400 font-mono">RUDE: {student.rude}</div>
                     </td>
+
+                    {/* Días del Mes */}
                     {workingDays.map((wd) => {
                       const status = student.days[wd.day] || 'PRESENTE';
+                      let badge = 'bg-emerald-100 text-emerald-700 font-bold';
+                      let letter = 'P';
+                      if (status === 'FALTA') {
+                        badge = 'bg-rose-100 text-rose-700 font-bold';
+                        letter = 'F';
+                      } else if (status === 'ATRASO') {
+                        badge = 'bg-amber-100 text-amber-700 font-bold';
+                        letter = 'A';
+                      } else if (status === 'LICENCIA') {
+                        badge = 'bg-blue-100 text-blue-700 font-bold';
+                        letter = 'L';
+                      }
+
                       return (
                         <td
                           key={wd.day}
-                          onClick={() => toggleAttendance(idx, wd.day)}
-                          className={`py-1 px-1 text-center border-r border-slate-200 cursor-pointer select-none transition ${
-                            status === 'PRESENTE'
-                              ? 'bg-emerald-50/40 hover:bg-emerald-100'
-                              : status === 'FALTA'
-                              ? 'bg-rose-100 font-bold hover:bg-rose-200'
-                              : status === 'ATRASO'
-                              ? 'bg-amber-100 font-bold hover:bg-amber-200'
-                              : 'bg-blue-100 font-bold hover:bg-blue-200'
-                          }`}
+                          onClick={() => toggleAttendance(studentIndex, wd.day)}
+                          className="py-1 px-0.5 text-center border-r border-slate-200 cursor-pointer select-none hover:opacity-75 transition"
+                          title={`Día ${wd.day}: ${status}. Haz clic para cambiar.`}
                         >
-                          {getStatusBadge(status)}
+                          <div className={`w-6 h-6 mx-auto rounded flex items-center justify-center text-[10px] ${badge}`}>
+                            {letter}
+                          </div>
                         </td>
                       );
                     })}
-                    <td className="py-2 px-2 text-center font-bold text-emerald-700 bg-emerald-50/30 border-r border-slate-200">
+
+                    {/* Resumen Total */}
+                    <td className="py-2 px-2 text-center font-bold text-emerald-700 bg-emerald-50/40 border-l border-r border-emerald-100">
                       {stats.p}
                     </td>
-                    <td className="py-2 px-2 text-center font-bold text-rose-700 bg-rose-50/30 border-r border-slate-200">
+                    <td className="py-2 px-2 text-center font-bold text-rose-700 bg-rose-50/40 border-r border-rose-100">
                       {stats.f}
                     </td>
-                    <td className="py-2 px-2 text-center font-bold text-amber-700 bg-amber-50/30 border-r border-slate-200">
+                    <td className="py-2 px-2 text-center font-bold text-amber-700 bg-amber-50/40 border-r border-amber-100">
                       {stats.a}
                     </td>
-                    <td className="py-2 px-2 text-center font-bold text-blue-700 bg-blue-50/30 border-r border-slate-200">
+                    <td className="py-2 px-2 text-center font-bold text-blue-700 bg-blue-50/40 border-r border-blue-100">
                       {stats.l}
                     </td>
-                    <td
-                      className={`py-2 px-3 text-center font-extrabold ${
-                        stats.percentage >= 85
-                          ? 'text-emerald-700'
-                          : stats.percentage >= 70
-                          ? 'text-amber-700'
-                          : 'text-rose-700'
-                      }`}
-                    >
-                      {stats.percentage}%
+                    <td className="py-2 px-3 text-center font-black bg-slate-100 text-slate-800">
+                      <span className={stats.percentage >= 80 ? 'text-emerald-700' : 'text-rose-600'}>
+                        {stats.percentage}%
+                      </span>
                     </td>
                   </tr>
                 );

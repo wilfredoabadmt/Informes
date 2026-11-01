@@ -130,10 +130,20 @@ function generateInitialRows(cursoId: string, subjectId: string, trim: string): 
 export const GradesPage: React.FC = () => {
   const { isMaestro, isDirector, isSuperAdmin } = useAuth();
 
+  // Rol Maestro: Solo ve los cursos y materias que tiene asignados en su carga horaria
+  const isMaestroOnly = isMaestro && !isDirector && !isSuperAdmin;
+  const cursosVisibles = isMaestroOnly
+    ? CURSOS_DISPONIBLES.filter((c) => ['SEC_1A', 'SEC_1B', 'SEC_2A'].includes(c.id))
+    : CURSOS_DISPONIBLES;
+
+  const asignaturasVisibles = isMaestroOnly
+    ? ASIGNATURAS_DISPONIBLES.filter((a) => ['LEN', 'MAT'].includes(a.id))
+    : ASIGNATURAS_DISPONIBLES;
+
   // Selectores de Navegación Dinámica
   const [selectedCurso, setSelectedCurso] = useState('SEC_1A');
-  const [selectedAsignatura, setSelectedAsignatura] = useState('GUA');
-  const [selectedTrimestre, setSelectedTrimestre] = useState('3');
+  const [selectedAsignatura, setSelectedAsignatura] = useState(isMaestroOnly ? 'LEN' : 'MAT');
+  const [selectedTrimestre, setSelectedTrimestre] = useState('1');
   const [viewMode, setViewMode] = useState<'summary' | 'detailed'>('summary');
 
   // Almacén reactivo de planillas por llave: curso_materia_trimestre
@@ -361,7 +371,7 @@ export const GradesPage: React.FC = () => {
             onChange={(e) => setSelectedCurso(e.target.value)}
             className="w-full text-xs p-2.5 bg-slate-50 border border-slate-200 rounded-lg font-bold text-slate-800 focus:bg-white focus:border-emerald-500 focus:outline-none transition"
           >
-            {CURSOS_DISPONIBLES.map((c) => (
+            {cursosVisibles.map((c) => (
               <option key={c.id} value={c.id}>
                 {c.nombre}
               </option>
@@ -379,7 +389,7 @@ export const GradesPage: React.FC = () => {
             onChange={(e) => setSelectedAsignatura(e.target.value)}
             className="w-full text-xs p-2.5 bg-slate-50 border border-slate-200 rounded-lg font-bold text-slate-800 focus:bg-white focus:border-emerald-500 focus:outline-none transition"
           >
-            {ASIGNATURAS_DISPONIBLES.map((a) => (
+            {asignaturasVisibles.map((a) => (
               <option key={a.id} value={a.id}>
                 {a.nombre}
               </option>

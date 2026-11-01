@@ -44,6 +44,7 @@ export const StudentsPage: React.FC = () => {
   const [filterEstado, setFilterEstado] = useState('ALL');
 
   const [students, setStudents] = useState<StudentItem[]>([
+    // 1° de Secundaria - Paralelo A
     {
       id: '1',
       rude: '807300452026001',
@@ -92,6 +93,36 @@ export const StudentsPage: React.FC = () => {
     {
       id: '4',
       rude: '807300452026004',
+      ci: '10847291',
+      nombres: 'Carlin Yarita',
+      primerApellido: 'Cardozo',
+      segundoApellido: 'Yevara',
+      fechaNacimiento: '2012-04-05',
+      genero: 'F',
+      curso: '1° de Secundaria - Paralelo A',
+      nombreTutor: 'Elena Yevara',
+      parentescoTutor: 'Madre',
+      telefonoTutor: '71928301',
+      estado: 'EFECTIVO',
+    },
+    {
+      id: '5',
+      rude: '807300452026005',
+      ci: '12948172',
+      nombres: 'Jhoanna Mayenni',
+      primerApellido: 'Colque',
+      segundoApellido: 'Colodro',
+      fechaNacimiento: '2012-08-18',
+      genero: 'F',
+      curso: '1° de Secundaria - Paralelo A',
+      nombreTutor: 'Ramiro Colque',
+      parentescoTutor: 'Padre',
+      telefonoTutor: '67019284',
+      estado: 'EFECTIVO',
+    },
+    {
+      id: '6',
+      rude: '807300452026006',
       ci: '9847261',
       nombres: 'Gabriel Omar',
       primerApellido: 'Flores',
@@ -104,19 +135,252 @@ export const StudentsPage: React.FC = () => {
       telefonoTutor: '73091824',
       estado: 'EFECTIVO',
     },
+
+    // 1° de Secundaria - Paralelo B
     {
-      id: '5',
-      rude: '807300452026005',
+      id: '7',
+      rude: '807300452026007',
       ci: '13948271',
-      nombres: 'Lucia Beatriz',
-      primerApellido: 'Quispe',
-      segundoApellido: 'Mamani',
-      fechaNacimiento: '2012-07-19',
+      nombres: 'Mateo Daniel',
+      primerApellido: 'Arce',
+      segundoApellido: 'Condori',
+      fechaNacimiento: '2012-06-15',
+      genero: 'M',
+      curso: '1° de Secundaria - Paralelo B',
+      nombreTutor: 'Daniel Arce',
+      parentescoTutor: 'Padre',
+      telefonoTutor: '71548123',
+      estado: 'EFECTIVO',
+    },
+    {
+      id: '8',
+      rude: '807300452026008',
+      ci: '12049182',
+      nombres: 'Sofia Belen',
+      primerApellido: 'Gutierrez',
+      segundoApellido: 'Rojas',
+      fechaNacimiento: '2012-03-20',
       genero: 'F',
       curso: '1° de Secundaria - Paralelo B',
-      nombreTutor: 'Rosa Mamani Condori',
+      nombreTutor: 'Belen Rojas',
       parentescoTutor: 'Madre',
-      telefonoTutor: '78492019',
+      telefonoTutor: '68923456',
+      estado: 'EFECTIVO',
+    },
+    {
+      id: '9',
+      rude: '807300452026009',
+      ci: '14920184',
+      nombres: 'Lucia Valentina',
+      primerApellido: 'Mamani',
+      segundoApellido: 'Quispe',
+      fechaNacimiento: '2012-01-19',
+      genero: 'F',
+      curso: '1° de Secundaria - Paralelo B',
+      nombreTutor: 'Juan Mamani',
+      parentescoTutor: 'Padre',
+      telefonoTutor: '72034111',
+      estado: 'EFECTIVO',
+    },
+    {
+      id: '10',
+      rude: '807300452026010',
+      ci: '11049283',
+      nombres: 'Nicole Andrea',
+      primerApellido: 'Torrez',
+      segundoApellido: 'Mendoza',
+      fechaNacimiento: '2012-10-12',
+      genero: 'F',
+      curso: '1° de Secundaria - Paralelo B',
+      nombreTutor: 'Andrea Mendoza',
+      parentescoTutor: 'Madre',
+      telefonoTutor: '71928222',
+      estado: 'EFECTIVO',
+    },
+    {
+      id: '11',
+      rude: '807300452026011',
+      ci: '10948271',
+      nombres: 'Alejandro Jose',
+      primerApellido: 'Vargas',
+      segundoApellido: 'Paz',
+      fechaNacimiento: '2012-08-30',
+      genero: 'M',
+      curso: '1° de Secundaria - Paralelo B',
+      nombreTutor: 'Jose Vargas',
+      parentescoTutor: 'Padre',
+      telefonoTutor: '67019333',
+      estado: 'EFECTIVO',
+    },
+    {
+      id: '12',
+      rude: '807300452026012',
+      ci: '12948194',
+      nombres: 'Bruno Jhoel',
+      primerApellido: 'Choque',
+      segundoApellido: 'Huanca',
+      fechaNacimiento: '2012-10-24',
+      genero: 'M',
+      curso: '1° de Secundaria - Paralelo B',
+      nombreTutor: 'Rosa Huanca',
+      parentescoTutor: 'Madre',
+      telefonoTutor: '71829444',
+      estado: 'EFECTIVO',
+    },
+
+    // 2° de Secundaria - Paralelo A
+    {
+      id: '13',
+      rude: '807300452026013',
+      ci: '11928471',
+      nombres: 'Diego Armando',
+      primerApellido: 'Salazar',
+      segundoApellido: 'Ramos',
+      fechaNacimiento: '2011-07-08',
+      genero: 'M',
+      curso: '2° de Secundaria - Paralelo A',
+      nombreTutor: 'Armando Salazar',
+      parentescoTutor: 'Padre',
+      telefonoTutor: '71548555',
+      estado: 'EFECTIVO',
+    },
+    {
+      id: '14',
+      rude: '807300452026014',
+      ci: '10948172',
+      nombres: 'Camila Renata',
+      primerApellido: 'Pinto',
+      segundoApellido: 'Morales',
+      fechaNacimiento: '2011-09-14',
+      genero: 'F',
+      curso: '2° de Secundaria - Paralelo A',
+      nombreTutor: 'Renata Morales',
+      parentescoTutor: 'Madre',
+      telefonoTutor: '68923666',
+      estado: 'EFECTIVO',
+    },
+    {
+      id: '15',
+      rude: '807300452026015',
+      ci: '12847192',
+      nombres: 'Rodrigo Martin',
+      primerApellido: 'Fernandez',
+      segundoApellido: 'Luna',
+      fechaNacimiento: '2011-12-05',
+      genero: 'M',
+      curso: '2° de Secundaria - Paralelo A',
+      nombreTutor: 'Martin Fernandez',
+      parentescoTutor: 'Padre',
+      telefonoTutor: '72034777',
+      estado: 'EFECTIVO',
+    },
+    {
+      id: '16',
+      rude: '807300452026016',
+      ci: '13948102',
+      nombres: 'Valeria Paola',
+      primerApellido: 'Castro',
+      segundoApellido: 'Guzman',
+      fechaNacimiento: '2011-04-18',
+      genero: 'F',
+      curso: '2° de Secundaria - Paralelo A',
+      nombreTutor: 'Paola Guzman',
+      parentescoTutor: 'Madre',
+      telefonoTutor: '71928888',
+      estado: 'EFECTIVO',
+    },
+    {
+      id: '17',
+      rude: '807300452026017',
+      ci: '14829104',
+      nombres: 'Sebastian Andres',
+      primerApellido: 'Ortiz',
+      segundoApellido: 'Perez',
+      fechaNacimiento: '2011-12-12',
+      genero: 'M',
+      curso: '2° de Secundaria - Paralelo A',
+      nombreTutor: 'Andres Ortiz',
+      parentescoTutor: 'Padre',
+      telefonoTutor: '67019999',
+      estado: 'EFECTIVO',
+    },
+
+    // 1° de Primaria - Paralelo A
+    {
+      id: '18',
+      rude: '807300452026018',
+      ci: '15928471',
+      nombres: 'Thiago Gael',
+      primerApellido: 'Mamani',
+      segundoApellido: 'Lopez',
+      fechaNacimiento: '2017-03-12',
+      genero: 'M',
+      curso: '1° de Primaria - Paralelo A',
+      nombreTutor: 'Gael Mamani',
+      parentescoTutor: 'Padre',
+      telefonoTutor: '71548100',
+      estado: 'EFECTIVO',
+    },
+    {
+      id: '19',
+      rude: '807300452026019',
+      ci: '16948172',
+      nombres: 'Valentina Paz',
+      primerApellido: 'Rios',
+      segundoApellido: 'Condori',
+      fechaNacimiento: '2017-05-24',
+      genero: 'F',
+      curso: '1° de Primaria - Paralelo A',
+      nombreTutor: 'Paz Rios',
+      parentescoTutor: 'Madre',
+      telefonoTutor: '68923200',
+      estado: 'EFECTIVO',
+    },
+    {
+      id: '20',
+      rude: '807300452026020',
+      ci: '15847192',
+      nombres: 'Liam Samuel',
+      primerApellido: 'Cruz',
+      segundoApellido: 'Quispe',
+      fechaNacimiento: '2017-08-16',
+      genero: 'M',
+      curso: '1° de Primaria - Paralelo A',
+      nombreTutor: 'Samuel Cruz',
+      parentescoTutor: 'Padre',
+      telefonoTutor: '72034300',
+      estado: 'EFECTIVO',
+    },
+
+    // 2° de Primaria - Paralelo A
+    {
+      id: '21',
+      rude: '807300452026023',
+      ci: '15928473',
+      nombres: 'Gael Facundo',
+      primerApellido: 'Sanchez',
+      segundoApellido: 'Nina',
+      fechaNacimiento: '2016-02-14',
+      genero: 'M',
+      curso: '2° de Primaria - Paralelo A',
+      nombreTutor: 'Facundo Sanchez',
+      parentescoTutor: 'Padre',
+      telefonoTutor: '71548600',
+      estado: 'EFECTIVO',
+    },
+    {
+      id: '22',
+      rude: '807300452026024',
+      ci: '16948174',
+      nombres: 'Emma Victoria',
+      primerApellido: 'Gutierrez',
+      segundoApellido: 'Luna',
+      fechaNacimiento: '2016-11-20',
+      genero: 'F',
+      curso: '2° de Primaria - Paralelo A',
+      nombreTutor: 'Victoria Luna',
+      parentescoTutor: 'Madre',
+      telefonoTutor: '68923700',
       estado: 'EFECTIVO',
     },
   ]);
@@ -339,11 +603,18 @@ export const StudentsPage: React.FC = () => {
           <select
             value={filterCurso}
             onChange={(e) => setFilterCurso(e.target.value)}
-            className="w-full text-xs p-2 bg-slate-50 border border-slate-200 rounded-lg font-medium text-slate-800"
+            className="w-full text-xs p-2.5 bg-slate-50 border border-slate-200 rounded-lg font-bold text-slate-800"
           >
-            <option value="ALL">Todos los Cursos</option>
-            <option value="1° de Secundaria">1° de Secundaria</option>
-            <option value="2° de Secundaria">2° de Secundaria</option>
+            <option value="ALL">Todos los Cursos ({students.length})</option>
+            <option value="1° de Secundaria - Paralelo A">1° de Secundaria - Paralelo A</option>
+            <option value="1° de Secundaria - Paralelo B">1° de Secundaria - Paralelo B</option>
+            <option value="2° de Secundaria - Paralelo A">2° de Secundaria - Paralelo A</option>
+            {!isMaestro && (
+              <>
+                <option value="1° de Primaria - Paralelo A">1° de Primaria - Paralelo A</option>
+                <option value="2° de Primaria - Paralelo A">2° de Primaria - Paralelo A</option>
+              </>
+            )}
           </select>
         </div>
 
@@ -351,7 +622,7 @@ export const StudentsPage: React.FC = () => {
           <select
             value={filterEstado}
             onChange={(e) => setFilterEstado(e.target.value)}
-            className="w-full text-xs p-2 bg-slate-50 border border-slate-200 rounded-lg font-medium text-slate-800"
+            className="w-full text-xs p-2.5 bg-slate-50 border border-slate-200 rounded-lg font-bold text-slate-800"
           >
             <option value="ALL">Todos los Estados</option>
             <option value="EFECTIVO">Efectivo (Activo)</option>
@@ -361,13 +632,81 @@ export const StudentsPage: React.FC = () => {
         </div>
       </div>
 
+      {/* Course Summary Pills */}
+      <div className="flex flex-wrap items-center gap-2">
+        <button
+          onClick={() => setFilterCurso('ALL')}
+          className={`px-3 py-1.5 rounded-xl text-xs font-bold transition cursor-pointer ${
+            filterCurso === 'ALL'
+              ? 'bg-slate-900 text-white shadow-sm'
+              : 'bg-white text-slate-600 hover:bg-slate-100 border border-slate-200'
+          }`}
+        >
+          Todos ({students.length})
+        </button>
+        <button
+          onClick={() => setFilterCurso('1° de Secundaria - Paralelo A')}
+          className={`px-3 py-1.5 rounded-xl text-xs font-bold transition cursor-pointer ${
+            filterCurso === '1° de Secundaria - Paralelo A'
+              ? 'bg-emerald-600 text-white shadow-sm'
+              : 'bg-white text-slate-600 hover:bg-slate-100 border border-slate-200'
+          }`}
+        >
+          1° Sec "A" ({students.filter((s) => s.curso.includes('1° de Secundaria - Paralelo A')).length})
+        </button>
+        <button
+          onClick={() => setFilterCurso('1° de Secundaria - Paralelo B')}
+          className={`px-3 py-1.5 rounded-xl text-xs font-bold transition cursor-pointer ${
+            filterCurso === '1° de Secundaria - Paralelo B'
+              ? 'bg-emerald-600 text-white shadow-sm'
+              : 'bg-white text-slate-600 hover:bg-slate-100 border border-slate-200'
+          }`}
+        >
+          1° Sec "B" ({students.filter((s) => s.curso.includes('1° de Secundaria - Paralelo B')).length})
+        </button>
+        <button
+          onClick={() => setFilterCurso('2° de Secundaria - Paralelo A')}
+          className={`px-3 py-1.5 rounded-xl text-xs font-bold transition cursor-pointer ${
+            filterCurso === '2° de Secundaria - Paralelo A'
+              ? 'bg-emerald-600 text-white shadow-sm'
+              : 'bg-white text-slate-600 hover:bg-slate-100 border border-slate-200'
+          }`}
+        >
+          2° Sec "A" ({students.filter((s) => s.curso.includes('2° de Secundaria - Paralelo A')).length})
+        </button>
+        {!isMaestro && (
+          <>
+            <button
+              onClick={() => setFilterCurso('1° de Primaria - Paralelo A')}
+              className={`px-3 py-1.5 rounded-xl text-xs font-bold transition cursor-pointer ${
+                filterCurso === '1° de Primaria - Paralelo A'
+                  ? 'bg-emerald-600 text-white shadow-sm'
+                  : 'bg-white text-slate-600 hover:bg-slate-100 border border-slate-200'
+              }`}
+            >
+              1° Prim "A" ({students.filter((s) => s.curso.includes('1° de Primaria - Paralelo A')).length})
+            </button>
+            <button
+              onClick={() => setFilterCurso('2° de Primaria - Paralelo A')}
+              className={`px-3 py-1.5 rounded-xl text-xs font-bold transition cursor-pointer ${
+                filterCurso === '2° de Primaria - Paralelo A'
+                  ? 'bg-emerald-600 text-white shadow-sm'
+                  : 'bg-white text-slate-600 hover:bg-slate-100 border border-slate-200'
+              }`}
+            >
+              2° Prim "A" ({students.filter((s) => s.curso.includes('2° de Primaria - Paralelo A')).length})
+            </button>
+          </>
+        )}
+      </div>
+
       {/* Students Data Table */}
       <div className="bg-white rounded-xl border border-slate-200 shadow-sm overflow-hidden">
         <div className="px-6 py-4 border-b border-slate-200 bg-slate-50 flex items-center justify-between">
           <h2 className="text-sm font-bold text-slate-800 uppercase tracking-wide">
             Nómina Oficial de Estudiantes ({filtered.length} Registros)
           </h2>
-          <span className="text-xs text-slate-500">Unidad Educativa Emborozú (Gestión 2026)</span>
+          <span className="text-xs text-slate-500 font-medium">Unidad Educativa Franz Tamayo (SIE 80730045) • Gestión 2026</span>
         </div>
 
         <div className="overflow-x-auto">

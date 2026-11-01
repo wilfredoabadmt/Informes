@@ -473,18 +473,21 @@ export function exportCentralizerToExcel(
 }
 
 /**
- * Exporta el Boletín Trimestral de un Estudiante en PDF
+ * MODELO 1: BOLETÍN TRIMESTRAL INDIVIDUAL DE CALIFICACIONES (SEP - BOLIVIA)
+ * Es el informe parcial de UN SOLO TRIMESTRE con desglose detallado en las 4 dimensiones (SER, SABER, HACER, DECIDIR),
+ * autoevaluación, puntos extras y valoración cualitativa de ese trimestre.
  */
 export function exportBulletinPdf(
   estudiante: string,
   rude: string,
   curso: string,
   trimestre: string,
-  materias: { nombre: string; ser: number; saber: number; hacer: number; decidir: number; total: number; obs: string }[]
+  materias: { nombre: string; ser: number; saber: number; hacer: number; decidir: number; auto: number; extras: number; total: number }[],
+  valoracionCualitativa?: string
 ) {
   const doc = new jsPDF({ orientation: 'portrait', unit: 'pt', format: 'letter' });
 
-  // Tricolor
+  // Tricolor Boliviano
   doc.setFillColor(213, 43, 30);
   doc.rect(40, 25, 170, 4, 'F');
   doc.setFillColor(252, 209, 22);
@@ -493,21 +496,26 @@ export function exportBulletinPdf(
   doc.rect(380, 25, 180, 4, 'F');
 
   doc.setFont('helvetica', 'bold');
-  doc.setFontSize(13);
+  doc.setFontSize(14);
   doc.setTextColor(24, 30, 40);
-  doc.text('BOLETÍN TRIMESTRAL DE CALIFICACIONES (SEP - BOLIVIA)', 40, 50);
+  doc.text('BOLETÍN TRIMESTRAL DE CALIFICACIONES', 40, 50);
 
   doc.setFontSize(9);
   doc.setFont('helvetica', 'normal');
   doc.setTextColor(80, 90, 100);
-  doc.text(`Unidad Educativa Franz Tamayo (SIE 80730045) • Gestión 2026`, 40, 65);
+  doc.text('SUBSISTEMA DE EDUCACIÓN REGULAR • VALORACIÓN CUALICUANTITATIVA POR DIMENSIONES (LEY 070)', 40, 64);
+  doc.text('UNIDAD EDUCATIVA FRANZ TAMAYO (SIE: 80730045) • DISTRITO LA PAZ 1 • GESTIÓN 2026', 40, 76);
 
+  // Ficha del Estudiante
+  doc.setFillColor(241, 245, 249);
+  doc.roundedRect(40, 88, 520, 44, 4, 4, 'F');
   doc.setFont('helvetica', 'bold');
+  doc.setFontSize(9);
   doc.setTextColor(30, 41, 59);
-  doc.text(`Estudiante: ${estudiante}`, 40, 85);
-  doc.text(`Código RUDE: ${rude}`, 40, 98);
-  doc.text(`Curso: ${curso}`, 350, 85);
-  doc.text(`Periodo: ${trimestre}`, 350, 98);
+  doc.text(`Estudiante: ${estudiante}`, 50, 104);
+  doc.text(`Código RUDE: ${rude}`, 50, 120);
+  doc.text(`Curso y Paralelo: ${curso}`, 320, 104);
+  doc.text(`Periodo Evaluado: ${trimestre}`, 320, 120);
 
   const tableBody = materias.map((m, idx) => [
     idx + 1,
@@ -516,20 +524,26 @@ export function exportBulletinPdf(
     m.saber,
     m.hacer,
     m.decidir,
+    m.auto || 10,
+    m.extras || 0,
     m.total,
     m.total >= 51 ? 'APROBADO' : 'RETENIDO',
   ]);
 
+  const promTrim = (materias.reduce((acc, m) => acc + m.total, 0) / materias.length).toFixed(1);
+
   autoTable(doc, {
-    startY: 110,
+    startY: 142,
     head: [[
       '#',
-      'Área Curricular / Materia',
+      'Área Curricular / Asignatura',
       'SER\n(10)',
       'SABER\n(35)',
       'HACER\n(35)',
       'DECIDIR\n(10)',
-      'NOTA\n(100)',
+      'AUTO\n(10)',
+      'EXTRAS\n(Bonif.)',
+      'TOTAL\n(100)',
       'ESTADO',
     ]],
     body: tableBody,
@@ -538,44 +552,271 @@ export function exportBulletinPdf(
       fillColor: [16, 120, 75],
       textColor: [255, 255, 255],
       halign: 'center',
+      fontStyle: 'bold',
       fontSize: 8,
     },
     bodyStyles: {
       fontSize: 8,
     },
     columnStyles: {
-      0: { halign: 'center', cellWidth: 25 },
-      1: { halign: 'left', cellWidth: 180 },
-      2: { halign: 'center', cellWidth: 40 },
-      3: { halign: 'center', cellWidth: 45 },
-      4: { halign: 'center', cellWidth: 45 },
-      5: { halign: 'center', cellWidth: 45 },
-      6: { halign: 'center', cellWidth: 50, fontStyle: 'bold' },
-      7: { halign: 'center', cellWidth: 70 },
+      0: { halign: 'center', cellWidth: 20 },
+      1: { halign: 'left', cellWidth: 160 },
+      2: { halign: 'center', cellWidth: 35 },
+      3: { halign: 'center', cellWidth: 40 },
+      4: { halign: 'center', cellWidth: 40 },
+      5: { halign: 'center', cellWidth: 40 },
+      6: { halign: 'center', cellWidth: 40 },
+      7: { halign: 'center', cellWidth: 45 },
+      8: { halign: 'center', cellWidth: 45, fontStyle: 'bold' },
+      9: { halign: 'center', cellWidth: 55 },
     },
   });
 
-  const finalY = (doc as any).lastAutoTable ? (doc as any).lastAutoTable.finalY + 40 : 450;
+  const finalY = (doc as any).lastAutoTable ? (doc as any).lastAutoTable.finalY + 15 : 430;
+
+  // Promedio Trimestral
+  doc.setFont('helvetica', 'bold');
+  doc.setFontSize(10);
+  doc.setTextColor(30, 41, 59);
+  doc.text(`PROMEDIO GENERAL DEL ${trimestre.toUpperCase()}: ${promTrim} / 100`, 40, finalY);
+
+  // Recuadro de Valoración Cualitativa del Trimestre (Requerimiento Ley 070)
+  const cualitativoY = finalY + 15;
+  doc.setFillColor(254, 252, 232); // Fondo cálido amber
+  doc.setDrawColor(251, 191, 36);
+  doc.roundedRect(40, cualitativoY, 520, 55, 4, 4, 'FD');
+
+  doc.setFont('helvetica', 'bold');
+  doc.setFontSize(8.5);
+  doc.setTextColor(146, 64, 14);
+  doc.text('INFORME DE EVALUACIÓN DEL DESARROLLO CUALITATIVO DEL TRIMESTRE:', 50, cualitativoY + 16);
+
+  doc.setFont('helvetica', 'normal');
+  doc.setFontSize(8);
+  doc.setTextColor(68, 64, 60);
+  const textoCualitativo =
+    valoracionCualitativa ||
+    `El/la estudiante demuestra compromiso en las actividades comunitarias, manifestando respeto y puntualidad en el aula (SER). Asimila con claridad los contenidos conceptuales y matemáticos (SABER), aplicando habilidades prácticas en la resolución de problemas (HACER). Participa activamente en la toma de decisiones grupales (DECIDIR).`;
+  doc.text(doc.splitTextToSize(textoCualitativo, 500), 50, cualitativoY + 30);
+
+  // Firmas
+  const firmasY = cualitativoY + 105;
   doc.setFontSize(8);
   doc.setTextColor(100, 110, 120);
-  doc.line(80, finalY + 40, 220, finalY + 40);
-  doc.text('Profesor(a) Asesor', 110, finalY + 52);
+  doc.line(80, firmasY, 230, firmasY);
+  doc.text('Profesor(a) Asesor(a) de Curso', 95, firmasY + 12);
 
-  doc.line(360, finalY + 40, 500, finalY + 40);
-  doc.text('Dirección Institucional', 390, finalY + 52);
+  doc.line(350, firmasY, 500, firmasY);
+  doc.text('Dirección de la Unidad Educativa', 365, firmasY + 12);
 
   const clean = estudiante.replace(/[^a-zA-Z0-9]/g, '_').substring(0, 20);
   doc.save(`Boletin_Trimestral_${clean}.pdf`);
 }
 
 /**
- * Exporta la Libreta Escolar Anual Oficial en PDF
+ * MODELO 2: LIBRETA ESCOLAR ELECTRÓNICA OFICIAL DE FIN DE GESTIÓN (MINISTERIO DE EDUCACIÓN - BOLIVIA)
+ * Es el documento legal anual oficial que agrupa las materias por CAMPOS DE SABERES, mostrando los 3 trimestres,
+ * el promedio anual acumulado, el informe cualitativo de fin de año, el ESTADO DE PROMOCIÓN ("PROMOVIDO AL SIGUIENTE AÑO")
+ * y el código QR de validación en el SIE.
  */
 export function exportSchoolReportCardPdf(
   estudiante: string,
   rude: string,
+  ci: string,
   curso: string,
-  materias: { nombre: string; t1: number; t2: number; t3: number; final: number; estado: string }[]
+  materiasOrganizadas: {
+    campo: string;
+    areas: { nombre: string; t1: number; t2: number; t3: number; final: number; estado: string }[];
+  }[],
+  promedioAnualGeneral: number,
+  estadoPromocion: 'PROMOVIDO(A) AL SIGUIENTE AÑO DE ESCOLARIDAD' | 'RETENIDO(A) EN EL AÑO DE ESCOLARIDAD'
+) {
+  const doc = new jsPDF({ orientation: 'portrait', unit: 'pt', format: 'letter' });
+
+  // Tricolor Boliviano Superior
+  doc.setFillColor(213, 43, 30);
+  doc.rect(40, 20, 170, 4, 'F');
+  doc.setFillColor(252, 209, 22);
+  doc.rect(210, 20, 170, 4, 'F');
+  doc.setFillColor(0, 121, 52);
+  doc.rect(380, 20, 180, 4, 'F');
+
+  // Encabezado Nacional Oficial
+  doc.setFont('helvetica', 'bold');
+  doc.setFontSize(12);
+  doc.setTextColor(24, 30, 40);
+  doc.text('ESTADO PLURINACIONAL DE BOLIVIA • MINISTERIO DE EDUCACIÓN', 40, 42);
+
+  doc.setFontSize(9);
+  doc.setFont('helvetica', 'normal');
+  doc.setTextColor(80, 90, 100);
+  doc.text('VICEMINISTERIO DE EDUCACIÓN REGULAR • SISTEMA DE INFORMACIÓN EDUCATIVA (SIE)', 40, 55);
+
+  doc.setFont('helvetica', 'bold');
+  doc.setFontSize(13);
+  doc.setTextColor(16, 120, 75);
+  doc.text('LIBRETA ESCOLAR ELECTRÓNICA - GESTIÓN ESCOLAR 2026', 40, 72);
+
+  // Recuadro Institucional y de Filiación
+  doc.setFillColor(248, 250, 252);
+  doc.setDrawColor(203, 213, 225);
+  doc.roundedRect(40, 82, 520, 52, 4, 4, 'FD');
+
+  doc.setFont('helvetica', 'bold');
+  doc.setFontSize(8.5);
+  doc.setTextColor(30, 41, 59);
+  doc.text(`ESTUDIANTE: ${estudiante}`, 50, 98);
+  doc.text(`CÓDIGO RUDE: ${rude}  |  C.I.: ${ci}`, 50, 112);
+  doc.text(`AÑO DE ESCOLARIDAD: ${curso}`, 50, 126);
+
+  doc.text(`UNIDAD EDUCATIVA: FRANZ TAMAYO`, 310, 98);
+  doc.text(`CÓDIGO SIE: 80730045  |  DISTRITO: LA PAZ 1`, 310, 112);
+  doc.text(`DEPARTAMENTO: LA PAZ  |  GESTIÓN: 2026`, 310, 126);
+
+  // Construcción de la tabla jerárquica con Campos de Saberes
+  const tableBody: any[][] = [];
+
+  materiasOrganizadas.forEach((grupo) => {
+    // Fila divisoria de Campo de Saberes
+    tableBody.push([
+      {
+        content: `CAMPO: ${grupo.campo.toUpperCase()}`,
+        colSpan: 6,
+        styles: { fillColor: [241, 245, 249], fontStyle: 'bold', textColor: [15, 23, 42], fontSize: 8 },
+      },
+    ]);
+
+    grupo.areas.forEach((area, idx) => {
+      tableBody.push([
+        idx + 1,
+        area.nombre,
+        area.t1,
+        area.t2,
+        area.t3,
+        area.final,
+      ]);
+    });
+  });
+
+  autoTable(doc, {
+    startY: 142,
+    head: [[
+      '#',
+      'Campos de Saberes y Áreas Curriculares',
+      '1er Trim.\n(100)',
+      '2do Trim.\n(100)',
+      '3er Trim.\n(100)',
+      'PROMEDIO\nFINAL',
+    ]],
+    body: tableBody,
+    theme: 'grid',
+    headStyles: {
+      fillColor: [30, 41, 59],
+      textColor: [255, 255, 255],
+      halign: 'center',
+      fontStyle: 'bold',
+      fontSize: 8,
+    },
+    bodyStyles: {
+      fontSize: 8,
+      textColor: [30, 41, 59],
+    },
+    columnStyles: {
+      0: { halign: 'center', cellWidth: 25 },
+      1: { halign: 'left', cellWidth: 265 },
+      2: { halign: 'center', cellWidth: 55 },
+      3: { halign: 'center', cellWidth: 55 },
+      4: { halign: 'center', cellWidth: 55 },
+      5: { halign: 'center', cellWidth: 65, fontStyle: 'bold' },
+    },
+    didParseCell: (data) => {
+      if (data.section === 'body' && data.column.index === 5 && typeof data.cell.raw === 'number') {
+        const val = Number(data.cell.raw);
+        if (val >= 51) {
+          data.cell.styles.textColor = [16, 120, 75];
+        } else {
+          data.cell.styles.textColor = [185, 28, 28];
+        }
+      }
+    },
+  });
+
+  const finalY = (doc as any).lastAutoTable ? (doc as any).lastAutoTable.finalY + 12 : 460;
+
+  // Recuadro de Estado de Promoción Oficial
+  doc.setFillColor(estadoPromocion.includes('PROMOVIDO') ? 236 : 254, estadoPromocion.includes('PROMOVIDO') ? 253 : 242, estadoPromocion.includes('PROMOVIDO') ? 245 : 242);
+  doc.setDrawColor(estadoPromocion.includes('PROMOVIDO') ? 16 : 239, estadoPromocion.includes('PROMOVIDO') ? 185 : 68, estadoPromocion.includes('PROMOVIDO') ? 129 : 68);
+  doc.roundedRect(40, finalY, 520, 48, 4, 4, 'FD');
+
+  doc.setFont('helvetica', 'bold');
+  doc.setFontSize(9);
+  doc.setTextColor(30, 41, 59);
+  doc.text(`PROMEDIO ANUAL DE GESTIÓN: ${promedioAnualGeneral.toFixed(1)} / 100`, 55, finalY + 18);
+
+  doc.setFontSize(10);
+  doc.setTextColor(estadoPromocion.includes('PROMOVIDO') ? 16 : 185, estadoPromocion.includes('PROMOVIDO') ? 120 : 28, estadoPromocion.includes('PROMOVIDO') ? 75 : 28);
+  doc.text(`ESTADO OFICIAL DE PROMOCIÓN: ${estadoPromocion}`, 55, finalY + 36);
+
+  // Informe de Evaluación del Desarrollo Cualitativo de Fin de Gestión
+  const cualiAnualY = finalY + 56;
+  doc.setFillColor(248, 250, 252);
+  doc.setDrawColor(226, 232, 240);
+  doc.roundedRect(40, cualiAnualY, 520, 45, 4, 4, 'FD');
+
+  doc.setFont('helvetica', 'bold');
+  doc.setFontSize(8);
+  doc.setTextColor(51, 65, 85);
+  doc.text('INFORME DEL DESARROLLO CUALITATIVO DE FIN DE GESTIÓN (LEY 070):', 50, cualiAnualY + 14);
+
+  doc.setFont('helvetica', 'normal');
+  doc.setFontSize(7.5);
+  doc.setTextColor(100, 116, 139);
+  const textoCualiAnual =
+    'El/la estudiante ha demostrado un óptimo desarrollo integral en las cuatro dimensiones formativas (Ser, Saber, Hacer, Decidir), consolidando los objetivos holísticos previstos en el plan de estudios del currículo base y regionalizado del Estado Plurinacional de Bolivia.';
+  doc.text(doc.splitTextToSize(textoCualiAnual, 500), 50, cualiAnualY + 26);
+
+  // QR simulado y sellos de seguridad
+  const footerY = cualiAnualY + 60;
+
+  // Código QR visual
+  doc.setFillColor(15, 23, 42);
+  doc.rect(50, footerY, 40, 40, 'F');
+  doc.setFillColor(255, 255, 255);
+  doc.rect(56, footerY + 6, 12, 12, 'F');
+  doc.rect(72, footerY + 22, 12, 12, 'F');
+  doc.setFillColor(15, 23, 42);
+  doc.rect(60, footerY + 10, 4, 4, 'F');
+
+  doc.setFontSize(7);
+  doc.setTextColor(100, 116, 139);
+  doc.text('DOCUMENTO OFICIAL VALIDADOR DEL SIE', 100, footerY + 14);
+  doc.text(`CÓDIGO DE VERIFICACIÓN ELECTRÓNICA: BO-MINEDU-2026-${rude.slice(-6)}`, 100, footerY + 26);
+  doc.text('Firma Digitalizada bajo Decreto Supremo N° 1302 y Ley N° 070', 100, footerY + 36);
+
+  // Firmas
+  doc.line(300, footerY + 30, 410, footerY + 30);
+  doc.text('Firma Maestro(a) Tutor', 315, footerY + 40);
+
+  doc.line(440, footerY + 30, 545, footerY + 30);
+  doc.text('Firma y Sello Dirección U.E.', 445, footerY + 40);
+
+  const clean = estudiante.replace(/[^a-zA-Z0-9]/g, '_').substring(0, 20);
+  doc.save(`Libreta_Oficial_SEP_${clean}.pdf`);
+}
+
+/**
+ * MODELO 3: CITACIÓN OFICIAL A PADRES DE FAMILIA / APODERADOS (KARDEX DISCIPLINARIO)
+ */
+export function exportParentalCitationPdf(
+  estudiante: string,
+  rude: string,
+  curso: string,
+  tutor: string,
+  contacto: string,
+  motivo: string,
+  fechaCita: string,
+  horaCita: string,
+  maestroEmisor: string
 ) {
   const doc = new jsPDF({ orientation: 'portrait', unit: 'pt', format: 'letter' });
 
@@ -590,91 +831,76 @@ export function exportSchoolReportCardPdf(
   doc.setFont('helvetica', 'bold');
   doc.setFontSize(14);
   doc.setTextColor(24, 30, 40);
-  doc.text('LIBRETA ESCOLAR ELECTRÓNICA OFICIAL', 40, 48);
+  doc.text('CITACIÓN OFICIAL A PADRE DE FAMILIA O APODERADO', 40, 55);
 
   doc.setFontSize(9);
   doc.setFont('helvetica', 'normal');
   doc.setTextColor(80, 90, 100);
-  doc.text('SUBSISTEMA DE EDUCACIÓN REGULAR • LEY DE LA EDUCACIÓN N° 070 AVELINO SIÑANI', 40, 62);
-  doc.text('ESTADO PLURINACIONAL DE BOLIVIA • MINISTERIO DE EDUCACIÓN', 40, 74);
+  doc.text('UNIDAD EDUCATIVA FRANZ TAMAYO (SIE: 80730045) • SEGUIMIENTO Y KARDEX DISCIPLINARIO', 40, 70);
 
-  // Recuadro de Estudiante
-  doc.setFillColor(248, 250, 252);
-  doc.roundedRect(40, 84, 520, 45, 6, 6, 'F');
+  // Recuadro de Cita
+  doc.setFillColor(254, 242, 242); // Alerta suave
+  doc.setDrawColor(248, 113, 113);
+  doc.roundedRect(40, 88, 520, 60, 4, 4, 'FD');
+
   doc.setFont('helvetica', 'bold');
-  doc.setFontSize(9);
+  doc.setFontSize(9.5);
+  doc.setTextColor(153, 27, 27);
+  doc.text(`SEÑOR(A) APODERADO(A): ${tutor.toUpperCase()}`, 50, 106);
+
+  doc.setFontSize(8.5);
+  doc.setTextColor(69, 10, 10);
+  doc.text(`Estudiante: ${estudiante}  |  Curso: ${curso}  |  RUDE: ${rude}`, 50, 122);
+  doc.text(`Teléfono registrado: ${contacto}`, 50, 138);
+
+  // Cuerpo de la citación
+  doc.setFont('helvetica', 'normal');
+  doc.setFontSize(9.5);
   doc.setTextColor(30, 41, 59);
-  doc.text(`Estudiante: ${estudiante}`, 50, 100);
-  doc.text(`Código RUDE: ${rude}`, 50, 116);
-  doc.text(`Unidad Educativa: Franz Tamayo (SIE: 80730045)`, 300, 100);
-  doc.text(`Curso: ${curso} | Gestión: 2026`, 300, 116);
+  const cuerpo = `Por intermedio de la presente, la Dirección y el plantel docente de la Unidad Educativa "Franz Tamayo" convocan a usted con carácter de URGENCIA Y OBLIGATORIO a presentarse en las instalaciones del establecimiento educativo para tratar asuntos concernientes al rendimiento académico y seguimiento disciplinario de su hijo(a).`;
+  doc.text(doc.splitTextToSize(cuerpo, 520), 40, 175);
 
-  const tableBody = materias.map((m, idx) => [
-    idx + 1,
-    m.nombre,
-    m.t1,
-    m.t2,
-    m.t3,
-    m.final,
-    m.estado,
-  ]);
-
-  const promedioGral = (materias.reduce((acc, m) => acc + m.final, 0) / materias.length).toFixed(1);
-  const estadoFinal = Number(promedioGral) >= 51 ? 'PROMOVIDO(A)' : 'RETENIDO(A)';
-
-  autoTable(doc, {
-    startY: 140,
-    head: [[
-      '#',
-      'Campos de Saberes y Áreas Curriculares',
-      '1er Trim.\n(100)',
-      '2do Trim.\n(100)',
-      '3er Trim.\n(100)',
-      'PROMEDIO\nANUAL',
-      'SITUACIÓN FINAL',
-    ]],
-    body: tableBody,
-    theme: 'grid',
-    headStyles: {
-      fillColor: [16, 120, 75],
-      textColor: [255, 255, 255],
-      halign: 'center',
-      fontSize: 8,
-    },
-    bodyStyles: {
-      fontSize: 8,
-    },
-    columnStyles: {
-      0: { halign: 'center', cellWidth: 25 },
-      1: { halign: 'left', cellWidth: 185 },
-      2: { halign: 'center', cellWidth: 50 },
-      3: { halign: 'center', cellWidth: 50 },
-      4: { halign: 'center', cellWidth: 50 },
-      5: { halign: 'center', cellWidth: 60, fontStyle: 'bold' },
-      6: { halign: 'center', cellWidth: 80 },
-    },
-  });
-
-  const finalY = (doc as any).lastAutoTable ? (doc as any).lastAutoTable.finalY + 20 : 450;
-
-  // Resumen final
+  // Fecha y hora convocada
+  doc.setFillColor(241, 245, 249);
+  doc.roundedRect(40, 220, 520, 45, 4, 4, 'F');
   doc.setFont('helvetica', 'bold');
   doc.setFontSize(10);
-  doc.setTextColor(30, 41, 59);
-  doc.text(`PROMEDIO ANUAL GENERAL: ${promedioGral} / 100`, 40, finalY + 15);
-  doc.text(`ESTADO DE PROMOCIÓN: ${estadoFinal}`, 320, finalY + 15);
+  doc.setTextColor(15, 23, 42);
+  doc.text(`FECHA DE REUNIÓN: ${fechaCita}`, 55, 240);
+  doc.text(`HORA: ${horaCita} a.m.`, 260, 240);
+  doc.text(`LUGAR: Dirección / Gabinete de Convivencia`, 380, 240);
 
-  // Código QR decorativo institucional y firmas
-  doc.setFontSize(7.5);
-  doc.setTextColor(100, 110, 120);
-  doc.text('DOCUMENTO FIRMADO DIGITALMENTE Y REGISTRADO EN EL SISTEMA DE INFORMACIÓN EDUCATIVA (SIE)', 40, finalY + 45);
+  // Motivo / Antecedentes registrados en el Kardex
+  doc.setFont('helvetica', 'bold');
+  doc.setFontSize(9);
+  doc.setTextColor(71, 85, 105);
+  doc.text('MOTIVO Y ANTECEDENTES REGISTRADOS EN EL KARDEX ESCOLAR:', 40, 290);
 
-  doc.line(80, finalY + 95, 230, finalY + 95);
-  doc.text('Firma Maestro(a) Asesor', 105, finalY + 107);
+  doc.setFont('helvetica', 'normal');
+  doc.setFontSize(9);
+  doc.setTextColor(51, 65, 85);
+  doc.text(doc.splitTextToSize(motivo, 520), 40, 305);
 
-  doc.line(350, finalY + 95, 500, finalY + 95);
-  doc.text('Sello y Firma Dirección U.E.', 375, finalY + 107);
+  // Advertencia normativa
+  doc.setFontSize(8);
+  doc.setTextColor(148, 163, 184);
+  const baseLegal = `Base Legal: Art. 10 y 11 del Reglamento de Faltas y Disciplina Estudiantil de la R.M. 0001/2026 del Ministerio de Educación del Estado Plurinacional de Bolivia. En caso de no asistir, se remitirá el caso a la Defensoría de la Niñez y Adolescencia según normativa vigente.`;
+  doc.text(doc.splitTextToSize(baseLegal, 520), 40, 360);
+
+  // Firmas
+  const firmasY = 460;
+  doc.line(60, firmasY, 210, firmasY);
+  doc.text(maestroEmisor, 80, firmasY + 12);
+  doc.text('Docente / Tutor de Curso', 85, firmasY + 22);
+
+  doc.line(240, firmasY, 370, firmasY);
+  doc.text('Dirección U.E. Franz Tamayo', 250, firmasY + 12);
+  doc.text('Sello Institucional', 275, firmasY + 22);
+
+  doc.line(400, firmasY, 530, firmasY);
+  doc.text('Firma Padre / Apoderado', 415, firmasY + 12);
+  doc.text('Constancia de Notificación', 415, firmasY + 22);
 
   const clean = estudiante.replace(/[^a-zA-Z0-9]/g, '_').substring(0, 20);
-  doc.save(`Libreta_Escolar_Oficial_${clean}.pdf`);
+  doc.save(`Citacion_Oficial_${clean}.pdf`);
 }

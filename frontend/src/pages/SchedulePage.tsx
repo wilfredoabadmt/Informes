@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import { useAuth } from '../context/AuthContext';
+import * as XLSX from 'xlsx';
 import {
   Clock,
   Calendar,
@@ -12,13 +13,18 @@ import {
   Plus,
   Edit2,
   X,
-  CheckCircle2,
+  FileSpreadsheet,
+  Award,
+  Sparkles,
+  User,
 } from 'lucide-react';
 
 interface SlotDetail {
   subject: string;
   grade: string;
   room: string;
+  teacher: string;
+  isMine: boolean; // Denota si es dictada por el maestro logueado
   color: string;
 }
 
@@ -35,411 +41,503 @@ interface ScheduleSlot {
   };
 }
 
-export const SchedulePage: React.FC = () => {
-  const { isMaestro, isDirector, isSuperAdmin, user } = useAuth();
-  const [selectedView, setSelectedView] = useState<'teacher' | 'classroom'>('teacher');
-  const [feedback, setFeedback] = useState<string | null>(null);
+const CURSOS_SCHEDULE = [
+  { id: 'SEC_1A', nombre: '1º de Secundaria - Paralelo "A"', turno: 'Mañana', aula: 'Aula 101' },
+  { id: 'SEC_1B', nombre: '1º de Secundaria - Paralelo "B"', turno: 'Tarde', aula: 'Aula 102' },
+  { id: 'SEC_2A', nombre: '2º de Secundaria - Paralelo "A"', turno: 'Mañana', aula: 'Aula 103' },
+  { id: 'PRIM_1A', nombre: '1º de Primaria - Paralelo "A"', turno: 'Mañana', aula: 'Aula 201' },
+  { id: 'PRIM_2A', nombre: '2º de Primaria - Paralelo "A"', turno: 'Mañana', aula: 'Aula 202' },
+];
 
-  // Modal State for adding/modifying slot
-  const [showModal, setShowModal] = useState(false);
-  const [slotForm, setSlotForm] = useState({
+// Horario específico de 1° Secundaria A (Con clases destacadas de Carlos Mamani)
+const SCHEDULE_SEC_1A: ScheduleSlot[] = [
+  {
     period: 1,
-    day: 'lunes' as 'lunes' | 'martes' | 'miercoles' | 'jueves' | 'viernes',
-    subject: 'Comunicación y Lenguajes',
-    grade: '1º Sec "A"',
-    room: 'Aula 101',
-    color: 'bg-emerald-50 border-emerald-300 text-emerald-900',
-  });
+    timeRange: '08:00 - 08:45',
+    days: {
+      lunes: { subject: 'Comunicación y Lenguajes', grade: '1º Sec "A"', room: 'Aula 101', teacher: 'Prof. Carlos Mamani C.', isMine: true, color: 'bg-emerald-50 border-emerald-300 text-emerald-900' },
+      martes: { subject: 'Ciencias Naturales', grade: '1º Sec "A"', room: 'Aula 101', teacher: 'Prof. Marleny Torrez', isMine: false, color: 'bg-blue-50 border-blue-200 text-blue-900' },
+      miercoles: { subject: 'Matemática', grade: '1º Sec "A"', room: 'Aula 101', teacher: 'Prof. Carlos Mamani C.', isMine: true, color: 'bg-emerald-50 border-emerald-300 text-emerald-900' },
+      jueves: { subject: 'Comunicación y Lenguajes', grade: '1º Sec "A"', room: 'Aula 101', teacher: 'Prof. Carlos Mamani C.', isMine: true, color: 'bg-emerald-50 border-emerald-300 text-emerald-900' },
+      viernes: { subject: 'Ciencias Sociales', grade: '1º Sec "A"', room: 'Aula 101', teacher: 'Prof. Roberto Quispe', isMine: false, color: 'bg-amber-50 border-amber-200 text-amber-900' },
+    },
+  },
+  {
+    period: 2,
+    timeRange: '08:45 - 09:30',
+    days: {
+      lunes: { subject: 'Comunicación y Lenguajes', grade: '1º Sec "A"', room: 'Aula 101', teacher: 'Prof. Carlos Mamani C.', isMine: true, color: 'bg-emerald-50 border-emerald-300 text-emerald-900' },
+      martes: { subject: 'Ciencias Naturales', grade: '1º Sec "A"', room: 'Aula 101', teacher: 'Prof. Marleny Torrez', isMine: false, color: 'bg-blue-50 border-blue-200 text-blue-900' },
+      miercoles: { subject: 'Matemática', grade: '1º Sec "A"', room: 'Aula 101', teacher: 'Prof. Carlos Mamani C.', isMine: true, color: 'bg-emerald-50 border-emerald-300 text-emerald-900' },
+      jueves: { subject: 'Lengua Originaria (Guaraní)', grade: '1º Sec "A"', room: 'Aula 101', teacher: 'Prof. Sonia Choque', isMine: false, color: 'bg-purple-50 border-purple-200 text-purple-900' },
+      viernes: { subject: 'Ciencias Sociales', grade: '1º Sec "A"', room: 'Aula 101', teacher: 'Prof. Roberto Quispe', isMine: false, color: 'bg-amber-50 border-amber-200 text-amber-900' },
+    },
+  },
+  {
+    period: 3,
+    timeRange: '09:30 - 10:15',
+    days: {
+      lunes: { subject: 'Artes Plásticas y Visuales', grade: '1º Sec "A"', room: 'Aula 101', teacher: 'Prof. Javier Gomez', isMine: false, color: 'bg-rose-50 border-rose-200 text-rose-900' },
+      martes: { subject: 'Matemática', grade: '1º Sec "A"', room: 'Aula 101', teacher: 'Prof. Carlos Mamani C.', isMine: true, color: 'bg-emerald-50 border-emerald-300 text-emerald-900' },
+      miercoles: { subject: 'Educación Física y Deportes', grade: '1º Sec "A"', room: 'Canchas', teacher: 'Prof. Hugo Morales', isMine: false, color: 'bg-teal-50 border-teal-200 text-teal-900' },
+      jueves: { subject: 'Taller de Lectura Crítica', grade: '1º Sec "A"', room: 'Aula 101', teacher: 'Prof. Carlos Mamani C.', isMine: true, color: 'bg-emerald-50 border-emerald-300 text-emerald-900' },
+      viernes: { subject: 'Educación Musical', grade: '1º Sec "A"', room: 'Aula Música', teacher: 'Prof. David Alanoca', isMine: false, color: 'bg-indigo-50 border-indigo-200 text-indigo-900' },
+    },
+  },
+  {
+    period: 0,
+    timeRange: '10:15 - 10:45',
+    isRecess: true,
+    days: {},
+  },
+  {
+    period: 4,
+    timeRange: '10:45 - 11:30',
+    days: {
+      lunes: { subject: 'Artes Plásticas y Visuales', grade: '1º Sec "A"', room: 'Aula 101', teacher: 'Prof. Javier Gomez', isMine: false, color: 'bg-rose-50 border-rose-200 text-rose-900' },
+      martes: { subject: 'Matemática', grade: '1º Sec "A"', room: 'Aula 101', teacher: 'Prof. Carlos Mamani C.', isMine: true, color: 'bg-emerald-50 border-emerald-300 text-emerald-900' },
+      miercoles: { subject: 'Educación Física y Deportes', grade: '1º Sec "A"', room: 'Canchas', teacher: 'Prof. Hugo Morales', isMine: false, color: 'bg-teal-50 border-teal-200 text-teal-900' },
+      jueves: { subject: 'Técnica Tecnológica', grade: '1º Sec "A"', room: 'Laboratorio', teacher: 'Prof. Walter Flores', isMine: false, color: 'bg-slate-100 border-slate-300 text-slate-800' },
+      viernes: { subject: 'Reforzamiento Pedagógico', grade: '1º Sec "A"', room: 'Aula 101', teacher: 'Prof. Carlos Mamani C.', isMine: true, color: 'bg-emerald-50 border-emerald-300 text-emerald-900' },
+    },
+  },
+  {
+    period: 5,
+    timeRange: '11:30 - 12:15',
+    days: {
+      lunes: { subject: 'Valores, Espiritualidad y Religiones', grade: '1º Sec "A"', room: 'Aula 101', teacher: 'Prof. Miriam Cruz', isMine: false, color: 'bg-orange-50 border-orange-200 text-orange-900' },
+      martes: { subject: 'Lengua Extranjera (Inglés)', grade: '1º Sec "A"', room: 'Aula 101', teacher: 'Prof. Gary Nina', isMine: false, color: 'bg-sky-50 border-sky-200 text-sky-900' },
+      miercoles: { subject: 'Técnica Tecnológica', grade: '1º Sec "A"', room: 'Laboratorio', teacher: 'Prof. Walter Flores', isMine: false, color: 'bg-slate-100 border-slate-300 text-slate-800' },
+      jueves: { subject: 'Ciencias Naturales', grade: '1º Sec "A"', room: 'Aula 101', teacher: 'Prof. Marleny Torrez', isMine: false, color: 'bg-blue-50 border-blue-200 text-blue-900' },
+      viernes: { subject: 'Consejo y Tutoría', grade: '1º Sec "A"', room: 'Aula 101', teacher: 'Prof. Carlos Mamani C.', isMine: true, color: 'bg-emerald-50 border-emerald-300 text-emerald-900' },
+    },
+  },
+  {
+    period: 6,
+    timeRange: '12:15 - 13:00',
+    days: {
+      lunes: { subject: 'Lengua Extranjera (Inglés)', grade: '1º Sec "A"', room: 'Aula 101', teacher: 'Prof. Gary Nina', isMine: false, color: 'bg-sky-50 border-sky-200 text-sky-900' },
+      martes: { subject: 'Lengua Extranjera (Inglés)', grade: '1º Sec "A"', room: 'Aula 101', teacher: 'Prof. Gary Nina', isMine: false, color: 'bg-sky-50 border-sky-200 text-sky-900' },
+      miercoles: { subject: 'Física y Química Inicial', grade: '1º Sec "A"', room: 'Aula 101', teacher: 'Prof. Alberto Simon', isMine: false, color: 'bg-cyan-50 border-cyan-200 text-cyan-900' },
+      jueves: { subject: 'Ciencias Naturales', grade: '1º Sec "A"', room: 'Aula 101', teacher: 'Prof. Marleny Torrez', isMine: false, color: 'bg-blue-50 border-blue-200 text-blue-900' },
+      viernes: { subject: 'Limpieza y Orden del Aula', grade: '1º Sec "A"', room: 'Aula 101', teacher: 'Prof. Carlos Mamani C.', isMine: true, color: 'bg-emerald-50 border-emerald-300 text-emerald-900' },
+    },
+  },
+];
 
-  // Exact period slots from sheet HOR in REGISTRO_MODERNO.xlsb
-  const [slots, setSlots] = useState<ScheduleSlot[]>([
-    {
-      period: 1,
-      timeRange: '08:00 - 08:45',
-      days: {
-        lunes: { subject: 'Comunicación y Lenguajes', grade: '1º Sec "A"', room: 'Aula 101', color: 'bg-emerald-50 border-emerald-300 text-emerald-900' },
-        martes: { subject: 'Comunicación y Lenguajes', grade: '1º Sec "B"', room: 'Aula 102', color: 'bg-indigo-50 border-indigo-300 text-indigo-900' },
-        miercoles: { subject: 'Lengua Extranjera (Inglés)', grade: '2º Sec "A"', room: 'Aula 103', color: 'bg-sky-50 border-sky-300 text-sky-900' },
-        jueves: { subject: 'Comunicación y Lenguajes', grade: '1º Sec "A"', room: 'Aula 101', color: 'bg-emerald-50 border-emerald-300 text-emerald-900' },
-        viernes: { subject: 'Literatura y Redacción', grade: '3º Sec "A"', room: 'Aula 201', color: 'bg-purple-50 border-purple-300 text-purple-900' },
-      },
+// Horario específico de 1° Secundaria B
+const SCHEDULE_SEC_1B: ScheduleSlot[] = [
+  {
+    period: 1,
+    timeRange: '13:30 - 14:15',
+    days: {
+      lunes: { subject: 'Matemática', grade: '1º Sec "B"', room: 'Aula 102', teacher: 'Prof. Carlos Mamani C.', isMine: true, color: 'bg-emerald-50 border-emerald-300 text-emerald-900' },
+      martes: { subject: 'Comunicación y Lenguajes', grade: '1º Sec "B"', room: 'Aula 102', teacher: 'Prof. Carlos Mamani C.', isMine: true, color: 'bg-emerald-50 border-emerald-300 text-emerald-900' },
+      miercoles: { subject: 'Ciencias Sociales', grade: '1º Sec "B"', room: 'Aula 102', teacher: 'Prof. Roberto Quispe', isMine: false, color: 'bg-amber-50 border-amber-200 text-amber-900' },
+      jueves: { subject: 'Ciencias Naturales', grade: '1º Sec "B"', room: 'Aula 102', teacher: 'Prof. Marleny Torrez', isMine: false, color: 'bg-blue-50 border-blue-200 text-blue-900' },
+      viernes: { subject: 'Matemática', grade: '1º Sec "B"', room: 'Aula 102', teacher: 'Prof. Carlos Mamani C.', isMine: true, color: 'bg-emerald-50 border-emerald-300 text-emerald-900' },
     },
-    {
-      period: 2,
-      timeRange: '08:45 - 09:30',
-      days: {
-        lunes: { subject: 'Comunicación y Lenguajes', grade: '1º Sec "A"', room: 'Aula 101', color: 'bg-emerald-50 border-emerald-300 text-emerald-900' },
-        martes: { subject: 'Comunicación y Lenguajes', grade: '1º Sec "B"', room: 'Aula 102', color: 'bg-indigo-50 border-indigo-300 text-indigo-900' },
-        miercoles: { subject: 'Lengua Originaria (Guaraní)', grade: '1º Sec "A"', room: 'Aula 101', color: 'bg-amber-50 border-amber-300 text-amber-900' },
-        jueves: { subject: 'Comunicación y Lenguajes', grade: '1º Sec "A"', room: 'Aula 101', color: 'bg-emerald-50 border-emerald-300 text-emerald-900' },
-        viernes: { subject: 'Literatura y Redacción', grade: '3º Sec "A"', room: 'Aula 201', color: 'bg-purple-50 border-purple-300 text-purple-900' },
-      },
+  },
+  {
+    period: 2,
+    timeRange: '14:15 - 15:00',
+    days: {
+      lunes: { subject: 'Matemática', grade: '1º Sec "B"', room: 'Aula 102', teacher: 'Prof. Carlos Mamani C.', isMine: true, color: 'bg-emerald-50 border-emerald-300 text-emerald-900' },
+      martes: { subject: 'Comunicación y Lenguajes', grade: '1º Sec "B"', room: 'Aula 102', teacher: 'Prof. Carlos Mamani C.', isMine: true, color: 'bg-emerald-50 border-emerald-300 text-emerald-900' },
+      miercoles: { subject: 'Ciencias Sociales', grade: '1º Sec "B"', room: 'Aula 102', teacher: 'Prof. Roberto Quispe', isMine: false, color: 'bg-amber-50 border-amber-200 text-amber-900' },
+      jueves: { subject: 'Ciencias Naturales', grade: '1º Sec "B"', room: 'Aula 102', teacher: 'Prof. Marleny Torrez', isMine: false, color: 'bg-blue-50 border-blue-200 text-blue-900' },
+      viernes: { subject: 'Matemática', grade: '1º Sec "B"', room: 'Aula 102', teacher: 'Prof. Carlos Mamani C.', isMine: true, color: 'bg-emerald-50 border-emerald-300 text-emerald-900' },
     },
-    {
-      period: 3,
-      timeRange: '09:30 - 10:15',
-      days: {
-        lunes: { subject: 'Taller de Expresión Oral', grade: '2º Sec "B"', room: 'Aula 104', color: 'bg-rose-50 border-rose-300 text-rose-900' },
-        martes: { subject: 'Lengua Originaria (Guaraní)', grade: '1º Sec "B"', room: 'Aula 102', color: 'bg-amber-50 border-amber-300 text-amber-900' },
-        miercoles: { subject: 'Comunicación y Lenguajes', grade: '1º Sec "B"', room: 'Aula 102', color: 'bg-indigo-50 border-indigo-300 text-indigo-900' },
-        jueves: { subject: 'Taller de Lectura Crítica', grade: '1º Sec "A"', room: 'Aula 101', color: 'bg-teal-50 border-teal-300 text-teal-900' },
-        viernes: { subject: 'Consejo de Evaluación', grade: 'Docentes', room: 'Sala Maestros', color: 'bg-slate-100 border-slate-300 text-slate-800' },
-      },
+  },
+  {
+    period: 0,
+    timeRange: '15:45 - 16:15',
+    isRecess: true,
+    days: {},
+  },
+  {
+    period: 3,
+    timeRange: '15:00 - 15:45',
+    days: {
+      lunes: { subject: 'Lengua Extranjera', grade: '1º Sec "B"', room: 'Aula 102', teacher: 'Prof. Gary Nina', isMine: false, color: 'bg-sky-50 border-sky-200 text-sky-900' },
+      martes: { subject: 'Artes Plásticas', grade: '1º Sec "B"', room: 'Aula 102', teacher: 'Prof. Javier Gomez', isMine: false, color: 'bg-rose-50 border-rose-200 text-rose-900' },
+      miercoles: { subject: 'Educación Física', grade: '1º Sec "B"', room: 'Canchas', teacher: 'Prof. Hugo Morales', isMine: false, color: 'bg-teal-50 border-teal-200 text-teal-900' },
+      jueves: { subject: 'Comunicación y Lenguajes', grade: '1º Sec "B"', room: 'Aula 102', teacher: 'Prof. Carlos Mamani C.', isMine: true, color: 'bg-emerald-50 border-emerald-300 text-emerald-900' },
+      viernes: { subject: 'Lengua Originaria Guaraní', grade: '1º Sec "B"', room: 'Aula 102', teacher: 'Prof. Sonia Choque', isMine: false, color: 'bg-purple-50 border-purple-200 text-purple-900' },
     },
-    {
-      period: 4,
-      timeRange: '10:15 - 11:00',
-      days: {
-        lunes: { subject: 'Taller de Expresión Oral', grade: '2º Sec "B"', room: 'Aula 104', color: 'bg-rose-50 border-rose-300 text-rose-900' },
-        martes: { subject: 'Atención a Padres (Kardex)', grade: 'Comunidad', room: 'Dirección', color: 'bg-amber-100 border-amber-400 text-amber-900' },
-        miercoles: { subject: 'Comunicación y Lenguajes', grade: '1º Sec "B"', room: 'Aula 102', color: 'bg-indigo-50 border-indigo-300 text-indigo-900' },
-        jueves: { subject: 'Taller de Lectura Crítica', grade: '1º Sec "A"', room: 'Aula 101', color: 'bg-teal-50 border-teal-300 text-teal-900' },
-        viernes: { subject: 'Reforzamiento Pedagógico', grade: '1º Sec "A"', room: 'Aula 101', color: 'bg-emerald-50 border-emerald-300 text-emerald-900' },
-      },
+  },
+  {
+    period: 4,
+    timeRange: '16:15 - 17:00',
+    days: {
+      lunes: { subject: 'Lengua Extranjera', grade: '1º Sec "B"', room: 'Aula 102', teacher: 'Prof. Gary Nina', isMine: false, color: 'bg-sky-50 border-sky-200 text-sky-900' },
+      martes: { subject: 'Artes Plásticas', grade: '1º Sec "B"', room: 'Aula 102', teacher: 'Prof. Javier Gomez', isMine: false, color: 'bg-rose-50 border-rose-200 text-rose-900' },
+      miercoles: { subject: 'Educación Física', grade: '1º Sec "B"', room: 'Canchas', teacher: 'Prof. Hugo Morales', isMine: false, color: 'bg-teal-50 border-teal-200 text-teal-900' },
+      jueves: { subject: 'Comunicación y Lenguajes', grade: '1º Sec "B"', room: 'Aula 102', teacher: 'Prof. Carlos Mamani C.', isMine: true, color: 'bg-emerald-50 border-emerald-300 text-emerald-900' },
+      viernes: { subject: 'Técnica Tecnológica', grade: '1º Sec "B"', room: 'Laboratorio', teacher: 'Prof. Walter Flores', isMine: false, color: 'bg-slate-100 border-slate-300 text-slate-800' },
     },
-    {
-      period: 0,
-      timeRange: '11:00 - 11:15',
-      isRecess: true,
-      days: {},
-    },
-    {
-      period: 5,
-      timeRange: '11:15 - 12:00',
-      days: {
-        lunes: { subject: 'Ciencias Sociales e Historia', grade: '1º Sec "A"', room: 'Aula 101', color: 'bg-amber-50 border-amber-300 text-amber-900' },
-        martes: { subject: 'Planificación Curricular', grade: 'Docente', room: 'Biblioteca', color: 'bg-slate-100 border-slate-300 text-slate-800' },
-        miercoles: { subject: 'Ciencias Sociales e Historia', grade: '1º Sec "A"', room: 'Aula 101', color: 'bg-amber-50 border-amber-300 text-amber-900' },
-        jueves: { subject: 'Lengua Extranjera (Inglés)', grade: '2º Sec "A"', room: 'Aula 103', color: 'bg-sky-50 border-sky-300 text-sky-900' },
-        viernes: { subject: 'Actividades Sociocomunitarias', grade: 'Colegio', room: 'Cancha', color: 'bg-lime-50 border-lime-300 text-lime-900' },
-      },
-    },
-    {
-      period: 6,
-      timeRange: '12:00 - 12:45',
-      days: {
-        lunes: { subject: 'Ciencias Sociales e Historia', grade: '1º Sec "A"', room: 'Aula 101', color: 'bg-amber-50 border-amber-300 text-amber-900' },
-        martes: { subject: 'Planificación Curricular', grade: 'Docente', room: 'Biblioteca', color: 'bg-slate-100 border-slate-300 text-slate-800' },
-        miercoles: { subject: 'Ciencias Sociales e Historia', grade: '1º Sec "A"', room: 'Aula 101', color: 'bg-amber-50 border-amber-300 text-amber-900' },
-        jueves: { subject: 'Lengua Extranjera (Inglés)', grade: '2º Sec "A"', room: 'Aula 103', color: 'bg-sky-50 border-sky-300 text-sky-900' },
-        viernes: { subject: 'Cierre de Jornada y Turno', grade: 'Institucional', room: 'Dirección', color: 'bg-slate-100 border-slate-300 text-slate-800' },
-      },
-    },
-  ]);
+  },
+];
 
-  const handleSaveSlot = (e: React.FormEvent) => {
-    e.preventDefault();
-    setSlots((prev) =>
-      prev.map((s) => {
-        if (s.period === slotForm.period && !s.isRecess) {
-          return {
-            ...s,
-            days: {
-              ...s.days,
-              [slotForm.day]: {
-                subject: slotForm.subject,
-                grade: slotForm.grade,
-                room: slotForm.room,
-                color: slotForm.color,
-              },
-            },
-          };
-        }
-        return s;
-      })
-    );
-    setShowModal(false);
-    setFeedback('¡Período pedagógico asignado y actualizado en el cronograma semanal!');
-    setTimeout(() => setFeedback(null), 3000);
-  };
+// Horario específico de 2° Secundaria A
+const SCHEDULE_SEC_2A: ScheduleSlot[] = [
+  {
+    period: 1,
+    timeRange: '08:00 - 08:45',
+    days: {
+      lunes: { subject: 'Matemática (Álgebra)', grade: '2º Sec "A"', room: 'Aula 103', teacher: 'Prof. Carlos Mamani C.', isMine: true, color: 'bg-emerald-50 border-emerald-300 text-emerald-900' },
+      martes: { subject: 'Física y Química', grade: '2º Sec "A"', room: 'Aula 103', teacher: 'Prof. Alberto Simon', isMine: false, color: 'bg-blue-50 border-blue-200 text-blue-900' },
+      miercoles: { subject: 'Comunicación y Lenguajes', grade: '2º Sec "A"', room: 'Aula 103', teacher: 'Prof. Laura Mendoza', isMine: false, color: 'bg-indigo-50 border-indigo-200 text-indigo-900' },
+      jueves: { subject: 'Matemática (Álgebra)', grade: '2º Sec "A"', room: 'Aula 103', teacher: 'Prof. Carlos Mamani C.', isMine: true, color: 'bg-emerald-50 border-emerald-300 text-emerald-900' },
+      viernes: { subject: 'Ciencias Sociales', grade: '2º Sec "A"', room: 'Aula 103', teacher: 'Prof. Roberto Quispe', isMine: false, color: 'bg-amber-50 border-amber-200 text-amber-900' },
+    },
+  },
+  {
+    period: 2,
+    timeRange: '08:45 - 09:30',
+    days: {
+      lunes: { subject: 'Matemática (Álgebra)', grade: '2º Sec "A"', room: 'Aula 103', teacher: 'Prof. Carlos Mamani C.', isMine: true, color: 'bg-emerald-50 border-emerald-300 text-emerald-900' },
+      martes: { subject: 'Física y Química', grade: '2º Sec "A"', room: 'Aula 103', teacher: 'Prof. Alberto Simon', isMine: false, color: 'bg-blue-50 border-blue-200 text-blue-900' },
+      miercoles: { subject: 'Comunicación y Lenguajes', grade: '2º Sec "A"', room: 'Aula 103', teacher: 'Prof. Laura Mendoza', isMine: false, color: 'bg-indigo-50 border-indigo-200 text-indigo-900' },
+      jueves: { subject: 'Matemática (Álgebra)', grade: '2º Sec "A"', room: 'Aula 103', teacher: 'Prof. Carlos Mamani C.', isMine: true, color: 'bg-emerald-50 border-emerald-300 text-emerald-900' },
+      viernes: { subject: 'Ciencias Sociales', grade: '2º Sec "A"', room: 'Aula 103', teacher: 'Prof. Roberto Quispe', isMine: false, color: 'bg-amber-50 border-amber-200 text-amber-900' },
+    },
+  },
+];
 
-  const handleClearSlot = (periodNum: number, dayKey: 'lunes' | 'martes' | 'miercoles' | 'jueves' | 'viernes') => {
-    setSlots((prev) =>
-      prev.map((s) => {
-        if (s.period === periodNum) {
-          const updatedDays = { ...s.days };
-          delete updatedDays[dayKey];
-          return { ...s, days: updatedDays };
-        }
-        return s;
-      })
-    );
-    setFeedback('Período liberado del horario.');
-    setTimeout(() => setFeedback(null), 3000);
+// Horario específico del Maestro (Carlos Mamani: 16 hrs semanales consolidadas)
+const SCHEDULE_MAESTRO_PERSONAL: ScheduleSlot[] = [
+  {
+    period: 1,
+    timeRange: '08:00 - 08:45',
+    days: {
+      lunes: { subject: 'Comunicación y Lenguajes', grade: '1º Sec "A"', room: 'Aula 101', teacher: 'Prof. Carlos Mamani C.', isMine: true, color: 'bg-emerald-50 border-emerald-300 text-emerald-900' },
+      martes: { subject: 'Comunicación y Lenguajes', grade: '1º Sec "B"', room: 'Aula 102', teacher: 'Prof. Carlos Mamani C.', isMine: true, color: 'bg-emerald-50 border-emerald-300 text-emerald-900' },
+      miercoles: { subject: 'Matemática', grade: '1º Sec "A"', room: 'Aula 101', teacher: 'Prof. Carlos Mamani C.', isMine: true, color: 'bg-emerald-50 border-emerald-300 text-emerald-900' },
+      jueves: { subject: 'Comunicación y Lenguajes', grade: '1º Sec "A"', room: 'Aula 101', teacher: 'Prof. Carlos Mamani C.', isMine: true, color: 'bg-emerald-50 border-emerald-300 text-emerald-900' },
+      viernes: { subject: 'Matemática (Álgebra)', grade: '2º Sec "A"', room: 'Aula 103', teacher: 'Prof. Carlos Mamani C.', isMine: true, color: 'bg-emerald-50 border-emerald-300 text-emerald-900' },
+    },
+  },
+  {
+    period: 2,
+    timeRange: '08:45 - 09:30',
+    days: {
+      lunes: { subject: 'Comunicación y Lenguajes', grade: '1º Sec "A"', room: 'Aula 101', teacher: 'Prof. Carlos Mamani C.', isMine: true, color: 'bg-emerald-50 border-emerald-300 text-emerald-900' },
+      martes: { subject: 'Comunicación y Lenguajes', grade: '1º Sec "B"', room: 'Aula 102', teacher: 'Prof. Carlos Mamani C.', isMine: true, color: 'bg-emerald-50 border-emerald-300 text-emerald-900' },
+      miercoles: { subject: 'Matemática', grade: '1º Sec "A"', room: 'Aula 101', teacher: 'Prof. Carlos Mamani C.', isMine: true, color: 'bg-emerald-50 border-emerald-300 text-emerald-900' },
+      jueves: { subject: 'Matemática (Álgebra)', grade: '2º Sec "A"', room: 'Aula 103', teacher: 'Prof. Carlos Mamani C.', isMine: true, color: 'bg-emerald-50 border-emerald-300 text-emerald-900' },
+      viernes: { subject: 'Matemática (Álgebra)', grade: '2º Sec "A"', room: 'Aula 103', teacher: 'Prof. Carlos Mamani C.', isMine: true, color: 'bg-emerald-50 border-emerald-300 text-emerald-900' },
+    },
+  },
+  {
+    period: 3,
+    timeRange: '09:30 - 10:15',
+    days: {
+      lunes: { subject: 'Atención a Padres (Kardex)', grade: '1º Sec "A"', room: 'Gabinete', teacher: 'Prof. Carlos Mamani C.', isMine: true, color: 'bg-amber-50 border-amber-300 text-amber-900' },
+      martes: { subject: 'Matemática', grade: '1º Sec "A"', room: 'Aula 101', teacher: 'Prof. Carlos Mamani C.', isMine: true, color: 'bg-emerald-50 border-emerald-300 text-emerald-900' },
+      miercoles: { subject: 'Taller de Lectura Crítica', grade: '1º Sec "A"', room: 'Aula 101', teacher: 'Prof. Carlos Mamani C.', isMine: true, color: 'bg-emerald-50 border-emerald-300 text-emerald-900' },
+      jueves: { subject: 'Comunicación y Lenguajes', grade: '1º Sec "B"', room: 'Aula 102', teacher: 'Prof. Carlos Mamani C.', isMine: true, color: 'bg-emerald-50 border-emerald-300 text-emerald-900' },
+      viernes: { subject: 'Consejo y Tutoría de Curso', grade: 'Docentes', room: 'Sala Maestros', teacher: 'Prof. Carlos Mamani C.', isMine: true, color: 'bg-slate-100 border-slate-300 text-slate-800' },
+    },
+  },
+  {
+    period: 0,
+    timeRange: '10:15 - 10:45',
+    isRecess: true,
+    days: {},
+  },
+  {
+    period: 4,
+    timeRange: '10:45 - 11:30',
+    days: {
+      martes: { subject: 'Matemática', grade: '1º Sec "A"', room: 'Aula 101', teacher: 'Prof. Carlos Mamani C.', isMine: true, color: 'bg-emerald-50 border-emerald-300 text-emerald-900' },
+      jueves: { subject: 'Comunicación y Lenguajes', grade: '1º Sec "B"', room: 'Aula 102', teacher: 'Prof. Carlos Mamani C.', isMine: true, color: 'bg-emerald-50 border-emerald-300 text-emerald-900' },
+      viernes: { subject: 'Reforzamiento Pedagógico', grade: '1º Sec "A"', room: 'Aula 101', teacher: 'Prof. Carlos Mamani C.', isMine: true, color: 'bg-emerald-50 border-emerald-300 text-emerald-900' },
+    },
+  },
+];
+
+export const SchedulePage: React.FC = () => {
+  const { isMaestro, isDirector, isSuperAdmin } = useAuth();
+
+  // Vista: 'my_schedule' (Mi Horario Docente) vs 'course' (Horario por Curso y Paralelo)
+  const [viewMode, setViewMode] = useState<'my_schedule' | 'course'>(
+    isMaestro ? 'my_schedule' : 'course'
+  );
+  const [selectedCursoId, setSelectedCursoId] = useState<string>('SEC_1A');
+
+  const isMaestroOnly = isMaestro && !isDirector && !isSuperAdmin;
+  const cursosDisponibles = isMaestroOnly
+    ? CURSOS_SCHEDULE.filter((c) => ['SEC_1A', 'SEC_1B', 'SEC_2A'].includes(c.id))
+    : CURSOS_SCHEDULE;
+
+  // Selección de horario según la vista y el curso seleccionado
+  const activeSlots: ScheduleSlot[] =
+    viewMode === 'my_schedule'
+      ? SCHEDULE_MAESTRO_PERSONAL
+      : selectedCursoId === 'SEC_1B'
+      ? SCHEDULE_SEC_1B
+      : selectedCursoId === 'SEC_2A'
+      ? SCHEDULE_SEC_2A
+      : SCHEDULE_SEC_1A;
+
+  const currentCurso = CURSOS_SCHEDULE.find((c) => c.id === selectedCursoId);
+
+  // Exportar Horario a Excel
+  const handleExportExcel = () => {
+    const wb = XLSX.utils.book_new();
+
+    const titulo =
+      viewMode === 'my_schedule'
+        ? 'HORARIO DOCENTE SEMANAL - PROF. CARLOS MAMANI CONDORI'
+        : `HORARIO SEMANAL OFICIAL - ${currentCurso?.nombre.toUpperCase()}`;
+
+    const wsData: any[][] = [
+      ['ESTADO PLURINACIONAL DE BOLIVIA - MINISTERIO DE EDUCACIÓN'],
+      ['UNIDAD EDUCATIVA FRANZ TAMAYO (SIE: 80730045)'],
+      [titulo],
+      [''],
+      ['Período / Hora', 'Lunes', 'Martes', 'Miércoles', 'Jueves', 'Viernes'],
+    ];
+
+    activeSlots.forEach((slot) => {
+      if (slot.isRecess) {
+        wsData.push([slot.timeRange, 'DESCANSO', 'PEDAGÓGICO', 'RECREO', 'ESCOLAR', '']);
+      } else {
+        wsData.push([
+          `Período ${slot.period} (${slot.timeRange})`,
+          slot.days.lunes ? `${slot.days.lunes.subject} (${slot.days.lunes.teacher})` : '-',
+          slot.days.martes ? `${slot.days.martes.subject} (${slot.days.martes.teacher})` : '-',
+          slot.days.miercoles ? `${slot.days.miercoles.subject} (${slot.days.miercoles.teacher})` : '-',
+          slot.days.jueves ? `${slot.days.jueves.subject} (${slot.days.jueves.teacher})` : '-',
+          slot.days.viernes ? `${slot.days.viernes.subject} (${slot.days.viernes.teacher})` : '-',
+        ]);
+      }
+    });
+
+    const ws = XLSX.utils.aoa_to_sheet(wsData);
+    ws['!cols'] = [
+      { wch: 22 },
+      { wch: 32 },
+      { wch: 32 },
+      { wch: 32 },
+      { wch: 32 },
+      { wch: 32 },
+    ];
+
+    XLSX.utils.book_append_sheet(wb, ws, 'Horario');
+    XLSX.writeFile(wb, `Horario_${viewMode === 'my_schedule' ? 'Docente_Mamani' : selectedCursoId}_2026.xlsx`);
   };
 
   return (
     <div className="space-y-6">
-      {/* Top Header */}
-      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 bg-white p-6 rounded-xl border border-slate-200 shadow-sm">
+      {/* Header */}
+      <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 bg-white p-6 rounded-2xl border border-slate-200 shadow-sm">
         <div className="flex items-center space-x-3">
-          <div className="p-3 bg-sky-50 rounded-xl text-sky-700">
+          <div className="p-3 bg-emerald-50 rounded-xl text-emerald-700">
             <Clock className="w-7 h-7" />
           </div>
           <div>
             <h1 className="text-xl font-bold text-slate-900 tracking-tight">
-              Horario Semanal de Clases y Actividades Pedagógicas
+              {viewMode === 'my_schedule'
+                ? 'Mi Horario Docente y Carga Horaria'
+                : 'Distribución de Horarios por Curso y Aula'}
             </h1>
             <p className="text-xs text-slate-500">
-              Distribución de períodos lectivos y descansos (Hoja HOR - Registro Moderno)
+              {viewMode === 'my_schedule'
+                ? 'Prof. Carlos Mamani Condori • 16 Horas Pedagógicas Semanales Asignadas (Gestión 2026)'
+                : `${currentCurso?.nombre} • Unidad Educativa Franz Tamayo (SIE 80730045)`}
             </p>
           </div>
         </div>
 
-        <div className="flex items-center space-x-3">
+        <div className="flex items-center space-x-2">
+          <button
+            onClick={handleExportExcel}
+            className="flex items-center space-x-1.5 px-3.5 py-2 bg-emerald-50 hover:bg-emerald-100 text-emerald-800 border border-emerald-200 rounded-xl text-xs font-bold transition shadow-sm cursor-pointer"
+          >
+            <FileSpreadsheet className="w-4 h-4 text-emerald-600" />
+            <span>Exportar Excel</span>
+          </button>
           <button
             onClick={() => window.print()}
-            className="inline-flex items-center space-x-2 px-3 py-2 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-lg text-xs font-semibold transition"
+            className="flex items-center space-x-1.5 px-3.5 py-2 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-xl text-xs font-semibold transition cursor-pointer"
           >
             <Printer className="w-4 h-4" />
-            <span>Imprimir Horario</span>
+            <span>Imprimir</span>
           </button>
-
-          {(isDirector || isSuperAdmin) && (
-            <button
-              onClick={() => setShowModal(true)}
-              className="inline-flex items-center space-x-2 px-4 py-2 bg-emerald-600 hover:bg-emerald-700 text-white rounded-lg text-xs font-bold transition shadow-sm"
-            >
-              <Plus className="w-4 h-4" />
-              <span>+ Asignar Período</span>
-            </button>
-          )}
         </div>
       </div>
 
-      {feedback && (
-        <div className="p-3.5 bg-emerald-50 border border-emerald-200 rounded-xl text-xs text-emerald-800 flex items-center space-x-2 animate-fadeIn">
-          <CheckCircle2 className="w-4 h-4 text-emerald-600 flex-shrink-0" />
-          <span>{feedback}</span>
-        </div>
-      )}
-
-      {/* Controls & Summary Cards */}
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-        <div className="bg-white p-4 rounded-xl border border-slate-200 shadow-sm space-y-2">
-          <label className="text-xs font-bold text-slate-600 uppercase tracking-wider block">
+      {/* View Mode & Course Selector Bar */}
+      <div className="bg-white p-4 rounded-2xl border border-slate-200 shadow-sm grid grid-cols-1 md:grid-cols-3 gap-3 items-center">
+        {/* Toggle Mode */}
+        <div>
+          <label className="text-[11px] font-bold text-slate-600 uppercase tracking-wider block mb-1">
             Modalidad de Visualización:
           </label>
-          <div className="flex space-x-2">
+          <div className="flex space-x-1.5">
             <button
-              onClick={() => setSelectedView('teacher')}
-              className={`flex-1 py-2 px-3 rounded-lg text-xs font-bold transition ${
-                selectedView === 'teacher'
+              onClick={() => setViewMode('my_schedule')}
+              className={`flex-1 py-2 px-2 text-xs font-bold rounded-xl transition cursor-pointer flex items-center justify-center space-x-1 ${
+                viewMode === 'my_schedule'
                   ? 'bg-emerald-600 text-white shadow-sm'
                   : 'bg-slate-100 text-slate-600 hover:bg-slate-200'
               }`}
             >
-              Horario del Maestro
+              <User className="w-3.5 h-3.5" />
+              <span>Mi Horario Docente</span>
             </button>
             <button
-              onClick={() => setSelectedView('classroom')}
-              className={`flex-1 py-2 px-3 rounded-lg text-xs font-bold transition ${
-                selectedView === 'classroom'
+              onClick={() => setViewMode('course')}
+              className={`flex-1 py-2 px-2 text-xs font-bold rounded-xl transition cursor-pointer flex items-center justify-center space-x-1 ${
+                viewMode === 'course'
                   ? 'bg-emerald-600 text-white shadow-sm'
                   : 'bg-slate-100 text-slate-600 hover:bg-slate-200'
               }`}
             >
-              Por Paralelo
+              <Building2 className="w-3.5 h-3.5" />
+              <span>Por Curso y Paralelo</span>
             </button>
           </div>
         </div>
 
-        <div className="bg-white p-4 rounded-xl border border-slate-200 shadow-sm space-y-2">
-          <label className="text-xs font-bold text-slate-600 uppercase tracking-wider block">
-            Información Institucional:
+        {/* Course Selector (Active when 'course' view is selected) */}
+        <div>
+          <label className="text-[11px] font-bold text-slate-600 uppercase tracking-wider block mb-1 flex items-center space-x-1">
+            <Filter className="w-3.5 h-3.5 text-emerald-600" />
+            <span>Seleccionar Curso y Paralelo:</span>
           </label>
-          <div className="text-xs text-slate-700 space-y-1">
-            <div><strong className="text-slate-900">Unidad Educativa:</strong> Emborozú</div>
-            <div><strong className="text-slate-900">Turno:</strong> Mañana (08:00 a 12:45)</div>
-            <div><strong className="text-slate-900">Gestión:</strong> 2026</div>
-          </div>
+          <select
+            disabled={viewMode === 'my_schedule'}
+            value={selectedCursoId}
+            onChange={(e) => setSelectedCursoId(e.target.value)}
+            className="w-full text-xs p-2.5 bg-slate-50 border border-slate-200 rounded-xl font-bold text-slate-800 disabled:opacity-50 focus:bg-white focus:outline-none focus:ring-2 focus:ring-emerald-500"
+          >
+            {cursosDisponibles.map((c) => (
+              <option key={c.id} value={c.id}>
+                {c.nombre} ({c.aula})
+              </option>
+            ))}
+          </select>
         </div>
 
-        <div className="bg-white p-4 rounded-xl border border-slate-200 shadow-sm flex items-center justify-between">
-          <div>
-            <div className="text-xs font-bold text-slate-600 uppercase tracking-wider">
-              Carga Horaria Semanal
-            </div>
-            <div className="text-2xl font-black text-slate-900 mt-1">
-              30 Horas
-            </div>
-            <div className="text-xs text-emerald-600 font-semibold">
-              6 Períodos diarios completados
-            </div>
+        {/* Legend for Teacher Highlights */}
+        <div className="flex flex-col justify-end text-xs text-slate-500 space-y-1">
+          <div className="flex items-center space-x-2">
+            <span className="w-3 h-3 rounded-full bg-emerald-600 inline-block" />
+            <span className="font-bold text-slate-800">★ Dictado por mí (Prof. Carlos Mamani)</span>
           </div>
-          <div className="w-12 h-12 rounded-xl bg-emerald-50 text-emerald-700 flex items-center justify-center font-bold">
-            <CheckCircle className="w-6 h-6" />
+          <div className="flex items-center space-x-2">
+            <span className="w-3 h-3 rounded-full bg-slate-300 inline-block" />
+            <span className="text-slate-500">Dictado por otros Docentes de Área</span>
           </div>
         </div>
       </div>
 
-      {/* Main Timetable Matrix */}
-      <div className="bg-white border border-slate-200 rounded-xl shadow-sm overflow-hidden">
-        <div className="px-6 py-4 border-b border-slate-200 bg-slate-50 flex items-center justify-between">
-          <h2 className="text-sm font-bold text-slate-800 uppercase tracking-wide">
-            Cronograma Pedagógico Semanal (Lunes a Viernes)
-          </h2>
-          <span className="text-xs text-slate-500 font-medium">
-            Duración por período: 45 minutos
+      {/* Weekly Timetable Grid */}
+      <div className="bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden">
+        <div className="p-4 border-b border-slate-200 bg-slate-50 flex items-center justify-between">
+          <span className="text-xs font-bold text-slate-800 uppercase tracking-wider flex items-center space-x-1.5">
+            <Calendar className="w-4 h-4 text-emerald-600" />
+            <span>
+              {viewMode === 'my_schedule'
+                ? 'Malla Semanal Consolidada de Clases (Lunes a Viernes)'
+                : `Malla Semanal • ${currentCurso?.nombre} (${currentCurso?.aula})`}
+            </span>
+          </span>
+          <span className="text-xs text-emerald-800 font-bold bg-emerald-50 px-2.5 py-1 rounded-lg border border-emerald-200">
+            {viewMode === 'my_schedule' ? '16 Horas / Semana' : `Turno ${currentCurso?.turno}`}
           </span>
         </div>
 
         <div className="overflow-x-auto">
-          <table className="w-full text-left border-collapse text-xs">
+          <table className="w-full text-xs text-left border-collapse">
             <thead>
-              <tr className="bg-slate-100 border-b border-slate-200 text-slate-700 font-bold">
-                <th className="py-3 px-3 text-center w-14 border-r border-slate-200">Período</th>
-                <th className="py-3 px-3 text-center w-28 border-r border-slate-200">Horario</th>
-                <th className="py-3 px-3 text-center w-1/5 border-r border-slate-200">LUNES</th>
-                <th className="py-3 px-3 text-center w-1/5 border-r border-slate-200">MARTES</th>
-                <th className="py-3 px-3 text-center w-1/5 border-r border-slate-200">MIÉRCOLES</th>
-                <th className="py-3 px-3 text-center w-1/5 border-r border-slate-200">JUEVES</th>
-                <th className="py-3 px-3 text-center w-1/5">VIERNES</th>
+              <tr className="bg-slate-100 border-b border-slate-200 text-slate-700 font-bold text-center">
+                <th className="py-3 px-3 w-28 border-r border-slate-200">Período / Hora</th>
+                <th className="py-3 px-3 w-1/5 border-r border-slate-200">Lunes</th>
+                <th className="py-3 px-3 w-1/5 border-r border-slate-200">Martes</th>
+                <th className="py-3 px-3 w-1/5 border-r border-slate-200">Miércoles</th>
+                <th className="py-3 px-3 w-1/5 border-r border-slate-200">Jueves</th>
+                <th className="py-3 px-3 w-1/5">Viernes</th>
               </tr>
             </thead>
-            <tbody className="divide-y divide-slate-200">
-              {slots.map((slot, index) => {
+            <tbody className="divide-y divide-slate-100">
+              {activeSlots.map((slot, index) => {
                 if (slot.isRecess) {
                   return (
-                    <tr key={`recess-${index}`} className="bg-amber-50/80 border-y-2 border-amber-200">
-                      <td colSpan={7} className="py-2.5 px-4 text-center font-bold text-amber-800 tracking-wider text-xs">
-                        <span className="inline-flex items-center space-x-2">
-                          <Coffee className="w-4 h-4" />
-                          <span>DESCANSO PEDAGÓGICO / RECREO ESCOLAR (11:00 - 11:15)</span>
-                        </span>
+                    <tr key={`recess-${index}`} className="bg-amber-50/60 border-y border-amber-200">
+                      <td className="py-2.5 px-3 text-center font-mono font-bold text-amber-800 border-r border-amber-200">
+                        {slot.timeRange}
+                      </td>
+                      <td colSpan={5} className="py-2.5 text-center font-bold text-amber-800 tracking-wider">
+                        <div className="flex items-center justify-center space-x-2">
+                          <Coffee className="w-4 h-4 text-amber-600" />
+                          <span>DESCANSO PEDAGÓGICO • RECREO ESCOLAR</span>
+                        </div>
                       </td>
                     </tr>
                   );
                 }
 
+                const daysOrder: Array<'lunes' | 'martes' | 'miercoles' | 'jueves' | 'viernes'> = [
+                  'lunes',
+                  'martes',
+                  'miercoles',
+                  'jueves',
+                  'viernes',
+                ];
+
                 return (
-                  <tr key={slot.period} className="hover:bg-slate-50/60 transition">
-                    <td className="py-3 px-3 text-center font-mono font-bold text-slate-700 border-r border-slate-200 bg-slate-50/50">
-                      {slot.period}º
-                    </td>
-                    <td className="py-3 px-3 text-center font-mono text-slate-600 border-r border-slate-200 whitespace-nowrap bg-slate-50/50">
-                      {slot.timeRange}
+                  <tr key={`slot-${slot.period}`} className="hover:bg-slate-50 transition">
+                    <td className="py-3 px-3 text-center border-r border-slate-200 bg-slate-50/50">
+                      <div className="font-bold text-slate-800">{slot.period}º Período</div>
+                      <div className="text-[10px] text-slate-400 font-mono mt-0.5">{slot.timeRange}</div>
                     </td>
 
-                    {/* Lunes */}
-                    <td className="p-2 border-r border-slate-200">
-                      {slot.days.lunes ? (
-                        <div className={`p-2 rounded-lg border group relative ${slot.days.lunes.color}`}>
-                          <div className="font-bold">{slot.days.lunes.subject}</div>
-                          <div className="flex justify-between text-[11px] text-slate-600 mt-1">
-                            <span>{slot.days.lunes.grade}</span>
-                            <span className="font-mono">{slot.days.lunes.room}</span>
-                          </div>
-                          {(isDirector || isSuperAdmin) && (
-                            <button
-                              onClick={() => handleClearSlot(slot.period, 'lunes')}
-                              title="Quitar"
-                              className="absolute top-1 right-1 opacity-0 group-hover:opacity-100 text-slate-400 hover:text-rose-600 transition"
-                            >
-                              <X className="w-3 h-3" />
-                            </button>
-                          )}
-                        </div>
-                      ) : (
-                        <div className="text-center text-slate-300">-</div>
-                      )}
-                    </td>
+                    {daysOrder.map((day) => {
+                      const detail = slot.days[day];
+                      if (!detail) {
+                        return (
+                          <td key={day} className="py-3 px-2 border-r border-slate-200 text-center">
+                            <span className="text-[11px] text-slate-300 italic">Libre / Sin Carga</span>
+                          </td>
+                        );
+                      }
 
-                    {/* Martes */}
-                    <td className="p-2 border-r border-slate-200">
-                      {slot.days.martes ? (
-                        <div className={`p-2 rounded-lg border group relative ${slot.days.martes.color}`}>
-                          <div className="font-bold">{slot.days.martes.subject}</div>
-                          <div className="flex justify-between text-[11px] text-slate-600 mt-1">
-                            <span>{slot.days.martes.grade}</span>
-                            <span className="font-mono">{slot.days.martes.room}</span>
-                          </div>
-                          {(isDirector || isSuperAdmin) && (
-                            <button
-                              onClick={() => handleClearSlot(slot.period, 'martes')}
-                              title="Quitar"
-                              className="absolute top-1 right-1 opacity-0 group-hover:opacity-100 text-slate-400 hover:text-rose-600 transition"
-                            >
-                              <X className="w-3 h-3" />
-                            </button>
-                          )}
-                        </div>
-                      ) : (
-                        <div className="text-center text-slate-300">-</div>
-                      )}
-                    </td>
+                      return (
+                        <td key={day} className="py-2 px-2 border-r border-slate-200 align-top">
+                          <div
+                            className={`p-2.5 rounded-xl border transition shadow-xs ${
+                              detail.isMine
+                                ? 'bg-emerald-50 border-emerald-400 text-emerald-950 ring-2 ring-emerald-500/20'
+                                : detail.color
+                            }`}
+                          >
+                            <div className="flex items-start justify-between">
+                              <span className="font-extrabold text-xs block leading-tight">
+                                {detail.subject}
+                              </span>
+                              {detail.isMine && (
+                                <span className="bg-emerald-600 text-white text-[9px] font-black px-1.5 py-0.5 rounded-full ml-1 shrink-0">
+                                  ★ MI CLASE
+                                </span>
+                              )}
+                            </div>
 
-                    {/* Miercoles */}
-                    <td className="p-2 border-r border-slate-200">
-                      {slot.days.miercoles ? (
-                        <div className={`p-2 rounded-lg border group relative ${slot.days.miercoles.color}`}>
-                          <div className="font-bold">{slot.days.miercoles.subject}</div>
-                          <div className="flex justify-between text-[11px] text-slate-600 mt-1">
-                            <span>{slot.days.miercoles.grade}</span>
-                            <span className="font-mono">{slot.days.miercoles.room}</span>
-                          </div>
-                          {(isDirector || isSuperAdmin) && (
-                            <button
-                              onClick={() => handleClearSlot(slot.period, 'miercoles')}
-                              title="Quitar"
-                              className="absolute top-1 right-1 opacity-0 group-hover:opacity-100 text-slate-400 hover:text-rose-600 transition"
-                            >
-                              <X className="w-3 h-3" />
-                            </button>
-                          )}
-                        </div>
-                      ) : (
-                        <div className="text-center text-slate-300">-</div>
-                      )}
-                    </td>
+                            <div className="text-[10px] text-slate-600 mt-1 font-medium flex items-center justify-between">
+                              <span className="font-bold text-slate-800">{detail.grade}</span>
+                              <span className="font-mono bg-white/70 px-1 rounded">{detail.room}</span>
+                            </div>
 
-                    {/* Jueves */}
-                    <td className="p-2 border-r border-slate-200">
-                      {slot.days.jueves ? (
-                        <div className={`p-2 rounded-lg border group relative ${slot.days.jueves.color}`}>
-                          <div className="font-bold">{slot.days.jueves.subject}</div>
-                          <div className="flex justify-between text-[11px] text-slate-600 mt-1">
-                            <span>{slot.days.jueves.grade}</span>
-                            <span className="font-mono">{slot.days.jueves.room}</span>
+                            <div className="text-[10px] text-slate-500 mt-1 pt-1 border-t border-slate-200/50">
+                              {detail.teacher}
+                            </div>
                           </div>
-                          {(isDirector || isSuperAdmin) && (
-                            <button
-                              onClick={() => handleClearSlot(slot.period, 'jueves')}
-                              title="Quitar"
-                              className="absolute top-1 right-1 opacity-0 group-hover:opacity-100 text-slate-400 hover:text-rose-600 transition"
-                            >
-                              <X className="w-3 h-3" />
-                            </button>
-                          )}
-                        </div>
-                      ) : (
-                        <div className="text-center text-slate-300">-</div>
-                      )}
-                    </td>
-
-                    {/* Viernes */}
-                    <td className="p-2">
-                      {slot.days.viernes ? (
-                        <div className={`p-2 rounded-lg border group relative ${slot.days.viernes.color}`}>
-                          <div className="font-bold">{slot.days.viernes.subject}</div>
-                          <div className="flex justify-between text-[11px] text-slate-600 mt-1">
-                            <span>{slot.days.viernes.grade}</span>
-                            <span className="font-mono">{slot.days.viernes.room}</span>
-                          </div>
-                          {(isDirector || isSuperAdmin) && (
-                            <button
-                              onClick={() => handleClearSlot(slot.period, 'viernes')}
-                              title="Quitar"
-                              className="absolute top-1 right-1 opacity-0 group-hover:opacity-100 text-slate-400 hover:text-rose-600 transition"
-                            >
-                              <X className="w-3 h-3" />
-                            </button>
-                          )}
-                        </div>
-                      ) : (
-                        <div className="text-center text-slate-300">-</div>
-                      )}
-                    </td>
+                        </td>
+                      );
+                    })}
                   </tr>
                 );
               })}
@@ -447,127 +545,6 @@ export const SchedulePage: React.FC = () => {
           </table>
         </div>
       </div>
-
-      {/* MODAL: ASIGNAR / CONFIGURAR PERÍODO */}
-      {showModal && (
-        <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-50 flex items-center justify-center p-4">
-          <div className="bg-white rounded-2xl max-w-md w-full p-6 shadow-2xl border border-slate-200 space-y-4 animate-scaleUp">
-            <div className="flex justify-between items-center border-b border-slate-200 pb-3">
-              <h2 className="text-sm font-bold text-slate-900 uppercase">Asignar Período al Horario</h2>
-              <button onClick={() => setShowModal(false)} className="text-slate-400 hover:text-slate-600">
-                <X className="w-5 h-5" />
-              </button>
-            </div>
-            <form onSubmit={handleSaveSlot} className="space-y-3 text-xs">
-              <div className="grid grid-cols-2 gap-3">
-                <div>
-                  <label className="font-bold text-slate-700 block mb-1">Día:</label>
-                  <select
-                    value={slotForm.day}
-                    onChange={(e) => setSlotForm({ ...slotForm, day: e.target.value as any })}
-                    className="w-full bg-slate-50 border border-slate-200 rounded-lg p-2 font-bold"
-                  >
-                    <option value="lunes">Lunes</option>
-                    <option value="martes">Martes</option>
-                    <option value="miercoles">Miércoles</option>
-                    <option value="jueves">Jueves</option>
-                    <option value="viernes">Viernes</option>
-                  </select>
-                </div>
-                <div>
-                  <label className="font-bold text-slate-700 block mb-1">Período:</label>
-                  <select
-                    value={slotForm.period}
-                    onChange={(e) => setSlotForm({ ...slotForm, period: Number(e.target.value) })}
-                    className="w-full bg-slate-50 border border-slate-200 rounded-lg p-2 font-bold"
-                  >
-                    <option value={1}>1º (08:00 - 08:45)</option>
-                    <option value={2}>2º (08:45 - 09:30)</option>
-                    <option value={3}>3º (09:30 - 10:15)</option>
-                    <option value={4}>4º (10:15 - 11:00)</option>
-                    <option value={5}>5º (11:15 - 12:00)</option>
-                    <option value={6}>6º (12:00 - 12:45)</option>
-                  </select>
-                </div>
-              </div>
-
-              <div>
-                <label className="font-bold text-slate-700 block mb-1">Asignatura:</label>
-                <select
-                  value={slotForm.subject}
-                  onChange={(e) => setSlotForm({ ...slotForm, subject: e.target.value })}
-                  className="w-full bg-slate-50 border border-slate-200 rounded-lg p-2 font-medium"
-                >
-                  <option value="Comunicación y Lenguajes">Comunicación y Lenguajes</option>
-                  <option value="Lengua Originaria (Guaraní)">Lengua Originaria (Guaraní)</option>
-                  <option value="Lengua Extranjera (Inglés)">Lengua Extranjera (Inglés)</option>
-                  <option value="Literatura y Redacción">Literatura y Redacción</option>
-                  <option value="Ciencias Sociales e Historia">Ciencias Sociales e Historia</option>
-                  <option value="Planificación Curricular">Planificación Curricular</option>
-                  <option value="Consejo de Evaluación">Consejo de Evaluación</option>
-                </select>
-              </div>
-
-              <div className="grid grid-cols-2 gap-3">
-                <div>
-                  <label className="font-bold text-slate-700 block mb-1">Curso / Paralelo:</label>
-                  <input
-                    type="text"
-                    required
-                    value={slotForm.grade}
-                    onChange={(e) => setSlotForm({ ...slotForm, grade: e.target.value })}
-                    className="w-full bg-slate-50 border border-slate-200 rounded-lg p-2"
-                    placeholder='ej. 1º Sec "A"'
-                  />
-                </div>
-                <div>
-                  <label className="font-bold text-slate-700 block mb-1">Aula / Espacio:</label>
-                  <input
-                    type="text"
-                    required
-                    value={slotForm.room}
-                    onChange={(e) => setSlotForm({ ...slotForm, room: e.target.value })}
-                    className="w-full bg-slate-50 border border-slate-200 rounded-lg p-2"
-                    placeholder="ej. Aula 101"
-                  />
-                </div>
-              </div>
-
-              <div>
-                <label className="font-bold text-slate-700 block mb-1">Color de Etiqueta:</label>
-                <select
-                  value={slotForm.color}
-                  onChange={(e) => setSlotForm({ ...slotForm, color: e.target.value })}
-                  className="w-full bg-slate-50 border border-slate-200 rounded-lg p-2 font-medium"
-                >
-                  <option value="bg-emerald-50 border-emerald-300 text-emerald-900">Verde Esmeralda (Lenguajes)</option>
-                  <option value="bg-sky-50 border-sky-300 text-sky-900">Azul Cielo (Idiomas)</option>
-                  <option value="bg-amber-50 border-amber-300 text-amber-900">Ámbar (Sociales / Historia)</option>
-                  <option value="bg-purple-50 border-purple-300 text-purple-900">Púrpura (Literatura)</option>
-                  <option value="bg-rose-50 border-rose-300 text-rose-900">Rosa (Talleres)</option>
-                  <option value="bg-slate-100 border-slate-300 text-slate-800">Gris (Institucional / Consejos)</option>
-                </select>
-              </div>
-
-              <div className="flex justify-end space-x-2 pt-3 border-t border-slate-100">
-                <button
-                  type="button"
-                  onClick={() => setShowModal(false)}
-                  className="px-4 py-2 text-slate-600 hover:bg-slate-100 rounded-lg"
-                >
-                  Cancelar
-                </button>
-                <button
-                  type="submit"
-                  className="px-4 py-2 bg-emerald-600 hover:bg-emerald-700 text-white font-bold rounded-lg shadow-sm"
-                >
-                  Guardar Período
-                </button>
-              </div>
-            </form>
-          </div>
-        </div>
-      )}
     </div>
   );
 };

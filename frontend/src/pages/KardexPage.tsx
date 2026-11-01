@@ -16,7 +16,10 @@ import {
   Sparkles,
   BookOpen,
   Trash2,
+  Filter,
+  CheckCircle2,
 } from 'lucide-react';
+import { exportParentalCitationPdf } from '../utils/exportHelpers';
 
 interface KardexEntry {
   id: string;
@@ -52,6 +55,7 @@ interface KardexEntry {
 
 interface StudentKardexInfo {
   id: string;
+  cursoId: string;
   rude: string;
   ci: string;
   nombreCompleto: string;
@@ -63,81 +67,281 @@ interface StudentKardexInfo {
   entries: KardexEntry[];
 }
 
+const CURSOS_KARDEX = [
+  { id: 'SEC_1A', nombre: '1º de Secundaria - Paralelo "A"', turno: 'Mañana' },
+  { id: 'SEC_1B', nombre: '1º de Secundaria - Paralelo "B"', turno: 'Tarde' },
+  { id: 'SEC_2A', nombre: '2º de Secundaria - Paralelo "A"', turno: 'Mañana' },
+  { id: 'PRIM_1A', nombre: '1º de Primaria - Paralelo "A"', turno: 'Mañana' },
+  { id: 'PRIM_2A', nombre: '2º de Primaria - Paralelo "A"', turno: 'Mañana' },
+];
+
+const INITIAL_KARDEX_STUDENTS: StudentKardexInfo[] = [
+  // 1° Secundaria A
+  {
+    id: 'k-1',
+    cursoId: 'SEC_1A',
+    rude: '807300452026001',
+    ci: '10928374 LP',
+    nombreCompleto: 'ALANOCA CRUZ ERICK ELIAS',
+    curso: '1º de Secundaria - Paralelo "A"',
+    fechaNacimiento: '14/05/2012',
+    tutorNombre: 'Marcos Alanoca Ticona',
+    tutorContacto: '71548923',
+    parentesco: 'Padre',
+    entries: [
+      {
+        id: 'ent-1',
+        fecha: '2026-03-12',
+        asistencia: { faltaConLicencia: false, faltaSinLicencia: false, fueraDeHorario: true, abandonoClase: false },
+        responsabilidad: { noPresentoDeber: true, noDioEvaluacion: false, noExpuso: false, noTrajoMateriales: false, danoMobiliario: false, trajoCelularSinPermiso: false },
+        participacion: { noParticipa: false, noPrestaAtencion: true },
+        conducta: { faltoRespetoDocente: false, faltoRespetoCompaneros: false, lenguajeInapropiado: false },
+        observacionDetalle: 'Llegó con 20 minutos de retraso e ingresó sin la tarea del tema de Análisis Sintáctico.',
+        compromisoEstudiante: 'El estudiante se compromete a regularizar la presentación el día lunes a primera hora.',
+        firmaMaestro: 'Prof. Carlos Mamani C.',
+        citacionPadres: false,
+      },
+      {
+        id: 'ent-1b',
+        fecha: '2026-03-24',
+        asistencia: { faltaConLicencia: false, faltaSinLicencia: false, fueraDeHorario: true, abandonoClase: false },
+        responsabilidad: { noPresentoDeber: false, noDioEvaluacion: false, noExpuso: false, noTrajoMateriales: true, danoMobiliario: false, trajoCelularSinPermiso: false },
+        participacion: { noParticipa: false, noPrestaAtencion: false },
+        conducta: { faltoRespetoDocente: false, faltoRespetoCompaneros: false, lenguajeInapropiado: false },
+        observacionDetalle: 'Olvidó traer su texto guía y carpeta de apuntes en hora de clases.',
+        compromisoEstudiante: 'Cuidar de empacar su material de trabajo la noche anterior.',
+        firmaMaestro: 'Prof. Carlos Mamani C.',
+        citacionPadres: false,
+      },
+    ],
+  },
+  {
+    id: 'k-2',
+    cursoId: 'SEC_1A',
+    rude: '807300452026002',
+    ci: '12847593 LP',
+    nombreCompleto: 'ARAMAYO TOLEDO FABIOLA',
+    curso: '1º de Secundaria - Paralelo "A"',
+    fechaNacimiento: '22/09/2012',
+    tutorNombre: 'Sonia Toledo Quispe',
+    tutorContacto: '68923145',
+    parentesco: 'Madre',
+    entries: [],
+  },
+  {
+    id: 'k-3',
+    cursoId: 'SEC_1A',
+    rude: '807300452026003',
+    ci: '11029485 LP',
+    nombreCompleto: 'CAMACHO RENJIFO KAROL LUCERO',
+    curso: '1º de Secundaria - Paralelo "A"',
+    fechaNacimiento: '11/11/2012',
+    tutorNombre: 'Lucero Renjifo',
+    tutorContacto: '72034918',
+    parentesco: 'Madre',
+    entries: [
+      {
+        id: 'ent-camacho-1',
+        fecha: '2026-03-15',
+        asistencia: { faltaConLicencia: false, faltaSinLicencia: true, fueraDeHorario: false, abandonoClase: false },
+        responsabilidad: { noPresentoDeber: false, noDioEvaluacion: true, noExpuso: false, noTrajoMateriales: false, danoMobiliario: false, trajoCelularSinPermiso: false },
+        participacion: { noParticipa: false, noPrestaAtencion: false },
+        conducta: { faltoRespetoDocente: false, faltoRespetoCompaneros: false, lenguajeInapropiado: false },
+        observacionDetalle: 'Falta no justificada a la evaluación programada del primer bloque temático.',
+        compromisoEstudiante: 'Presentar justificativo médico firmado por apoderado para reprogramación.',
+        firmaMaestro: 'Prof. Carlos Mamani C.',
+        citacionPadres: false,
+      },
+    ],
+  },
+  {
+    id: 'k-4',
+    cursoId: 'SEC_1A',
+    rude: '807300452026004',
+    ci: '10847291 LP',
+    nombreCompleto: 'CARDOZO YEVARA CARLIN YARITA',
+    curso: '1º de Secundaria - Paralelo "A"',
+    fechaNacimiento: '05/04/2012',
+    tutorNombre: 'Elena Yevara',
+    tutorContacto: '71928301',
+    parentesco: 'Madre',
+    entries: [],
+  },
+  {
+    id: 'k-5',
+    cursoId: 'SEC_1A',
+    rude: '807300452026005',
+    ci: '12948172 LP',
+    nombreCompleto: 'COLQUE COLODRO JHOANNA MAYENNI',
+    curso: '1º de Secundaria - Paralelo "A"',
+    fechaNacimiento: '18/08/2012',
+    tutorNombre: 'Ramiro Colque',
+    tutorContacto: '67019284',
+    parentesco: 'Padre',
+    entries: [],
+  },
+  {
+    id: 'k-6',
+    cursoId: 'SEC_1A',
+    rude: '807300452026006',
+    ci: '9847261 LP',
+    nombreCompleto: 'FLORES CALLISAYA GABRIEL OMAR',
+    curso: '1º de Secundaria - Paralelo "A"',
+    fechaNacimiento: '03/02/2012',
+    tutorNombre: 'Ramiro Flores Choque',
+    tutorContacto: '73091824',
+    parentesco: 'Padre',
+    entries: [
+      {
+        id: 'ent-2',
+        fecha: '2026-03-18',
+        asistencia: { faltaConLicencia: false, faltaSinLicencia: true, fueraDeHorario: false, abandonoClase: false },
+        responsabilidad: { noPresentoDeber: false, noDioEvaluacion: true, noExpuso: false, noTrajoMateriales: true, danoMobiliario: false, trajoCelularSinPermiso: true },
+        participacion: { noParticipa: true, noPrestaAtencion: true },
+        conducta: { faltoRespetoDocente: false, faltoRespetoCompaneros: true, lenguajeInapropiado: false },
+        observacionDetalle: 'Uso reiterado de teléfono celular en horas de clase y distracción continua a compañeros.',
+        compromisoEstudiante: 'No volver a ingresar al aula con dispositivos electrónicos sin previa autorización.',
+        firmaMaestro: 'Prof. Carlos Mamani C.',
+        citacionPadres: true,
+      },
+    ],
+  },
+
+  // 1° Secundaria B
+  {
+    id: 'k-7',
+    cursoId: 'SEC_1B',
+    rude: '807300452026007',
+    ci: '13948271 LP',
+    nombreCompleto: 'ARCE CONDORI MATEO DANIEL',
+    curso: '1º de Secundaria - Paralelo "B"',
+    fechaNacimiento: '15/06/2012',
+    tutorNombre: 'Daniel Arce',
+    tutorContacto: '71548123',
+    parentesco: 'Padre',
+    entries: [],
+  },
+  {
+    id: 'k-8',
+    cursoId: 'SEC_1B',
+    rude: '807300452026012',
+    ci: '12948194 LP',
+    nombreCompleto: 'CHOQUE HUANCA BRUNO JHOEL',
+    curso: '1º de Secundaria - Paralelo "B"',
+    fechaNacimiento: '24/10/2012',
+    tutorNombre: 'Rosa Huanca',
+    tutorContacto: '71829444',
+    parentesco: 'Madre',
+    entries: [
+      {
+        id: 'ent-choque-1',
+        fecha: '2026-03-20',
+        asistencia: { faltaConLicencia: false, faltaSinLicencia: false, fueraDeHorario: false, abandonoClase: false },
+        responsabilidad: { noPresentoDeber: false, noDioEvaluacion: false, noExpuso: false, noTrajoMateriales: false, danoMobiliario: true, trajoCelularSinPermiso: false },
+        participacion: { noParticipa: false, noPrestaAtencion: false },
+        conducta: { faltoRespetoDocente: false, faltoRespetoCompaneros: true, lenguajeInapropiado: true },
+        observacionDetalle: 'Manchó con corrector y rayó la mesa de trabajo de su aula; usó términos inadecuados.',
+        compromisoEstudiante: 'Limpiar el mobiliario afectado en presencia del regente de disciplina.',
+        firmaMaestro: 'Prof. Carlos Mamani C.',
+        citacionPadres: true,
+      },
+    ],
+  },
+  {
+    id: 'k-9',
+    cursoId: 'SEC_1B',
+    rude: '807300452026009',
+    ci: '14920184 LP',
+    nombreCompleto: 'MAMANI QUISPE LUCIA VALENTINA',
+    curso: '1º de Secundaria - Paralelo "B"',
+    fechaNacimiento: '19/01/2012',
+    tutorNombre: 'Juan Mamani',
+    tutorContacto: '72034111',
+    parentesco: 'Padre',
+    entries: [
+      {
+        id: 'ent-lucia-1',
+        fecha: '2026-03-10',
+        asistencia: { faltaConLicencia: false, faltaSinLicencia: false, fueraDeHorario: true, abandonoClase: false },
+        responsabilidad: { noPresentoDeber: false, noDioEvaluacion: false, noExpuso: false, noTrajoMateriales: false, danoMobiliario: false, trajoCelularSinPermiso: false },
+        participacion: { noParticipa: false, noPrestaAtencion: false },
+        conducta: { faltoRespetoDocente: false, faltoRespetoCompaneros: false, lenguajeInapropiado: false },
+        observacionDetalle: 'Retraso de 15 minutos en el ingreso de la jornada matutina.',
+        compromisoEstudiante: 'Tomar previsiones de transporte escolar.',
+        firmaMaestro: 'Prof. Carlos Mamani C.',
+        citacionPadres: false,
+      },
+    ],
+  },
+
+  // 2° Secundaria A
+  {
+    id: 'k-10',
+    cursoId: 'SEC_2A',
+    rude: '807300452026017',
+    ci: '14829104 LP',
+    nombreCompleto: 'ORTIZ PEREZ SEBASTIAN ANDRES',
+    curso: '2º de Secundaria - Paralelo "A"',
+    fechaNacimiento: '12/12/2011',
+    tutorNombre: 'Andres Ortiz',
+    tutorContacto: '67019999',
+    parentesco: 'Padre',
+    entries: [
+      {
+        id: 'ent-ortiz-1',
+        fecha: '2026-03-25',
+        asistencia: { faltaConLicencia: false, faltaSinLicencia: false, fueraDeHorario: false, abandonoClase: true },
+        responsabilidad: { noPresentoDeber: true, noDioEvaluacion: false, noExpuso: false, noTrajoMateriales: false, danoMobiliario: false, trajoCelularSinPermiso: false },
+        participacion: { noParticipa: false, noPrestaAtencion: true },
+        conducta: { faltoRespetoDocente: true, faltoRespetoCompaneros: false, lenguajeInapropiado: false },
+        observacionDetalle: 'Salió del aula sin autorización del docente 10 minutos antes del timbre de salida.',
+        compromisoEstudiante: 'Permanecer en su pupitre hasta la finalización reglamentaria del periodo.',
+        firmaMaestro: 'Prof. Carlos Mamani C.',
+        citacionPadres: true,
+      },
+    ],
+  },
+  {
+    id: 'k-11',
+    cursoId: 'SEC_2A',
+    rude: '807300452026013',
+    ci: '11928471 LP',
+    nombreCompleto: 'SALAZAR RAMOS DIEGO ARMANDO',
+    curso: '2º de Secundaria - Paralelo "A"',
+    fechaNacimiento: '08/07/2011',
+    tutorNombre: 'Armando Salazar',
+    tutorContacto: '71548555',
+    parentesco: 'Padre',
+    entries: [],
+  },
+];
+
 export const KardexPage: React.FC = () => {
   const { isMaestro, isDirector, isSuperAdmin, user } = useAuth();
 
-  // Mock Students with Kardex history matching REGISTRO_MODERNO.xlsb
-  const [students, setStudents] = useState<StudentKardexInfo[]>([
-    {
-      id: 'k-1',
-      rude: '807300452026001',
-      ci: '10928374 LP',
-      nombreCompleto: 'ALANOCA CRUZ ERICK ELIAS',
-      curso: '1º de Secundaria - Paralelo A',
-      fechaNacimiento: '14/05/2012',
-      tutorNombre: 'Marcos Alanoca Ticona',
-      tutorContacto: '71548923',
-      parentesco: 'Padre',
-      entries: [
-        {
-          id: 'ent-1',
-          fecha: '2026-03-12',
-          asistencia: { faltaConLicencia: false, faltaSinLicencia: false, fueraDeHorario: true, abandonoClase: false },
-          responsabilidad: { noPresentoDeber: true, noDioEvaluacion: false, noExpuso: false, noTrajoMateriales: false, danoMobiliario: false, trajoCelularSinPermiso: false },
-          participacion: { noParticipa: false, noPrestaAtencion: true },
-          conducta: { faltoRespetoDocente: false, faltoRespetoCompaneros: false, lenguajeInapropiado: false },
-          observacionDetalle: 'Llegó con 20 minutos de retraso y no entregó la tarea de Lenguaje sobre sintaxis.',
-          compromisoEstudiante: 'El estudiante se compromete a regularizar su tarea el día lunes a primera hora.',
-          firmaMaestro: 'Prof. Carlos Mamani C.',
-          citacionPadres: false,
-        },
-      ],
-    },
-    {
-      id: 'k-2',
-      rude: '807300452026002',
-      ci: '12847593 LP',
-      nombreCompleto: 'ARAMAYO TOLEDO FABIOLA',
-      curso: '1º de Secundaria - Paralelo A',
-      fechaNacimiento: '22/09/2012',
-      tutorNombre: 'Sonia Toledo Quispe',
-      tutorContacto: '68923145',
-      parentesco: 'Madre',
-      entries: [],
-    },
-    {
-      id: 'k-3',
-      rude: '807300452026006',
-      ci: '9847261 LP',
-      nombreCompleto: 'FLORES CALLISAYA GABRIEL OMAR',
-      curso: '1º de Secundaria - Paralelo A',
-      fechaNacimiento: '03/02/2012',
-      tutorNombre: 'Ramiro Flores Choque',
-      tutorContacto: '73091824',
-      parentesco: 'Padre',
-      entries: [
-        {
-          id: 'ent-2',
-          fecha: '2026-03-18',
-          asistencia: { faltaConLicencia: false, faltaSinLicencia: true, fueraDeHorario: false, abandonoClase: false },
-          responsabilidad: { noPresentoDeber: false, noDioEvaluacion: true, noExpuso: false, noTrajoMateriales: true, danoMobiliario: false, trajoCelularSinPermiso: true },
-          participacion: { noParticipa: true, noPrestaAtencion: true },
-          conducta: { faltoRespetoDocente: false, faltoRespetoCompaneros: true, lenguajeInapropiado: false },
-          observacionDetalle: 'Uso de teléfono móvil durante la explicación y discusión con compañero de banco.',
-          compromisoEstudiante: 'No volver a sacar el dispositivo en horas lectivas.',
-          firmaMaestro: 'Prof. Carlos Mamani C.',
-          citacionPadres: true,
-        },
-      ],
-    },
-  ]);
+  // Maestro solo ve sus cursos asignados (SEC_1A, SEC_1B, SEC_2A)
+  const isMaestroOnly = isMaestro && !isDirector && !isSuperAdmin;
+  const cursosDisponibles = isMaestroOnly
+    ? CURSOS_KARDEX.filter((c) => ['SEC_1A', 'SEC_1B', 'SEC_2A'].includes(c.id))
+    : CURSOS_KARDEX;
+
+  const [selectedCursoId, setSelectedCursoId] = useState<string>('SEC_1A');
+  const [filterOnlyIncidents, setFilterOnlyIncidents] = useState<boolean>(false);
+  const [students, setStudents] = useState<StudentKardexInfo[]>(INITIAL_KARDEX_STUDENTS);
+
+  // Filtrado reactivo de estudiantes según curso y opción de incidencias
+  const studentsOfCourse = students.filter((s) => s.cursoId === selectedCursoId);
+  const visibleStudents = filterOnlyIncidents
+    ? studentsOfCourse.filter((s) => s.entries.length > 0)
+    : studentsOfCourse;
 
   const [selectedStudentId, setSelectedStudentId] = useState<string>('k-1');
   const [showCitationModal, setShowCitationModal] = useState<boolean>(false);
-  const [citationDate, setCitationDate] = useState<string>('2026-04-05');
-  const [citationTime, setCitationTime] = useState<string>('10:30');
+  const [citationDate, setCitationDate] = useState<string>('2026-04-08');
+  const [citationTime, setCitationTime] = useState<string>('09:30');
+  const [feedback, setFeedback] = useState<string | null>(null);
 
-  // Form state for creating a new Kardex observation
+  // Form state para nueva observación de Kardex
   const [newDate, setNewDate] = useState<string>(new Date().toISOString().split('T')[0]);
   const [asistencia, setAsistencia] = useState({
     faltaConLicencia: false,
@@ -166,7 +370,11 @@ export const KardexPage: React.FC = () => {
   const [compromisoEstudiante, setCompromisoEstudiante] = useState('');
   const [citacionPadres, setCitacionPadres] = useState(false);
 
-  const selectedStudent = students.find((s) => s.id === selectedStudentId) || students[0];
+  // Asegurar que el estudiante seleccionado pertenezca al curso visible
+  const selectedStudent =
+    visibleStudents.find((s) => s.id === selectedStudentId) ||
+    visibleStudents[0] ||
+    studentsOfCourse[0];
 
   const handleAddEntry = (e: React.FormEvent) => {
     e.preventDefault();
@@ -191,11 +399,12 @@ export const KardexPage: React.FC = () => {
 
     setStudents((prev) =>
       prev.map((s) =>
-        s.id === selectedStudentId
-          ? { ...s, entries: [newEntry, ...s.entries] }
-          : s
+        s.id === selectedStudent.id ? { ...s, entries: [newEntry, ...s.entries] } : s
       )
     );
+
+    setFeedback('✅ Registro de Kardex disciplinario añadido exitosamente.');
+    setTimeout(() => setFeedback(null), 3000);
 
     // Reset Form
     setObservacionDetalle('');
@@ -210,600 +419,630 @@ export const KardexPage: React.FC = () => {
   const handleDeleteEntry = (entryId: string) => {
     setStudents((prev) =>
       prev.map((s) =>
-        s.id === selectedStudentId
+        s.id === selectedStudent.id
           ? { ...s, entries: s.entries.filter((e) => e.id !== entryId) }
           : s
       )
     );
   };
 
+  // Descarga del documento formal de Citación a Padres en PDF
+  const handleGenerateCitationPdf = () => {
+    if (!selectedStudent) return;
+    const teacherName = user?.persona
+      ? `Prof. ${user.persona.nombres} ${user.persona.primerApellido}`
+      : 'Prof. Carlos Mamani Condori';
+
+    const lastEntry = selectedStudent.entries[0];
+    const motivoTexto = lastEntry
+      ? lastEntry.observacionDetalle
+      : 'Reiteradas llamadas de atención pedagógicas y retrasos en el horario de ingreso.';
+
+    exportParentalCitationPdf(
+      selectedStudent.nombreCompleto,
+      selectedStudent.rude,
+      selectedStudent.curso,
+      selectedStudent.tutorNombre,
+      selectedStudent.tutorContacto,
+      motivoTexto,
+      citationDate,
+      citationTime,
+      teacherName
+    );
+
+    setShowCitationModal(false);
+    setFeedback(`✅ Citación Oficial generada y descargada en PDF para el apoderado ${selectedStudent.tutorNombre}.`);
+    setTimeout(() => setFeedback(null), 3500);
+  };
+
   return (
     <div className="space-y-6">
-      {/* Top Header */}
-      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 bg-white p-6 rounded-xl border border-slate-200 shadow-sm">
+      {/* Header */}
+      <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 bg-white p-6 rounded-2xl border border-slate-200 shadow-sm">
         <div className="flex items-center space-x-3">
-          <div className="p-3 bg-indigo-50 rounded-xl text-indigo-700">
-            <ClipboardList className="w-7 h-7" />
+          <div className="p-3 bg-red-50 rounded-xl text-red-600">
+            <ShieldAlert className="w-7 h-7" />
           </div>
           <div>
             <h1 className="text-xl font-bold text-slate-900 tracking-tight">
-              Kardex Escolar de Seguimiento y Disciplina
+              Kardex & Seguimiento Disciplinario Estudiantil
             </h1>
             <p className="text-xs text-slate-500">
-              Bitácora disciplinaria y pedagógica oficial (Registro Moderno - Ley 070)
+              Evaluación Integral de Convivencia y Trazabilidad de 14 Aspectos Normativos (Ley 070)
             </p>
           </div>
         </div>
 
-        <div className="flex items-center space-x-3">
+        <div className="flex items-center space-x-2">
+          {selectedStudent && (
+            <button
+              onClick={() => setShowCitationModal(true)}
+              className="flex items-center space-x-2 px-3.5 py-2 bg-red-600 hover:bg-red-700 text-white rounded-xl text-xs font-bold transition shadow-sm cursor-pointer"
+            >
+              <Send className="w-4 h-4" />
+              <span>Generar Citación a Padres</span>
+            </button>
+          )}
           <button
             onClick={() => window.print()}
-            className="inline-flex items-center space-x-2 px-3 py-2 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-lg text-xs font-semibold transition"
+            className="flex items-center space-x-1.5 px-3 py-2 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-xl text-xs font-semibold transition cursor-pointer"
           >
             <Printer className="w-4 h-4" />
             <span>Imprimir Kardex</span>
           </button>
-          <button
-            onClick={() => setShowCitationModal(true)}
-            className="inline-flex items-center space-x-2 px-3 py-2 bg-rose-600 hover:bg-rose-700 text-white rounded-lg text-xs font-semibold transition shadow-sm"
-          >
-            <AlertTriangle className="w-4 h-4" />
-            <span>Generar Citación a Padres</span>
-          </button>
         </div>
       </div>
 
-      {/* Student Selector & Demographics Card */}
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-        {/* Student Selector */}
-        <div className="bg-white p-5 rounded-xl border border-slate-200 shadow-sm space-y-4">
-          <div>
-            <label className="text-xs font-bold text-slate-600 uppercase tracking-wider block mb-1">
-              Seleccionar Estudiante:
-            </label>
-            <select
-              value={selectedStudentId}
-              onChange={(e) => setSelectedStudentId(e.target.value)}
-              className="w-full bg-slate-50 border border-slate-200 rounded-lg px-3 py-2.5 text-xs font-bold text-slate-800 focus:outline-none focus:ring-2 focus:ring-indigo-500"
-            >
-              {students.map((s) => (
-                <option key={s.id} value={s.id}>
-                  {s.nombreCompleto} ({s.rude})
-                </option>
-              ))}
-            </select>
-          </div>
-
-          <div className="border-t border-slate-100 pt-3 space-y-2 text-xs">
-            <div className="flex justify-between text-slate-600">
-              <span className="font-semibold">Curso:</span>
-              <span>{selectedStudent.curso}</span>
-            </div>
-            <div className="flex justify-between text-slate-600">
-              <span className="font-semibold">Fecha de Nac.:</span>
-              <span>{selectedStudent.fechaNacimiento}</span>
-            </div>
-            <div className="flex justify-between text-slate-600">
-              <span className="font-semibold">Carnet de Identidad:</span>
-              <span className="font-mono">{selectedStudent.ci}</span>
-            </div>
-            <div className="flex justify-between text-slate-600">
-              <span className="font-semibold">Código RUDE:</span>
-              <span className="font-mono text-indigo-700 font-bold">{selectedStudent.rude}</span>
-            </div>
-          </div>
+      {feedback && (
+        <div className="flex items-center space-x-2 p-3.5 bg-emerald-50 border border-emerald-200 text-emerald-800 rounded-xl text-xs font-medium animate-fadeIn">
+          <CheckCircle2 className="w-4 h-4 text-emerald-600 flex-shrink-0" />
+          <span>{feedback}</span>
         </div>
-
-        {/* Parent / Tutor Information Card (Exact from sheet KARDEX) */}
-        <div className="bg-white p-5 rounded-xl border border-slate-200 shadow-sm space-y-3">
-          <div className="flex items-center space-x-2 text-slate-800 font-bold text-xs uppercase tracking-wide border-b border-slate-100 pb-2">
-            <User className="w-4 h-4 text-indigo-600" />
-            <span>Datos del Padre, Madre o Tutor</span>
-          </div>
-
-          <div className="space-y-2 text-xs">
-            <div>
-              <span className="text-slate-500 block">Nombres y Apellidos del Tutor:</span>
-              <span className="font-bold text-slate-800 text-sm">{selectedStudent.tutorNombre}</span>
-            </div>
-            <div className="grid grid-cols-2 gap-2 pt-1">
-              <div>
-                <span className="text-slate-500 block">Parentesco:</span>
-                <span className="font-semibold text-slate-700">{selectedStudent.parentesco}</span>
-              </div>
-              <div>
-                <span className="text-slate-500 block">Teléfono / Celular:</span>
-                <span className="font-bold text-emerald-700 flex items-center space-x-1">
-                  <Phone className="w-3.5 h-3.5" />
-                  <span>{selectedStudent.tutorContacto}</span>
-                </span>
-              </div>
-            </div>
-          </div>
-
-          <div className="bg-slate-50 p-2.5 rounded-lg border border-slate-100 text-[11px] text-slate-600">
-            Conforme a normativa, el apoderado legal debe estar registrado para el seguimiento de rendimiento y citaciones presenciales.
-          </div>
-        </div>
-
-        {/* Incidents Summary Metric */}
-        <div className="bg-gradient-to-br from-indigo-900 to-slate-900 text-white p-5 rounded-xl shadow-sm flex flex-col justify-between">
-          <div>
-            <div className="text-xs uppercase tracking-wider text-indigo-200 font-semibold mb-1">
-              Estado Disciplinario Acumulado
-            </div>
-            <div className="text-2xl font-black">
-              {selectedStudent.entries.length} {selectedStudent.entries.length === 1 ? 'Incidencia' : 'Incidencias'}
-            </div>
-            <p className="text-xs text-indigo-200 mt-1">
-              Registro del periodo escolar vigente 2026
-            </p>
-          </div>
-
-          <div className="grid grid-cols-2 gap-2 pt-4 border-t border-indigo-800/60 text-xs">
-            <div>
-              <span className="text-slate-400 block text-[10px]">CITACIONES:</span>
-              <span className="font-bold text-amber-300">
-                {selectedStudent.entries.filter((e) => e.citacionPadres).length} Emitidas
-              </span>
-            </div>
-            <div>
-              <span className="text-slate-400 block text-[10px]">CONDUCTA:</span>
-              <span className="font-bold text-emerald-400">
-                {selectedStudent.entries.length === 0 ? 'Excelente' : 'Bajo Seguimiento'}
-              </span>
-            </div>
-          </div>
-        </div>
-      </div>
-
-      {/* New Kardex Entry Form (Only for Teachers and Admins) */}
-      {(isMaestro || isSuperAdmin) && (
-        <form
-          onSubmit={handleAddEntry}
-          className="bg-white p-6 rounded-xl border border-slate-200 shadow-sm space-y-5"
-        >
-          <div className="flex items-center justify-between border-b border-slate-200 pb-3">
-            <h2 className="text-sm font-bold text-slate-800 uppercase tracking-wide flex items-center space-x-2">
-              <ClipboardList className="w-4 h-4 text-emerald-600" />
-              <span>Registrar Nueva Observación Pedagógica / Disciplinaria</span>
-            </h2>
-            <div className="flex items-center space-x-2">
-              <label className="text-xs font-semibold text-slate-600">Fecha del Hecho:</label>
-              <input
-                type="date"
-                value={newDate}
-                onChange={(e) => setNewDate(e.target.value)}
-                className="bg-slate-50 border border-slate-200 rounded-lg px-2.5 py-1 text-xs font-medium text-slate-800 focus:outline-none focus:ring-2 focus:ring-emerald-500"
-              />
-            </div>
-          </div>
-
-          {/* 4 Categorized Checkboxes (Exact from Sheet KARDEX) */}
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-            {/* 1. Asistencia */}
-            <div className="bg-slate-50 p-3.5 rounded-xl border border-slate-200 space-y-2">
-              <h3 className="text-xs font-bold text-slate-800 uppercase tracking-wider text-rose-800 flex items-center space-x-1">
-                <span>1. Asistencia</span>
-              </h3>
-              <div className="space-y-1.5 text-xs text-slate-700">
-                <label className="flex items-center space-x-2 cursor-pointer">
-                  <input
-                    type="checkbox"
-                    checked={asistencia.faltaConLicencia}
-                    onChange={(e) => setAsistencia({ ...asistencia, faltaConLicencia: e.target.checked })}
-                    className="rounded text-rose-600 focus:ring-rose-500"
-                  />
-                  <span>Falta con licencia</span>
-                </label>
-                <label className="flex items-center space-x-2 cursor-pointer">
-                  <input
-                    type="checkbox"
-                    checked={asistencia.faltaSinLicencia}
-                    onChange={(e) => setAsistencia({ ...asistencia, faltaSinLicencia: e.target.checked })}
-                    className="rounded text-rose-600 focus:ring-rose-500"
-                  />
-                  <span>Falta sin licencia</span>
-                </label>
-                <label className="flex items-center space-x-2 cursor-pointer">
-                  <input
-                    type="checkbox"
-                    checked={asistencia.fueraDeHorario}
-                    onChange={(e) => setAsistencia({ ...asistencia, fueraDeHorario: e.target.checked })}
-                    className="rounded text-rose-600 focus:ring-rose-500"
-                  />
-                  <span>Fuera de horario (Atraso)</span>
-                </label>
-                <label className="flex items-center space-x-2 cursor-pointer">
-                  <input
-                    type="checkbox"
-                    checked={asistencia.abandonoClase}
-                    onChange={(e) => setAsistencia({ ...asistencia, abandonoClase: e.target.checked })}
-                    className="rounded text-rose-600 focus:ring-rose-500"
-                  />
-                  <span>Abandono de la clase</span>
-                </label>
-              </div>
-            </div>
-
-            {/* 2. Responsabilidad */}
-            <div className="bg-slate-50 p-3.5 rounded-xl border border-slate-200 space-y-2">
-              <h3 className="text-xs font-bold text-slate-800 uppercase tracking-wider text-amber-800 flex items-center space-x-1">
-                <span>2. Responsabilidad</span>
-              </h3>
-              <div className="space-y-1.5 text-xs text-slate-700">
-                <label className="flex items-center space-x-2 cursor-pointer">
-                  <input
-                    type="checkbox"
-                    checked={responsabilidad.noPresentoDeber}
-                    onChange={(e) => setResponsabilidad({ ...responsabilidad, noPresentoDeber: e.target.checked })}
-                    className="rounded text-amber-600 focus:ring-amber-500"
-                  />
-                  <span>No presentó deber / tarea</span>
-                </label>
-                <label className="flex items-center space-x-2 cursor-pointer">
-                  <input
-                    type="checkbox"
-                    checked={responsabilidad.noDioEvaluacion}
-                    onChange={(e) => setResponsabilidad({ ...responsabilidad, noDioEvaluacion: e.target.checked })}
-                    className="rounded text-amber-600 focus:ring-amber-500"
-                  />
-                  <span>No dio su evaluación</span>
-                </label>
-                <label className="flex items-center space-x-2 cursor-pointer">
-                  <input
-                    type="checkbox"
-                    checked={responsabilidad.noExpuso}
-                    onChange={(e) => setResponsabilidad({ ...responsabilidad, noExpuso: e.target.checked })}
-                    className="rounded text-amber-600 focus:ring-amber-500"
-                  />
-                  <span>No expuso en disertación</span>
-                </label>
-                <label className="flex items-center space-x-2 cursor-pointer">
-                  <input
-                    type="checkbox"
-                    checked={responsabilidad.noTrajoMateriales}
-                    onChange={(e) => setResponsabilidad({ ...responsabilidad, noTrajoMateriales: e.target.checked })}
-                    className="rounded text-amber-600 focus:ring-amber-500"
-                  />
-                  <span>No trajo materiales</span>
-                </label>
-                <label className="flex items-center space-x-2 cursor-pointer">
-                  <input
-                    type="checkbox"
-                    checked={responsabilidad.danoMobiliario}
-                    onChange={(e) => setResponsabilidad({ ...responsabilidad, danoMobiliario: e.target.checked })}
-                    className="rounded text-amber-600 focus:ring-amber-500"
-                  />
-                  <span>Dañó el inmobiliario</span>
-                </label>
-                <label className="flex items-center space-x-2 cursor-pointer">
-                  <input
-                    type="checkbox"
-                    checked={responsabilidad.trajoCelularSinPermiso}
-                    onChange={(e) => setResponsabilidad({ ...responsabilidad, trajoCelularSinPermiso: e.target.checked })}
-                    className="rounded text-amber-600 focus:ring-amber-500"
-                  />
-                  <span>Trajo celular sin permiso</span>
-                </label>
-              </div>
-            </div>
-
-            {/* 3. Participación */}
-            <div className="bg-slate-50 p-3.5 rounded-xl border border-slate-200 space-y-2">
-              <h3 className="text-xs font-bold text-slate-800 uppercase tracking-wider text-blue-800 flex items-center space-x-1">
-                <span>3. Participación</span>
-              </h3>
-              <div className="space-y-1.5 text-xs text-slate-700">
-                <label className="flex items-center space-x-2 cursor-pointer">
-                  <input
-                    type="checkbox"
-                    checked={participacion.noParticipa}
-                    onChange={(e) => setParticipacion({ ...participacion, noParticipa: e.target.checked })}
-                    className="rounded text-blue-600 focus:ring-blue-500"
-                  />
-                  <span>No participa en clases</span>
-                </label>
-                <label className="flex items-center space-x-2 cursor-pointer">
-                  <input
-                    type="checkbox"
-                    checked={participacion.noPrestaAtencion}
-                    onChange={(e) => setParticipacion({ ...participacion, noPrestaAtencion: e.target.checked })}
-                    className="rounded text-blue-600 focus:ring-blue-500"
-                  />
-                  <span>No presta atención en clases</span>
-                </label>
-              </div>
-            </div>
-
-            {/* 4. Conducta */}
-            <div className="bg-slate-50 p-3.5 rounded-xl border border-slate-200 space-y-2">
-              <h3 className="text-xs font-bold text-slate-800 uppercase tracking-wider text-purple-800 flex items-center space-x-1">
-                <span>4. Conducta</span>
-              </h3>
-              <div className="space-y-1.5 text-xs text-slate-700">
-                <label className="flex items-center space-x-2 cursor-pointer">
-                  <input
-                    type="checkbox"
-                    checked={conducta.faltoRespetoDocente}
-                    onChange={(e) => setConducta({ ...conducta, faltoRespetoDocente: e.target.checked })}
-                    className="rounded text-purple-600 focus:ring-purple-500"
-                  />
-                  <span>Faltó el respeto al docente</span>
-                </label>
-                <label className="flex items-center space-x-2 cursor-pointer">
-                  <input
-                    type="checkbox"
-                    checked={conducta.faltoRespetoCompaneros}
-                    onChange={(e) => setConducta({ ...conducta, faltoRespetoCompaneros: e.target.checked })}
-                    className="rounded text-purple-600 focus:ring-purple-500"
-                  />
-                  <span>Faltó el respeto a compañeros</span>
-                </label>
-                <label className="flex items-center space-x-2 cursor-pointer">
-                  <input
-                    type="checkbox"
-                    checked={conducta.lenguajeInapropiado}
-                    onChange={(e) => setConducta({ ...conducta, lenguajeInapropiado: e.target.checked })}
-                    className="rounded text-purple-600 focus:ring-purple-500"
-                  />
-                  <span>Utilizó lenguaje inapropiado</span>
-                </label>
-              </div>
-            </div>
-          </div>
-
-          {/* Written Observations and Commitments */}
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            <div>
-              <label className="text-xs font-bold text-slate-700 block mb-1">
-                Detalle de la Observación y Hechos:
-              </label>
-              <textarea
-                value={observacionDetalle}
-                onChange={(e) => setObservacionDetalle(e.target.value)}
-                placeholder="Describa puntualmente lo sucedido en aula o predio educativo..."
-                rows={3}
-                required
-                className="w-full bg-slate-50 border border-slate-200 rounded-lg p-2.5 text-xs text-slate-800 focus:outline-none focus:ring-2 focus:ring-emerald-500"
-              />
-            </div>
-            <div>
-              <label className="text-xs font-bold text-slate-700 block mb-1">
-                Compromiso del Estudiante:
-              </label>
-              <textarea
-                value={compromisoEstudiante}
-                onChange={(e) => setCompromisoEstudiante(e.target.value)}
-                placeholder="Compromiso asumido por el estudiante para subsanar la observación..."
-                rows={3}
-                className="w-full bg-slate-50 border border-slate-200 rounded-lg p-2.5 text-xs text-slate-800 focus:outline-none focus:ring-2 focus:ring-emerald-500"
-              />
-            </div>
-          </div>
-
-          <div className="flex items-center justify-between pt-2">
-            <label className="flex items-center space-x-2 text-xs font-bold text-rose-700 cursor-pointer">
-              <input
-                type="checkbox"
-                checked={citacionPadres}
-                onChange={(e) => setCitacionPadres(e.target.checked)}
-                className="rounded text-rose-600 focus:ring-rose-500"
-              />
-              <span>Requiere Citación Formal a Padres de Familia</span>
-            </label>
-
-            <button
-              type="submit"
-              className="inline-flex items-center space-x-2 px-4 py-2 bg-emerald-600 hover:bg-emerald-700 text-white rounded-lg text-xs font-bold transition shadow-sm"
-            >
-              <Send className="w-4 h-4" />
-              <span>Guardar en Kardex</span>
-            </button>
-          </div>
-        </form>
       )}
 
-      {/* Historical Kardex Table */}
-      <div className="bg-white border border-slate-200 rounded-xl shadow-sm overflow-hidden">
-        <div className="px-6 py-4 border-b border-slate-200 bg-slate-50 flex items-center justify-between">
-          <h2 className="text-sm font-bold text-slate-800 uppercase tracking-wide">
-            Historial de Incidencias en Kardex - {selectedStudent.nombreCompleto}
-          </h2>
-          <span className="text-xs text-slate-500 font-mono">
-            {selectedStudent.entries.length} registro(s)
-          </span>
+      {/* Course and Filters Selector Bar */}
+      <div className="bg-white p-4 rounded-2xl border border-slate-200 shadow-sm grid grid-cols-1 md:grid-cols-3 gap-3">
+        <div>
+          <label className="text-[11px] font-bold text-slate-600 uppercase tracking-wider block mb-1 flex items-center space-x-1">
+            <Filter className="w-3.5 h-3.5 text-emerald-600" />
+            <span>Curso y Paralelo:</span>
+          </label>
+          <select
+            value={selectedCursoId}
+            onChange={(e) => {
+              setSelectedCursoId(e.target.value);
+              const firstSt = students.find((s) => s.cursoId === e.target.value);
+              if (firstSt) setSelectedStudentId(firstSt.id);
+            }}
+            className="w-full text-xs p-2.5 bg-slate-50 border border-slate-200 rounded-xl font-bold text-slate-800 focus:bg-white focus:outline-none focus:ring-2 focus:ring-emerald-500"
+          >
+            {cursosDisponibles.map((c) => (
+              <option key={c.id} value={c.id}>
+                {c.nombre} (Turno {c.turno})
+              </option>
+            ))}
+          </select>
         </div>
 
-        {selectedStudent.entries.length === 0 ? (
-          <div className="p-8 text-center text-slate-500 text-xs">
-            El estudiante no registra faltas ni observaciones disciplinarias. Su conducta es intachable.
+        <div>
+          <label className="text-[11px] font-bold text-slate-600 uppercase tracking-wider block mb-1">
+            Filtro de Incidentes:
+          </label>
+          <div className="flex space-x-1.5">
+            <button
+              type="button"
+              onClick={() => setFilterOnlyIncidents(false)}
+              className={`flex-1 py-2 px-2 text-xs font-bold rounded-xl transition cursor-pointer ${
+                !filterOnlyIncidents
+                  ? 'bg-slate-900 text-white shadow-sm'
+                  : 'bg-slate-100 text-slate-600 hover:bg-slate-200'
+              }`}
+            >
+              Todos ({studentsOfCourse.length})
+            </button>
+            <button
+              type="button"
+              onClick={() => setFilterOnlyIncidents(true)}
+              className={`flex-1 py-2 px-2 text-xs font-bold rounded-xl transition cursor-pointer flex items-center justify-center space-x-1 ${
+                filterOnlyIncidents
+                  ? 'bg-red-600 text-white shadow-sm'
+                  : 'bg-red-50 text-red-700 hover:bg-red-100 border border-red-200'
+              }`}
+            >
+              <span>🔴 Con Incidencias</span>
+              <span className="ml-1 px-1.5 py-0.2 bg-white/20 rounded-full text-[10px]">
+                {studentsOfCourse.filter((s) => s.entries.length > 0).length}
+              </span>
+            </button>
           </div>
-        ) : (
-          <div className="overflow-x-auto">
-            <table className="w-full text-left border-collapse text-xs">
-              <thead>
-                <tr className="bg-slate-100 border-b border-slate-200 text-slate-700 font-bold">
-                  <th className="py-2.5 px-3 w-28">Fecha</th>
-                  <th className="py-2.5 px-3 min-w-[200px]">Aspectos Observados</th>
-                  <th className="py-2.5 px-3 min-w-[240px]">Detalle y Compromiso</th>
-                  <th className="py-2.5 px-3 w-28 text-center">Citación</th>
-                  <th className="py-2.5 px-3 min-w-[150px]">Firma / Docente</th>
-                  {(isMaestro || isSuperAdmin) && (
-                    <th className="py-2.5 px-3 text-center w-16">Acción</th>
-                  )}
-                </tr>
-              </thead>
-              <tbody className="divide-y divide-slate-200">
-                {selectedStudent.entries.map((ent) => {
-                  const markedAspects: string[] = [];
-                  if (ent.asistencia.faltaConLicencia) markedAspects.push('Falta c/licencia');
-                  if (ent.asistencia.faltaSinLicencia) markedAspects.push('Falta s/licencia');
-                  if (ent.asistencia.fueraDeHorario) markedAspects.push('Atraso');
-                  if (ent.asistencia.abandonoClase) markedAspects.push('Abandono clase');
-                  if (ent.responsabilidad.noPresentoDeber) markedAspects.push('Sin tarea/deber');
-                  if (ent.responsabilidad.noDioEvaluacion) markedAspects.push('No dio examen');
-                  if (ent.responsabilidad.noExpuso) markedAspects.push('No expuso');
-                  if (ent.responsabilidad.noTrajoMateriales) markedAspects.push('Sin materiales');
-                  if (ent.responsabilidad.danoMobiliario) markedAspects.push('Dañó mobiliario');
-                  if (ent.responsabilidad.trajoCelularSinPermiso) markedAspects.push('Celular sin permiso');
-                  if (ent.participacion.noParticipa) markedAspects.push('No participa');
-                  if (ent.participacion.noPrestaAtencion) markedAspects.push('Desatención');
-                  if (ent.conducta.faltoRespetoDocente) markedAspects.push('Falta respeto docente');
-                  if (ent.conducta.faltoRespetoCompaneros) markedAspects.push('Falta respeto pares');
-                  if (ent.conducta.lenguajeInapropiado) markedAspects.push('Lenguaje inadecuado');
+        </div>
 
-                  return (
-                    <tr key={ent.id} className="hover:bg-slate-50 transition">
-                      <td className="py-3 px-3 font-semibold text-slate-800 whitespace-nowrap">
-                        {ent.fecha}
-                      </td>
-                      <td className="py-3 px-3">
-                        <div className="flex flex-wrap gap-1">
-                          {markedAspects.map((aspect, i) => (
-                            <span
-                              key={i}
-                              className="px-2 py-0.5 bg-rose-50 border border-rose-200 text-rose-700 rounded text-[10px] font-semibold"
-                            >
-                              {aspect}
-                            </span>
-                          ))}
-                        </div>
-                      </td>
-                      <td className="py-3 px-3">
-                        <p className="text-slate-800 font-medium">{ent.observacionDetalle}</p>
-                        {ent.compromisoEstudiante && (
-                          <p className="text-indigo-700 text-[11px] mt-1 italic">
-                            Compromiso: "{ent.compromisoEstudiante}"
-                          </p>
-                        )}
-                      </td>
-                      <td className="py-3 px-3 text-center">
-                        {ent.citacionPadres ? (
-                          <span className="px-2 py-1 bg-amber-100 text-amber-800 rounded font-bold text-[10px]">
-                            EMITIDA
-                          </span>
-                        ) : (
-                          <span className="text-slate-400 text-[10px]">No</span>
-                        )}
-                      </td>
-                      <td className="py-3 px-3 text-slate-600 font-medium">
-                        {ent.firmaMaestro}
-                      </td>
-                      {(isMaestro || isSuperAdmin) && (
-                        <td className="py-3 px-3 text-center">
-                          <button
-                            onClick={() => handleDeleteEntry(ent.id)}
-                            title="Eliminar observación"
-                            className="p-1.5 text-slate-400 hover:text-rose-600 hover:bg-slate-100 rounded-lg transition"
-                          >
-                            <Trash2 className="w-3.5 h-3.5" />
-                          </button>
-                        </td>
-                      )}
-                    </tr>
-                  );
-                })}
-              </tbody>
-            </table>
+        <div className="flex items-center justify-end">
+          <div className="text-right text-xs text-slate-500">
+            <div>
+              Total con Incidencias:{' '}
+              <span className="font-bold text-red-600">
+                {studentsOfCourse.filter((s) => s.entries.length > 0).length}
+              </span>{' '}
+              de {studentsOfCourse.length}
+            </div>
+            <div className="text-[11px] text-slate-400">U.E. Franz Tamayo (SIE 80730045)</div>
           </div>
-        )}
+        </div>
       </div>
 
-      {/* Parental Citation Modal (Printable) */}
-      {showCitationModal && (
+      {/* Main Layout: Student List + Detailed Kardex Panel */}
+      <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
+        {/* Left Column: Student Selection List */}
+        <div className="lg:col-span-4 space-y-3">
+          <div className="bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden">
+            <div className="p-3.5 bg-slate-50 border-b border-slate-200 flex justify-between items-center">
+              <span className="text-xs font-bold text-slate-700 uppercase tracking-wider">
+                Nómina de Estudiantes
+              </span>
+              <span className="text-[11px] font-semibold text-slate-400">
+                {visibleStudents.length} mostrados
+              </span>
+            </div>
+
+            <div className="divide-y divide-slate-100 max-h-[560px] overflow-y-auto">
+              {visibleStudents.map((st) => {
+                const isSelected = selectedStudent && selectedStudent.id === st.id;
+                const incidentCount = st.entries.length;
+                return (
+                  <div
+                    key={st.id}
+                    onClick={() => setSelectedStudentId(st.id)}
+                    className={`p-3.5 cursor-pointer transition flex items-center justify-between ${
+                      isSelected
+                        ? 'bg-emerald-50/80 border-l-4 border-emerald-600'
+                        : 'hover:bg-slate-50'
+                    }`}
+                  >
+                    <div>
+                      <div className="text-xs font-bold text-slate-900">{st.nombreCompleto}</div>
+                      <div className="text-[10px] text-slate-400 font-mono">RUDE: {st.rude}</div>
+                    </div>
+                    <div>
+                      {incidentCount > 0 ? (
+                        <span className="inline-flex items-center space-x-1 px-2 py-0.5 rounded-full text-[10px] font-bold bg-red-100 text-red-700 border border-red-200">
+                          <AlertTriangle className="w-3 h-3 text-red-600" />
+                          <span>{incidentCount} {incidentCount === 1 ? 'falta' : 'faltas'}</span>
+                        </span>
+                      ) : (
+                        <span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-emerald-100 text-emerald-800">
+                          Sin faltas
+                        </span>
+                      )}
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+          </div>
+        </div>
+
+        {/* Right Column: Kardex Details & Form */}
+        <div className="lg:col-span-8 space-y-5">
+          {selectedStudent ? (
+            <>
+              {/* Student Demographics Header */}
+              <div className="bg-white p-5 rounded-2xl border border-slate-200 shadow-sm space-y-3">
+                <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-2 border-b border-slate-100 pb-3">
+                  <div>
+                    <h2 className="text-base font-extrabold text-slate-900">
+                      {selectedStudent.nombreCompleto}
+                    </h2>
+                    <p className="text-xs text-slate-500 font-medium">
+                      {selectedStudent.curso} • Código RUDE:{' '}
+                      <span className="font-mono">{selectedStudent.rude}</span>
+                    </p>
+                  </div>
+                  <div className="flex items-center space-x-2">
+                    <span className="px-2.5 py-1 bg-slate-100 text-slate-700 rounded-lg text-xs font-semibold">
+                      CI: {selectedStudent.ci}
+                    </span>
+                    <span
+                      className={`px-2.5 py-1 rounded-lg text-xs font-bold ${
+                        selectedStudent.entries.length > 0
+                          ? 'bg-red-50 text-red-700 border border-red-200'
+                          : 'bg-emerald-50 text-emerald-700 border border-emerald-200'
+                      }`}
+                    >
+                      {selectedStudent.entries.length} Incidentes Registrados
+                    </span>
+                  </div>
+                </div>
+
+                <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 text-xs text-slate-600 pt-1">
+                  <div>
+                    <span className="font-bold text-slate-700">Tutor / Apoderado:</span>{' '}
+                    <span>{selectedStudent.tutorNombre} ({selectedStudent.parentesco})</span>
+                  </div>
+                  <div>
+                    <span className="font-bold text-slate-700">Teléfono Contacto:</span>{' '}
+                    <span className="font-mono">{selectedStudent.tutorContacto}</span>
+                  </div>
+                  <div>
+                    <span className="font-bold text-slate-700">Fecha Nacimiento:</span>{' '}
+                    <span>{selectedStudent.fechaNacimiento}</span>
+                  </div>
+                </div>
+              </div>
+
+              {/* Add New Observation Form (14 Aspects) */}
+              {(isMaestro || isSuperAdmin) && (
+                <form
+                  onSubmit={handleAddEntry}
+                  className="bg-white p-5 rounded-2xl border border-slate-200 shadow-sm space-y-4"
+                >
+                  <div className="flex items-center justify-between border-b border-slate-100 pb-2">
+                    <h3 className="text-xs font-bold text-slate-800 uppercase tracking-wider flex items-center space-x-1.5">
+                      <ClipboardList className="w-4 h-4 text-emerald-600" />
+                      <span>Registrar Nuevo Hecho / Observación Disciplinaria</span>
+                    </h3>
+                    <div className="flex items-center space-x-2">
+                      <span className="text-[11px] font-bold text-slate-600">Fecha:</span>
+                      <input
+                        type="date"
+                        value={newDate}
+                        onChange={(e) => setNewDate(e.target.value)}
+                        className="text-xs p-1 bg-slate-50 border border-slate-200 rounded font-medium text-slate-800"
+                      />
+                    </div>
+                  </div>
+
+                  {/* 14 Aspects Checklist */}
+                  <div className="grid grid-cols-1 md:grid-cols-4 gap-3 text-xs">
+                    {/* Asistencia */}
+                    <div className="p-3 bg-blue-50/50 rounded-xl border border-blue-100 space-y-1.5">
+                      <span className="font-bold text-blue-900 block text-[11px] uppercase">
+                        1. Asistencia
+                      </span>
+                      <label className="flex items-center space-x-2 cursor-pointer text-[11px]">
+                        <input
+                          type="checkbox"
+                          checked={asistencia.fueraDeHorario}
+                          onChange={(e) =>
+                            setAsistencia({ ...asistencia, fueraDeHorario: e.target.checked })
+                          }
+                          className="rounded text-emerald-600"
+                        />
+                        <span>Llegada con retraso</span>
+                      </label>
+                      <label className="flex items-center space-x-2 cursor-pointer text-[11px]">
+                        <input
+                          type="checkbox"
+                          checked={asistencia.faltaSinLicencia}
+                          onChange={(e) =>
+                            setAsistencia({ ...asistencia, faltaSinLicencia: e.target.checked })
+                          }
+                          className="rounded text-emerald-600"
+                        />
+                        <span>Falta injustificada</span>
+                      </label>
+                      <label className="flex items-center space-x-2 cursor-pointer text-[11px]">
+                        <input
+                          type="checkbox"
+                          checked={asistencia.abandonoClase}
+                          onChange={(e) =>
+                            setAsistencia({ ...asistencia, abandonoClase: e.target.checked })
+                          }
+                          className="rounded text-emerald-600"
+                        />
+                        <span>Abandono de aula</span>
+                      </label>
+                    </div>
+
+                    {/* Responsabilidad */}
+                    <div className="p-3 bg-amber-50/50 rounded-xl border border-amber-100 space-y-1.5">
+                      <span className="font-bold text-amber-900 block text-[11px] uppercase">
+                        2. Responsabilidad
+                      </span>
+                      <label className="flex items-center space-x-2 cursor-pointer text-[11px]">
+                        <input
+                          type="checkbox"
+                          checked={responsabilidad.noPresentoDeber}
+                          onChange={(e) =>
+                            setResponsabilidad({
+                              ...responsabilidad,
+                              noPresentoDeber: e.target.checked,
+                            })
+                          }
+                          className="rounded text-emerald-600"
+                        />
+                        <span>No presentó tarea</span>
+                      </label>
+                      <label className="flex items-center space-x-2 cursor-pointer text-[11px]">
+                        <input
+                          type="checkbox"
+                          checked={responsabilidad.noTrajoMateriales}
+                          onChange={(e) =>
+                            setResponsabilidad({
+                              ...responsabilidad,
+                              noTrajoMateriales: e.target.checked,
+                            })
+                          }
+                          className="rounded text-emerald-600"
+                        />
+                        <span>Sin material / libro</span>
+                      </label>
+                      <label className="flex items-center space-x-2 cursor-pointer text-[11px]">
+                        <input
+                          type="checkbox"
+                          checked={responsabilidad.trajoCelularSinPermiso}
+                          onChange={(e) =>
+                            setResponsabilidad({
+                              ...responsabilidad,
+                              trajoCelularSinPermiso: e.target.checked,
+                            })
+                          }
+                          className="rounded text-emerald-600"
+                        />
+                        <span>Uso no autorizado de celular</span>
+                      </label>
+                    </div>
+
+                    {/* Participación */}
+                    <div className="p-3 bg-purple-50/50 rounded-xl border border-purple-100 space-y-1.5">
+                      <span className="font-bold text-purple-900 block text-[11px] uppercase">
+                        3. Participación
+                      </span>
+                      <label className="flex items-center space-x-2 cursor-pointer text-[11px]">
+                        <input
+                          type="checkbox"
+                          checked={participacion.noPrestaAtencion}
+                          onChange={(e) =>
+                            setParticipacion({
+                              ...participacion,
+                              noPrestaAtencion: e.target.checked,
+                            })
+                          }
+                          className="rounded text-emerald-600"
+                        />
+                        <span>Falta de atención</span>
+                      </label>
+                      <label className="flex items-center space-x-2 cursor-pointer text-[11px]">
+                        <input
+                          type="checkbox"
+                          checked={participacion.noParticipa}
+                          onChange={(e) =>
+                            setParticipacion({
+                              ...participacion,
+                              noParticipa: e.target.checked,
+                            })
+                          }
+                          className="rounded text-emerald-600"
+                        />
+                        <span>No participa en grupo</span>
+                      </label>
+                    </div>
+
+                    {/* Conducta */}
+                    <div className="p-3 bg-rose-50/50 rounded-xl border border-rose-100 space-y-1.5">
+                      <span className="font-bold text-rose-900 block text-[11px] uppercase">
+                        4. Convivencia
+                      </span>
+                      <label className="flex items-center space-x-2 cursor-pointer text-[11px]">
+                        <input
+                          type="checkbox"
+                          checked={conducta.faltoRespetoDocente}
+                          onChange={(e) =>
+                            setConducta({ ...conducta, faltoRespetoDocente: e.target.checked })
+                          }
+                          className="rounded text-emerald-600"
+                        />
+                        <span>Falta respeto a docente</span>
+                      </label>
+                      <label className="flex items-center space-x-2 cursor-pointer text-[11px]">
+                        <input
+                          type="checkbox"
+                          checked={conducta.faltoRespetoCompaneros}
+                          onChange={(e) =>
+                            setConducta({ ...conducta, faltoRespetoCompaneros: e.target.checked })
+                          }
+                          className="rounded text-emerald-600"
+                        />
+                        <span>Conflicto con pares</span>
+                      </label>
+                      <label className="flex items-center space-x-2 cursor-pointer text-[11px]">
+                        <input
+                          type="checkbox"
+                          checked={conducta.lenguajeInapropiado}
+                          onChange={(e) =>
+                            setConducta({ ...conducta, lenguajeInapropiado: e.target.checked })
+                          }
+                          className="rounded text-emerald-600"
+                        />
+                        <span>Lenguaje inadecuado</span>
+                      </label>
+                    </div>
+                  </div>
+
+                  {/* Detail Narrative and Commitment */}
+                  <div className="space-y-3">
+                    <div>
+                      <label className="text-[11px] font-bold text-slate-700 block mb-1">
+                        Descripción Detallada del Hecho:
+                      </label>
+                      <textarea
+                        required
+                        rows={2}
+                        value={observacionDetalle}
+                        onChange={(e) => setObservacionDetalle(e.target.value)}
+                        placeholder="Describa el hecho ocurrido de forma objetiva y pedagógica..."
+                        className="w-full text-xs p-2.5 bg-slate-50 border border-slate-200 rounded-xl focus:bg-white focus:outline-none focus:border-emerald-500"
+                      />
+                    </div>
+                    <div>
+                      <label className="text-[11px] font-bold text-slate-700 block mb-1">
+                        Compromiso del Estudiante:
+                      </label>
+                      <input
+                        type="text"
+                        value={compromisoEstudiante}
+                        onChange={(e) => setCompromisoEstudiante(e.target.value)}
+                        placeholder="ej. El estudiante se compromete a no reincidir y cumplir con sus deberes..."
+                        className="w-full text-xs p-2 bg-slate-50 border border-slate-200 rounded-xl focus:bg-white focus:outline-none focus:border-emerald-500"
+                      />
+                    </div>
+                  </div>
+
+                  <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3 pt-2 border-t border-slate-100">
+                    <label className="flex items-center space-x-2 cursor-pointer text-xs font-semibold text-red-700">
+                      <input
+                        type="checkbox"
+                        checked={citacionPadres}
+                        onChange={(e) => setCitacionPadres(e.target.checked)}
+                        className="rounded text-red-600"
+                      />
+                      <span>¿Requiere Citación Oficial a Padres de Familia?</span>
+                    </label>
+
+                    <button
+                      type="submit"
+                      className="px-4 py-2 bg-emerald-600 hover:bg-emerald-700 text-white font-bold rounded-xl text-xs shadow-sm transition cursor-pointer"
+                    >
+                      Guardar en Kardex
+                    </button>
+                  </div>
+                </form>
+              )}
+
+              {/* Historical Log of Entries */}
+              <div className="bg-white rounded-2xl border border-slate-200 shadow-sm p-5 space-y-4">
+                <h3 className="text-xs font-bold text-slate-800 uppercase tracking-wider flex items-center space-x-2">
+                  <FileText className="w-4 h-4 text-slate-600" />
+                  <span>Historial de Observaciones Registradas ({selectedStudent.entries.length})</span>
+                </h3>
+
+                {selectedStudent.entries.length === 0 ? (
+                  <div className="p-8 text-center text-slate-400 text-xs">
+                    Este estudiante no tiene faltas ni observaciones registradas en la presente gestión.
+                  </div>
+                ) : (
+                  <div className="space-y-3">
+                    {selectedStudent.entries.map((entry) => (
+                      <div
+                        key={entry.id}
+                        className="p-4 bg-slate-50 rounded-xl border border-slate-200 space-y-2 relative hover:border-slate-300 transition"
+                      >
+                        <div className="flex justify-between items-start">
+                          <div className="flex items-center space-x-2">
+                            <span className="font-mono text-[11px] font-bold text-slate-600 bg-white px-2 py-0.5 rounded border border-slate-200">
+                              {entry.fecha}
+                            </span>
+                            {entry.citacionPadres && (
+                              <span className="px-2 py-0.5 bg-red-100 text-red-700 text-[10px] font-bold rounded-full">
+                                Citación Requerida
+                              </span>
+                            )}
+                          </div>
+
+                          {(isMaestro || isSuperAdmin) && (
+                            <button
+                              onClick={() => handleDeleteEntry(entry.id)}
+                              className="text-slate-400 hover:text-red-600 transition"
+                              title="Eliminar observación"
+                            >
+                              <Trash2 className="w-3.5 h-3.5" />
+                            </button>
+                          )}
+                        </div>
+
+                        <p className="text-xs text-slate-800 font-medium">{entry.observacionDetalle}</p>
+
+                        {entry.compromisoEstudiante && (
+                          <div className="text-[11px] text-emerald-800 bg-emerald-50/60 p-2 rounded-lg border border-emerald-100">
+                            <span className="font-bold">Compromiso: </span>
+                            <span>{entry.compromisoEstudiante}</span>
+                          </div>
+                        )}
+
+                        <div className="text-[10px] text-slate-400 flex justify-between items-center pt-1 border-t border-slate-100">
+                          <span>Registrado por: {entry.firmaMaestro}</span>
+                          <span className="font-semibold text-slate-500">U.E. Franz Tamayo</span>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </div>
+            </>
+          ) : (
+            <div className="bg-white p-12 text-center text-slate-400 rounded-2xl border border-slate-200">
+              Seleccione un estudiante de la nómina lateral para ver su expediente disciplinario.
+            </div>
+          )}
+        </div>
+      </div>
+
+      {/* Parental Citation Modal */}
+      {showCitationModal && selectedStudent && (
         <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-50 flex items-center justify-center p-4">
-          <div className="bg-white rounded-2xl max-w-xl w-full p-6 shadow-2xl border border-slate-200 space-y-4 animate-scaleUp">
-            {/* Official Header */}
-            <div className="text-center border-b border-slate-200 pb-3">
-              <div className="text-[10px] uppercase tracking-widest text-slate-500 font-bold">
-                ESTADO PLURINACIONAL DE BOLIVIA - MINISTERIO DE EDUCACIÓN
-              </div>
-              <h2 className="text-lg font-black text-slate-900 mt-1">
-                CITACIÓN A PADRES DE FAMILIA / APODERADO LEGAL
+          <div className="bg-white rounded-2xl max-w-md w-full p-6 shadow-2xl border border-slate-200 space-y-4 animate-scaleUp">
+            <div className="flex justify-between items-center border-b border-slate-100 pb-3">
+              <h2 className="text-sm font-bold text-slate-900 uppercase">
+                Emitir Citación a Padres de Familia
               </h2>
-              <div className="text-xs font-semibold text-emerald-800">
-                UNIDAD EDUCATIVA EMBOROZU
+              <button
+                onClick={() => setShowCitationModal(false)}
+                className="text-slate-400 hover:text-slate-600"
+              >
+                ✕
+              </button>
+            </div>
+
+            <div className="text-xs text-slate-600 space-y-2 bg-red-50/60 p-3 rounded-xl border border-red-100">
+              <div>
+                <span className="font-bold text-slate-800">Estudiante: </span>
+                <span>{selectedStudent.nombreCompleto}</span>
+              </div>
+              <div>
+                <span className="font-bold text-slate-800">Apoderado Convocado: </span>
+                <span>{selectedStudent.tutorNombre} ({selectedStudent.parentesco})</span>
+              </div>
+              <div>
+                <span className="font-bold text-slate-800">Contacto: </span>
+                <span className="font-mono">{selectedStudent.tutorContacto}</span>
               </div>
             </div>
 
-            {/* Citation Body */}
-            <div className="space-y-3 text-xs text-slate-700 leading-relaxed">
-              <p>
-                Señor(a): <strong className="text-slate-900">{selectedStudent.tutorNombre}</strong> ({selectedStudent.parentesco})
-              </p>
-              <p>
-                Presente.-
-              </p>
-              <p>
-                Por medio de la presente, la Dirección y el cuerpo docente de la Unidad Educativa citan a su persona a una reunión de carácter urgente respecto al seguimiento conductual y pedagógico del estudiante:
-              </p>
-              <div className="bg-slate-50 p-3 rounded-lg border border-slate-200 font-medium text-slate-900">
-                Estudiante: <strong>{selectedStudent.nombreCompleto}</strong> <br />
-                Curso: <strong>{selectedStudent.curso}</strong> <br />
-                Código RUDE: <strong className="font-mono">{selectedStudent.rude}</strong>
+            <div className="grid grid-cols-2 gap-3 text-xs">
+              <div>
+                <label className="font-bold text-slate-700 block mb-1">Fecha de la Cita:</label>
+                <input
+                  type="date"
+                  value={citationDate}
+                  onChange={(e) => setCitationDate(e.target.value)}
+                  className="w-full bg-slate-50 border border-slate-200 rounded-lg p-2 font-medium"
+                />
               </div>
-
-              <div className="grid grid-cols-2 gap-3 pt-2">
-                <div>
-                  <label className="text-[11px] font-bold text-slate-600 block mb-1">
-                    Fecha de Reunión:
-                  </label>
-                  <input
-                    type="date"
-                    value={citationDate}
-                    onChange={(e) => setCitationDate(e.target.value)}
-                    className="w-full bg-slate-50 border border-slate-200 rounded p-1.5 text-xs font-semibold text-slate-800"
-                  />
-                </div>
-                <div>
-                  <label className="text-[11px] font-bold text-slate-600 block mb-1">
-                    Hora Convocada:
-                  </label>
-                  <input
-                    type="time"
-                    value={citationTime}
-                    onChange={(e) => setCitationTime(e.target.value)}
-                    className="w-full bg-slate-50 border border-slate-200 rounded p-1.5 text-xs font-semibold text-slate-800"
-                  />
-                </div>
-              </div>
-
-              <p className="text-[11px] text-slate-500 italic pt-2">
-                Su puntual asistencia es fundamental para coordinar acciones formativas en favor del estudiante, conforme a reglamentación del Subsistema de Educación Regular.
-              </p>
-
-              {/* Signatures */}
-              <div className="grid grid-cols-2 gap-8 pt-8 border-t border-slate-200 text-center">
-                <div className="border-t border-slate-400 pt-1 text-[11px] font-bold text-slate-700">
-                  Prof. Carlos Mamani C. <br />
-                  <span className="text-[10px] font-normal text-slate-500">Docente de Asignatura</span>
-                </div>
-                <div className="border-t border-slate-400 pt-1 text-[11px] font-bold text-slate-700">
-                  Firma / Sello del Tutor <br />
-                  <span className="text-[10px] font-normal text-slate-500">Notificado en fecha: ____/____/2026</span>
-                </div>
+              <div>
+                <label className="font-bold text-slate-700 block mb-1">Hora de Atención:</label>
+                <input
+                  type="time"
+                  value={citationTime}
+                  onChange={(e) => setCitationTime(e.target.value)}
+                  className="w-full bg-slate-50 border border-slate-200 rounded-lg p-2 font-medium"
+                />
               </div>
             </div>
 
-            {/* Actions */}
-            <div className="flex items-center justify-end space-x-3 pt-4 border-t border-slate-100">
+            <div className="flex justify-end space-x-2 pt-3 border-t border-slate-100">
               <button
                 type="button"
                 onClick={() => setShowCitationModal(false)}
-                className="px-4 py-2 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-lg text-xs font-semibold transition"
+                className="px-4 py-2 text-slate-600 hover:bg-slate-100 rounded-xl text-xs"
               >
-                Cerrar
+                Cancelar
               </button>
               <button
                 type="button"
-                onClick={() => {
-                  window.print();
-                }}
-                className="inline-flex items-center space-x-2 px-4 py-2 bg-emerald-600 hover:bg-emerald-700 text-white rounded-lg text-xs font-bold transition shadow-sm"
+                onClick={handleGenerateCitationPdf}
+                className="px-4 py-2 bg-red-600 hover:bg-red-700 text-white font-bold rounded-xl text-xs shadow-sm transition cursor-pointer"
               >
-                <Printer className="w-4 h-4" />
-                <span>Imprimir Citación Oficial</span>
+                Descargar Citación en PDF
               </button>
             </div>
           </div>

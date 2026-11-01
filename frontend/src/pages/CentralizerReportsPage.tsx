@@ -123,6 +123,11 @@ const CURSOS_LISTA = [
 export const CentralizerReportsPage: React.FC = () => {
   const { isMaestro, isDirector, isSuperAdmin } = useAuth();
 
+  const isMaestroOnly = isMaestro && !isDirector && !isSuperAdmin;
+  const cursosDisponibles = isMaestroOnly
+    ? CURSOS_LISTA.filter((c) => ['SEC_1A', 'SEC_1B', 'SEC_2A'].includes(c.id))
+    : CURSOS_LISTA;
+
   const [selectedCurso, setSelectedCurso] = useState('SEC_1A');
   const [selectedTrimestre, setSelectedTrimestre] = useState('1');
   const [selectedEstudianteId, setSelectedEstudianteId] = useState('807300452026001');
@@ -155,44 +160,226 @@ export const CentralizerReportsPage: React.FC = () => {
     setFeedback(`✅ Centralizador oficial en Excel (.xlsx) generado exitosamente para ${cursoInfo?.nombre}.`);
   };
 
-  // Descarga del Boletín Trimestral Individual en PDF
+  // MODELO 1: Descarga del Boletín Trimestral Individual en PDF (Desglose de 4 Dimensiones de 1 solo trimestre)
   const handleDownloadBoletinPdf = () => {
     const est =
       dataActual.estudiantes.find((s) => s.rude === selectedEstudianteId) || dataActual.estudiantes[0];
     const cent =
       dataActual.centralizador.find((c) => c.rude === est.rude) || dataActual.centralizador[0];
 
-    const materias = [
-      { nombre: 'Matemática', ser: 9, saber: Math.floor(cent.matematica * 0.35), hacer: Math.floor(cent.matematica * 0.35), decidir: 9, total: cent.matematica, obs: 'Aprobado' },
-      { nombre: 'Comunicación y Lenguajes', ser: 9, saber: Math.floor(cent.lenguaje * 0.35), hacer: Math.floor(cent.lenguaje * 0.35), decidir: 8, total: cent.lenguaje, obs: 'Aprobado' },
-      { nombre: 'Ciencias Naturales', ser: 8, saber: Math.floor(cent.ciencias * 0.35), hacer: Math.floor(cent.ciencias * 0.35), decidir: 8, total: cent.ciencias, obs: 'Aprobado' },
-      { nombre: 'Ciencias Sociales', ser: 9, saber: Math.floor(cent.sociales * 0.35), hacer: Math.floor(cent.sociales * 0.35), decidir: 9, total: cent.sociales, obs: 'Aprobado' },
-      { nombre: 'Artes Plásticas y Visuales', ser: 10, saber: Math.floor(cent.artes * 0.35), hacer: Math.floor(cent.artes * 0.35), decidir: 9, total: cent.artes, obs: 'Aprobado' },
-      { nombre: 'Lengua Originaria Guaraní', ser: 9, saber: Math.floor(cent.guarani * 0.35), hacer: Math.floor(cent.guarani * 0.35), decidir: 8, total: cent.guarani, obs: 'Aprobado' },
+    const materiasTrimestrales = [
+      {
+        nombre: 'Matemática',
+        ser: 9,
+        saber: Math.min(35, Math.floor(cent.matematica * 0.35)),
+        hacer: Math.min(35, Math.floor(cent.matematica * 0.35)),
+        decidir: 9,
+        auto: 10,
+        extras: cent.matematica > 90 ? 2 : 0,
+        total: cent.matematica,
+      },
+      {
+        nombre: 'Comunicación y Lenguajes',
+        ser: 9,
+        saber: Math.min(35, Math.floor(cent.lenguaje * 0.35)),
+        hacer: Math.min(35, Math.floor(cent.lenguaje * 0.35)),
+        decidir: 8,
+        auto: 10,
+        extras: 0,
+        total: cent.lenguaje,
+      },
+      {
+        nombre: 'Ciencias Naturales (Biología-Geografía)',
+        ser: 8,
+        saber: Math.min(35, Math.floor(cent.ciencias * 0.35)),
+        hacer: Math.min(35, Math.floor(cent.ciencias * 0.35)),
+        decidir: 8,
+        auto: 10,
+        extras: 0,
+        total: cent.ciencias,
+      },
+      {
+        nombre: 'Ciencias Sociales',
+        ser: 9,
+        saber: Math.min(35, Math.floor(cent.sociales * 0.35)),
+        hacer: Math.min(35, Math.floor(cent.sociales * 0.35)),
+        decidir: 9,
+        auto: 10,
+        extras: 1,
+        total: cent.sociales,
+      },
+      {
+        nombre: 'Artes Plásticas y Visuales',
+        ser: 10,
+        saber: Math.min(35, Math.floor(cent.artes * 0.35)),
+        hacer: Math.min(35, Math.floor(cent.artes * 0.35)),
+        decidir: 9,
+        auto: 10,
+        extras: 0,
+        total: cent.artes,
+      },
+      {
+        nombre: 'Lengua Originaria Guaraní',
+        ser: 9,
+        saber: Math.min(35, Math.floor(cent.guarani * 0.35)),
+        hacer: Math.min(35, Math.floor(cent.guarani * 0.35)),
+        decidir: 8,
+        auto: 10,
+        extras: 0,
+        total: cent.guarani,
+      },
     ];
 
-    exportBulletinPdf(est.apellidosNombres, est.rude, cursoInfo?.nombre || selectedCurso, trimLabel, materias);
-    setFeedback(`✅ Boletín trimestral en PDF generado para ${est.apellidosNombres}.`);
+    const textoCualitativo = `En el ${trimLabel}, el/la estudiante ${est.apellidosNombres} demuestra excelente vocación y responsabilidad en la entrega de actividades (SER). Consolida destrezas de análisis crítico y razonamiento lógico-matemático (SABER y HACER). Fortalece el trabajo comunitario y asume liderazgo positivo con sus compañeros de curso (DECIDIR).`;
+
+    exportBulletinPdf(
+      est.apellidosNombres,
+      est.rude,
+      cursoInfo?.nombre || selectedCurso,
+      trimLabel,
+      materiasTrimestrales,
+      textoCualitativo
+    );
+    setFeedback(`✅ Boletín Trimestral emitido con desglose de 4 Dimensiones para ${est.apellidosNombres}.`);
   };
 
-  // Descarga de la Libreta Escolar Anual Oficial en PDF
+  // MODELO 2: Descarga de la Libreta Escolar Electrónica Oficial (Anual por Campos de Saberes con Promoción)
   const handleDownloadLibretaPdf = () => {
     const est =
       dataActual.estudiantes.find((s) => s.rude === selectedEstudianteId) || dataActual.estudiantes[0];
     const cent =
       dataActual.centralizador.find((c) => c.rude === est.rude) || dataActual.centralizador[0];
 
-    const materiasAnuales = [
-      { nombre: 'Matemática', t1: cent.matematica - 2, t2: cent.matematica, t3: cent.matematica + 1, final: cent.matematica, estado: 'APROBADO' },
-      { nombre: 'Comunicación y Lenguajes', t1: cent.lenguaje - 1, t2: cent.lenguaje, t3: cent.lenguaje + 2, final: cent.lenguaje, estado: 'APROBADO' },
-      { nombre: 'Ciencias Naturales', t1: cent.ciencias - 3, t2: cent.ciencias, t3: cent.ciencias + 2, final: cent.ciencias, estado: 'APROBADO' },
-      { nombre: 'Ciencias Sociales', t1: cent.sociales, t2: cent.sociales - 1, t3: cent.sociales + 2, final: cent.sociales, estado: 'APROBADO' },
-      { nombre: 'Artes Plásticas y Visuales', t1: cent.artes, t2: cent.artes + 1, t3: cent.artes, final: cent.artes, estado: 'APROBADO' },
-      { nombre: 'Lengua Originaria Guaraní', t1: cent.guarani - 1, t2: cent.guarani, t3: cent.guarani + 1, final: cent.guarani, estado: 'APROBADO' },
+    const camposOrganizados = [
+      {
+        campo: 'Cosmos y Pensamiento',
+        areas: [
+          {
+            nombre: 'Valores, Espiritualidades y Religiones',
+            t1: 88,
+            t2: 90,
+            t3: 92,
+            final: 90,
+            estado: 'APROBADO',
+          },
+        ],
+      },
+      {
+        campo: 'Comunidad y Sociedad',
+        areas: [
+          {
+            nombre: 'Comunicación y Lenguajes: Lengua Castellana',
+            t1: cent.lenguaje - 2,
+            t2: cent.lenguaje,
+            t3: cent.lenguaje + 2,
+            final: cent.lenguaje,
+            estado: 'APROBADO',
+          },
+          {
+            nombre: 'Lengua Originaria (Guaraní)',
+            t1: cent.guarani - 1,
+            t2: cent.guarani,
+            t3: cent.guarani + 1,
+            final: cent.guarani,
+            estado: 'APROBADO',
+          },
+          {
+            nombre: 'Lengua Extranjera (Inglés)',
+            t1: 82,
+            t2: 85,
+            t3: 88,
+            final: 85,
+            estado: 'APROBADO',
+          },
+          {
+            nombre: 'Ciencias Sociales',
+            t1: cent.sociales - 1,
+            t2: cent.sociales,
+            t3: cent.sociales + 2,
+            final: cent.sociales,
+            estado: 'APROBADO',
+          },
+          {
+            nombre: 'Artes Plásticas y Visuales',
+            t1: cent.artes,
+            t2: cent.artes + 1,
+            t3: cent.artes,
+            final: cent.artes,
+            estado: 'APROBADO',
+          },
+          {
+            nombre: 'Educación Musical',
+            t1: 86,
+            t2: 88,
+            t3: 90,
+            final: 88,
+            estado: 'APROBADO',
+          },
+          {
+            nombre: 'Educación Física y Deportes',
+            t1: 90,
+            t2: 92,
+            t3: 94,
+            final: 92,
+            estado: 'APROBADO',
+          },
+        ],
+      },
+      {
+        campo: 'Vida, Tierra y Territorio',
+        areas: [
+          {
+            nombre: 'Ciencias Naturales: Biología - Geografía',
+            t1: cent.ciencias - 2,
+            t2: cent.ciencias,
+            t3: cent.ciencias + 2,
+            final: cent.ciencias,
+            estado: 'APROBADO',
+          },
+        ],
+      },
+      {
+        campo: 'Ciencia, Tecnología y Producción',
+        areas: [
+          {
+            nombre: 'Matemática',
+            t1: cent.matematica - 2,
+            t2: cent.matematica,
+            t3: cent.matematica + 2,
+            final: cent.matematica,
+            estado: 'APROBADO',
+          },
+          {
+            nombre: 'Técnica Tecnológica General',
+            t1: 88,
+            t2: 90,
+            t3: 92,
+            final: 90,
+            estado: 'APROBADO',
+          },
+        ],
+      },
     ];
 
-    exportSchoolReportCardPdf(est.apellidosNombres, est.rude, cursoInfo?.nombre || selectedCurso, materiasAnuales);
-    setFeedback(`✅ Libreta Escolar Electrónica Oficial generada para ${est.apellidosNombres}.`);
+    // Promedio ponderado de todas las materias del año escolar
+    const allAreas = camposOrganizados.flatMap((g) => g.areas);
+    const promGeneral = allAreas.reduce((acc, a) => acc + a.final, 0) / allAreas.length;
+    const estadoProm: 'PROMOVIDO(A) AL SIGUIENTE AÑO DE ESCOLARIDAD' | 'RETENIDO(A) EN EL AÑO DE ESCOLARIDAD' =
+      promGeneral >= 51
+        ? 'PROMOVIDO(A) AL SIGUIENTE AÑO DE ESCOLARIDAD'
+        : 'RETENIDO(A) EN EL AÑO DE ESCOLARIDAD';
+
+    exportSchoolReportCardPdf(
+      est.apellidosNombres,
+      est.rude,
+      est.ci,
+      cursoInfo?.nombre || selectedCurso,
+      camposOrganizados,
+      promGeneral,
+      estadoProm
+    );
+
+    setFeedback(`✅ Libreta Escolar Oficial Anual generada con Código SIE y QR para ${est.apellidosNombres}.`);
   };
 
   return (
@@ -239,7 +426,7 @@ export const CentralizerReportsPage: React.FC = () => {
             }}
             className="w-full text-xs p-2.5 bg-slate-50 border border-slate-200 rounded-xl font-bold text-slate-800 focus:bg-white focus:outline-none focus:border-emerald-500 transition"
           >
-            {CURSOS_LISTA.map((c) => (
+            {cursosDisponibles.map((c) => (
               <option key={c.id} value={c.id}>
                 {c.nombre}
               </option>
