@@ -287,6 +287,94 @@ async function main() {
   }
   console.log(`✅ Catálogo de ${materiasData.length} materias del SEP creado en los 4 Campos de Saberes`);
 
+  // -------------------------------------------------------------
+  // 8. CATÁLOGO SAAS: PLANES DE SUSCRIPCIÓN & FACTURACIÓN
+  // -------------------------------------------------------------
+  await prisma.planSuscripcion.upsert({
+    where: { codigo: 'PLAN_BASIC' },
+    update: {},
+    create: {
+      codigo: 'PLAN_BASIC',
+      nombre: 'Plan Básico / Rural',
+      descripcion: 'Para maestros independientes o unidades educativas rurales pequeñas.',
+      precioMensual: 0,
+      precioAnual: 0,
+      moneda: 'BOB',
+      maxEstudiantes: 100,
+      maxDocentes: 8,
+      permiteReportesOficiales: true,
+      permiteLogoPersonalizado: false,
+      permiteKardexCompleto: false,
+      permiteSoportePrioritario: false,
+      orden: 1,
+    },
+  });
+
+  const planPro = await prisma.planSuscripcion.upsert({
+    where: { codigo: 'PLAN_PRO' },
+    update: {},
+    create: {
+      codigo: 'PLAN_PRO',
+      nombre: 'Plan Colegio Profesional',
+      descripcion: 'Solución integral para colegios fiscales, privados y de convenio.',
+      precioMensual: 250,
+      precioAnual: 2400,
+      moneda: 'BOB',
+      maxEstudiantes: 1200,
+      maxDocentes: 60,
+      permiteReportesOficiales: true,
+      permiteLogoPersonalizado: true,
+      permiteKardexCompleto: true,
+      permiteSoportePrioritario: true,
+      orden: 2,
+    },
+  });
+
+  await prisma.planSuscripcion.upsert({
+    where: { codigo: 'PLAN_ENTERPRISE' },
+    update: {},
+    create: {
+      codigo: 'PLAN_ENTERPRISE',
+      nombre: 'Plan Red Educativa / Distrito',
+      descripcion: 'Para redes de colegios (Fe y Alegría, Don Bosco) y Direcciones Distritales.',
+      precioMensual: 600,
+      precioAnual: 5800,
+      moneda: 'BOB',
+      maxEstudiantes: 99999,
+      maxDocentes: 9999,
+      permiteReportesOficiales: true,
+      permiteLogoPersonalizado: true,
+      permiteKardexCompleto: true,
+      permiteSoportePrioritario: true,
+      orden: 3,
+    },
+  });
+
+  console.log('✅ Catálogo de 3 planes SaaS creado (Básico, Pro Colegio, Red Educativa)');
+
+  // Asignar suscripción Pro activa a las instituciones existentes
+  const instituciones = await prisma.unidadEducativa.findMany();
+  for (const inst of instituciones) {
+    const unAnioMas = new Date();
+    unAnioMas.setFullYear(unAnioMas.getFullYear() + 1);
+
+    await prisma.suscripcionInstitucion.upsert({
+      where: { institucionId: inst.id },
+      update: {},
+      create: {
+        institucionId: inst.id,
+        planId: planPro.id,
+        estado: 'ACTIVA',
+        periodoFacturacion: 'ANUAL',
+        fechaInicio: new Date(),
+        fechaFin: unAnioMas,
+        diasGracia: 10,
+        montoActual: 2400,
+      },
+    });
+  }
+  console.log(`✅ Suscripciones SaaS asignadas a ${instituciones.length} unidades educativas.`);
+
   console.log('✨ Seed multi-tenant completado con éxito.');
 }
 

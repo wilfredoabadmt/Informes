@@ -23,6 +23,7 @@ import {
   CalendarCheck,
   ClipboardList,
   Clock,
+  CreditCard,
 } from 'lucide-react';
 
 export const Layout: React.FC = () => {
@@ -83,6 +84,7 @@ export const Layout: React.FC = () => {
       { label: 'Kardex Disciplinario', path: '/kardex', icon: ClipboardList },
       { label: 'Horarios & Aulas', path: '/schedule', icon: Clock },
       { label: 'Centralizadores & Reportes', path: '/reports', icon: FileSpreadsheet },
+      { label: 'Suscripción & Facturación SaaS', path: '/billing', icon: CreditCard },
       { label: 'Auditoría del Sistema', path: '/audit', icon: ShieldCheck },
     ];
   } else if (isDirector) {
@@ -95,6 +97,7 @@ export const Layout: React.FC = () => {
       { label: 'Kardex Disciplinario', path: '/kardex', icon: ClipboardList },
       { label: 'Horario Institucional', path: '/schedule', icon: Clock },
       { label: 'Centralizadores & Boletines', path: '/reports', icon: FileSpreadsheet },
+      { label: 'Suscripción & Facturación', path: '/billing', icon: CreditCard },
       { label: 'Trazabilidad de Colegio', path: '/audit', icon: ShieldCheck },
     ];
   } else if (isMaestro) {

@@ -3,6 +3,7 @@ import {
   UnauthorizedException,
   ForbiddenException,
   NotFoundException,
+  BadRequestException,
   Logger,
 } from '@nestjs/common';
 import { JwtService } from '@nestjs/jwt';
@@ -397,6 +398,173 @@ export class AuthService {
     });
 
     return { message: 'Sesión finalizada correctamente.' };
+  }
+
+  /**
+   * Registro autónomo de una nueva Unidad Educativa con suscripción Trial (Onboarding SaaS)
+   */
+  async registerSchool(dto: any, ip?: string, userAgent?: string) {
+    const sie = dto.sie.trim();
+    const email = dto.email.trim().toLowerCase();
+    const ci = dto.ci.trim();
+
+    // 1. Validar que el código SIE no exista
+    const sieExistente = await this.prisma.unidadEducativa.findUnique({
+      where: { sie },
+    });
+    if (sieExistente) {
+      throw new BadRequestException(`El código SIE ${sie} ya se encuentra registrado.`);
+    }
+
+    // 2. Validar que el correo no esté ocupado
+    const emailExistente = await this.prisma.usuario.findUnique({
+      where: { email },
+    });
+    if (emailExistente) {
+      throw new BadRequestException(`El correo electrónico ${email} ya tiene una cuenta registrada.`);
+    }
+
+    // 3. Hashear password
+    const passwordHash = await this.passwordService.hash(dto.password);
+
+    // 4. Buscar o crear Plan SaaS (por defecto PLAN_PRO para prueba de 14 días)
+    const planCodigo = dto.planCodigo || 'PLAN_PRO';
+    let plan = await this.prisma.planSuscripcion.findUnique({
+      where: { codigo: planCodigo },
+    });
+    if (!plan) {
+      plan = await this.prisma.planSuscripcion.findFirst({
+        where: { activo: true },
+        orderBy: { orden: 'asc' },
+      });
+    }
+
+    const fechaFinTrial = new Date();
+    fechaFinTrial.setDate(fechaFinTrial.getDate() + 14);
+
+    // 5. Crear en transacción atómica: Persona, Usuario, UnidadEducativa, Vinculacion, Gestion 2026, Suscripcion
+    const resultado = await this.prisma.$transaction(async (tx) => {
+      // Persona
+      let persona = await tx.persona.findUnique({ where: { ci } });
+      if (!persona) {
+        persona = await tx.persona.create({
+          data: {
+            ci,
+            nombres: dto.nombres.trim(),
+            primerApellido: dto.primerApellido.trim(),
+            segundoApellido: dto.segundoApellido ? dto.segundoApellido.trim() : null,
+            telefono: dto.telefono ? dto.telefono.trim() : null,
+          },
+        });
+      }
+
+      // Usuario
+      const usuario = await tx.usuario.create({
+        data: {
+          personaId: persona.id,
+          email,
+          passwordHash,
+          rolGlobal: RolGlobal.INSTITUTIONAL_USER,
+          estado: EstadoUsuario.ACTIVO,
+        },
+      });
+
+      // Unidad Educativa
+      const institucion = await tx.unidadEducativa.create({
+        data: {
+          sie,
+          nombre: dto.nombreColegio.trim(),
+          departamento: dto.departamento.trim(),
+          provincia: dto.provincia.trim(),
+          municipio: dto.municipio.trim(),
+          distrito: dto.distrito ? dto.distrito.trim() : null,
+          telefono: dto.telefono ? dto.telefono.trim() : null,
+          tipo: dto.tipo || 'FISCAL',
+          nivel: dto.nivel || 'INTEGRADO',
+          activo: true,
+        },
+      });
+
+      // Vinculación Institucional como Administrador Institucional / Director
+      const vinculacion = await tx.vinculacionInstitucional.create({
+        data: {
+          institucionId: institucion.id,
+          usuarioId: usuario.id,
+          rolInstitucional: 'ADMIN_INSTITUCIONAL',
+          cargoOficial: 'Director(a) General',
+          estado: EstadoVinculacion.ACTIVO,
+        },
+      });
+
+      // Gestión Escolar 2026 inicial
+      await tx.gestionEscolar.create({
+        data: {
+          institucionId: institucion.id,
+          anio: 2026,
+          fechaInicio: new Date('2026-02-01'),
+          fechaFin: new Date('2026-11-30'),
+          estado: 'ABIERTA',
+          activo: true,
+        },
+      });
+
+      // Suscripción SaaS (Trial 14 días)
+      if (plan) {
+        await tx.suscripcionInstitucion.create({
+          data: {
+            institucionId: institucion.id,
+            planId: plan.id,
+            estado: 'TRIAL',
+            periodoFacturacion: 'MENSUAL',
+            fechaFin: fechaFinTrial,
+            diasGracia: 5,
+            montoActual: plan.precioMensual,
+          },
+        });
+      }
+
+      return { usuario, persona, institucion, vinculacion };
+    });
+
+    // 6. Generar tokens JWT para auto-login inmediato
+    const tokens = await this.generateTokenPair(
+      resultado.usuario.id,
+      resultado.usuario.email,
+      resultado.usuario.rolGlobal,
+    );
+
+    // Auditoría
+    await this.auditService.log({
+      usuarioId: resultado.usuario.id,
+      institucionId: resultado.institucion.id,
+      tipo: TipoAuditoria.USER_CREATE,
+      accion: 'REGISTRO_AUTONOMO_COLEGIO_SAAS',
+      detalle: {
+        sie: resultado.institucion.sie,
+        nombre: resultado.institucion.nombre,
+        plan: planCodigo,
+      },
+      ip,
+      userAgent,
+    });
+
+    return {
+      message: '¡Unidad Educativa registrada exitosamente! Período de prueba de 14 días activado.',
+      tokens,
+      user: {
+        id: resultado.usuario.id,
+        email: resultado.usuario.email,
+        persona: resultado.persona,
+        rolGlobal: resultado.usuario.rolGlobal,
+      },
+      institution: {
+        id: resultado.institucion.id,
+        sie: resultado.institucion.sie,
+        nombre: resultado.institucion.nombre,
+        role: 'ADMIN_INSTITUCIONAL',
+        cargoOficial: 'Director(a) General',
+      },
+    };
   }
 
   // --- MÉTODOS AUXILIARES PRIVADOS ---

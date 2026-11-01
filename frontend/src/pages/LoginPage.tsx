@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, Link } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import { School, KeyRound, User, AlertCircle, Sparkles } from 'lucide-react';
 
@@ -159,6 +159,29 @@ export const LoginPage: React.FC = () => {
                 Directora acepta <span className="font-mono">directora@franztamayo.edu.bo</span> o <span className="font-mono">elena.flores@minedu.gob.bo</span>
               </div>
             </div>
+          </div>
+        </div>
+
+        {/* Banner SaaS Onboarding */}
+        <div className="mt-6 bg-emerald-50 border border-emerald-200 rounded-2xl p-4 text-center shadow-sm">
+          <p className="text-xs font-bold text-emerald-900">¿Deseas implementar SIGMA en tu Unidad Educativa?</p>
+          <p className="text-[11px] text-slate-600 mt-1">
+            Comienza una prueba gratuita de 14 días con calificaciones 4D, boletines oficiales y RUDE.
+          </p>
+          <div className="mt-3 flex items-center justify-center space-x-3">
+            <Link
+              to="/landing"
+              className="text-xs font-bold text-emerald-700 hover:text-emerald-800 hover:underline"
+            >
+              Ver Planes & Precios
+            </Link>
+            <span className="text-slate-300">•</span>
+            <Link
+              to="/registro-colegio"
+              className="px-3.5 py-1.5 bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl text-xs font-bold shadow-sm transition"
+            >
+              Crear Colegio Gratis
+            </Link>
           </div>
         </div>
 

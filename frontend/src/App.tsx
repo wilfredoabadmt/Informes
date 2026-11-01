@@ -13,6 +13,9 @@ import { KardexPage } from './pages/KardexPage';
 import { SchedulePage } from './pages/SchedulePage';
 import { CentralizerReportsPage } from './pages/CentralizerReportsPage';
 import { AuditPage } from './pages/AuditPage';
+import { LandingPage } from './pages/LandingPage';
+import { RegisterSchoolPage } from './pages/RegisterSchoolPage';
+import { BillingPage } from './pages/BillingPage';
 
 const ProtectedRoute: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const { user, loading } = useAuth();
@@ -39,7 +42,13 @@ export const App: React.FC = () => {
     <AuthProvider>
       <BrowserRouter>
         <Routes>
+          {/* Rutas Públicas SaaS */}
+          <Route path="/landing" element={<LandingPage />} />
+          <Route path="/planes" element={<LandingPage />} />
+          <Route path="/registro-colegio" element={<RegisterSchoolPage />} />
+          <Route path="/onboarding" element={<RegisterSchoolPage />} />
           <Route path="/login" element={<LoginPage />} />
+
           <Route
             path="/"
             element={
@@ -57,6 +66,7 @@ export const App: React.FC = () => {
             <Route path="kardex" element={<KardexPage />} />
             <Route path="schedule" element={<SchedulePage />} />
             <Route path="reports" element={<CentralizerReportsPage />} />
+            <Route path="billing" element={<BillingPage />} />
             <Route path="audit" element={<AuditPage />} />
           </Route>
           <Route path="*" element={<Navigate to="/" replace />} />

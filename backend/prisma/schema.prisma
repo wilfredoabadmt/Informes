@@ -237,6 +237,7 @@ model UnidadEducativa {
   auditorias         RegistroAuditoria[]
   registrosKardex    RegistroKardex[]
   horariosPeriodos   HorarioPeriodo[]
+  suscripcion        SuscripcionInstitucion?
 
   @@index([sie])
   @@index([departamento])
@@ -680,4 +681,105 @@ model HorarioPeriodo {
   @@index([institucionId])
   @@index([asignacionId])
   @@map("horarios_periodos")
+}
+
+// -------------------------------------------------------------
+// MODELO SAAS: PLANES, SUSCRIPCIONES Y FACTURACIÓN
+// -------------------------------------------------------------
+
+enum EstadoSuscripcion {
+  TRIAL
+  ACTIVA
+  GRACIA
+  VENCIDA
+  CANCELADA
+}
+
+enum PeriodoFacturacion {
+  MENSUAL
+  SEMESTRAL
+  ANUAL
+}
+
+enum MetodoPagoSaaS {
+  QR_SIMPLE
+  TRANSFERENCIA_BANCARIA
+  TARJETA_CREDITO_DEBITO
+  MANUAL_ADMIN
+}
+
+enum EstadoPagoSaaS {
+  PENDIENTE
+  APROBADO
+  RECHAZADO
+}
+
+model PlanSuscripcion {
+  id                        String                 @id @default(uuid()) @db.Uuid
+  codigo                    String                 @unique @db.VarChar(50)
+  nombre                    String                 @db.VarChar(100)
+  descripcion               String                 @db.VarChar(255)
+  precioMensual             Decimal                @map("precio_mensual") @db.Decimal(10, 2)
+  precioAnual               Decimal                @map("precio_anual") @db.Decimal(10, 2)
+  moneda                    String                 @default("BOB") @db.VarChar(10)
+  maxEstudiantes            Int                    @default(100) @map("max_estudiantes")
+  maxDocentes               Int                    @default(10) @map("max_docentes")
+  permiteReportesOficiales   Boolean                @default(true) @map("permite_reportes_oficiales")
+  permiteLogoPersonalizado   Boolean                @default(false) @map("permite_logo_personalizado")
+  permiteKardexCompleto      Boolean                @default(false) @map("permite_kardex_completo")
+  permiteSoportePrioritario  Boolean                @default(false) @map("permite_soporte_prioritario")
+  activo                    Boolean                @default(true)
+  orden                     Int                    @default(1)
+  createdAt                 DateTime               @default(now()) @map("created_at")
+  updatedAt                 DateTime               @updatedAt @map("updated_at")
+
+  suscripciones SuscripcionInstitucion[]
+
+  @@map("planes_suscripcion")
+}
+
+model SuscripcionInstitucion {
+  id                 String             @id @default(uuid()) @db.Uuid
+  institucionId      String             @unique @map("institucion_id") @db.Uuid
+  planId             String             @map("plan_id") @db.Uuid
+  estado             EstadoSuscripcion  @default(TRIAL)
+  periodoFacturacion PeriodoFacturacion @default(MENSUAL) @map("periodo_facturacion")
+  fechaInicio        DateTime           @default(now()) @map("fecha_inicio")
+  fechaFin           DateTime           @map("fecha_fin")
+  diasGracia         Int                @default(5) @map("dias_gracia")
+  autoRenovacion     Boolean            @default(true) @map("auto_renovacion")
+  montoActual        Decimal            @default(0.00) @map("monto_actual") @db.Decimal(10, 2)
+  createdAt          DateTime           @default(now()) @map("created_at")
+  updatedAt          DateTime           @updatedAt @map("updated_at")
+
+  institucion UnidadEducativa           @relation(fields: [institucionId], references: [id], onDelete: Cascade)
+  plan        PlanSuscripcion           @relation(fields: [planId], references: [id], onDelete: Restrict)
+  pagos       HistorialPagoSuscripcion[]
+
+  @@index([institucionId])
+  @@index([planId])
+  @@index([estado])
+  @@map("suscripciones_institucion")
+}
+
+model HistorialPagoSuscripcion {
+  id                 String         @id @default(uuid()) @db.Uuid
+  suscripcionId      String         @map("suscripcion_id") @db.Uuid
+  monto              Decimal        @db.Decimal(10, 2)
+  moneda             String         @default("BOB") @db.VarChar(10)
+  metodoPago         MetodoPagoSaaS @default(QR_SIMPLE) @map("metodo_pago")
+  estado             EstadoPagoSaaS @default(PENDIENTE)
+  codigoTransaccion  String         @unique @map("codigo_transaccion") @db.VarChar(100)
+  referenciaBancaria String?        @map("referencia_bancaria") @db.VarChar(100)
+  comprobanteUrl     String?        @map("comprobante_url") @db.VarChar(255)
+  fechaPago          DateTime?      @map("fecha_pago")
+  observaciones      String?        @db.VarChar(255)
+  createdAt          DateTime       @default(now()) @map("created_at")
+  updatedAt          DateTime       @updatedAt @map("updated_at")
+
+  suscripcion SuscripcionInstitucion @relation(fields: [suscripcionId], references: [id], onDelete: Cascade)
+
+  @@index([suscripcionId])
+  @@index([estado])
+  @@map("historial_pagos_suscripcion")
 }

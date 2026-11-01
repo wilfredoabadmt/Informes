@@ -11,6 +11,7 @@ import {
 import { ApiTags, ApiOperation, ApiResponse, ApiBearerAuth } from '@nestjs/swagger';
 import { AuthService } from './auth.service';
 import { LoginDto } from './dto/login.dto';
+import { RegisterSchoolDto } from './dto/register-school.dto';
 import { SelectContextDto } from './dto/select-context.dto';
 import { RefreshTokenDto } from './dto/refresh-token.dto';
 import { JwtAuthGuard } from '../../common/guards/jwt-auth.guard';
@@ -32,6 +33,17 @@ export class AuthController {
     const ip = req.ip;
     const userAgent = req.headers['user-agent'];
     return this.authService.login(dto, ip, userAgent);
+  }
+
+  @Post('register-school')
+  @HttpCode(HttpStatus.CREATED)
+  @ApiOperation({ summary: 'Auto-registro de nueva Unidad Educativa y Director (SaaS Onboarding)' })
+  @ApiResponse({ status: 201, description: 'Colegio registrado exitosamente con período de prueba' })
+  @ApiResponse({ status: 400, description: 'Código SIE o Correo duplicado' })
+  async registerSchool(@Body() dto: RegisterSchoolDto, @Req() req: Request) {
+    const ip = req.ip;
+    const userAgent = req.headers['user-agent'];
+    return this.authService.registerSchool(dto, ip, userAgent);
   }
 
   @Get('me')
