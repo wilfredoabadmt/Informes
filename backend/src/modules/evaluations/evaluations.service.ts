@@ -28,6 +28,7 @@ export const DIMENSION_LIMITS: Record<DimensionEvaluacion, number> = {
   [DimensionEvaluacion.HACER]: 35,
   [DimensionEvaluacion.DECIDIR]: 10,
   [DimensionEvaluacion.AUTOEVALUACION]: 10,
+  [DimensionEvaluacion.PUNTOS_EXTRAS]: 10,
 };
 
 @Injectable()

@@ -15,6 +15,7 @@ import {
   ClipboardList,
   Sparkles,
   BookOpen,
+  Trash2,
 } from 'lucide-react';
 
 interface KardexEntry {
@@ -204,6 +205,16 @@ export const KardexPage: React.FC = () => {
     setResponsabilidad({ noPresentoDeber: false, noDioEvaluacion: false, noExpuso: false, noTrajoMateriales: false, danoMobiliario: false, trajoCelularSinPermiso: false });
     setParticipacion({ noParticipa: false, noPrestaAtencion: false });
     setConducta({ faltoRespetoDocente: false, faltoRespetoCompaneros: false, lenguajeInapropiado: false });
+  };
+
+  const handleDeleteEntry = (entryId: string) => {
+    setStudents((prev) =>
+      prev.map((s) =>
+        s.id === selectedStudentId
+          ? { ...s, entries: s.entries.filter((e) => e.id !== entryId) }
+          : s
+      )
+    );
   };
 
   return (
@@ -618,6 +629,9 @@ export const KardexPage: React.FC = () => {
                   <th className="py-2.5 px-3 min-w-[240px]">Detalle y Compromiso</th>
                   <th className="py-2.5 px-3 w-28 text-center">Citación</th>
                   <th className="py-2.5 px-3 min-w-[150px]">Firma / Docente</th>
+                  {(isMaestro || isSuperAdmin) && (
+                    <th className="py-2.5 px-3 text-center w-16">Acción</th>
+                  )}
                 </tr>
               </thead>
               <tbody className="divide-y divide-slate-200">
@@ -676,6 +690,17 @@ export const KardexPage: React.FC = () => {
                       <td className="py-3 px-3 text-slate-600 font-medium">
                         {ent.firmaMaestro}
                       </td>
+                      {(isMaestro || isSuperAdmin) && (
+                        <td className="py-3 px-3 text-center">
+                          <button
+                            onClick={() => handleDeleteEntry(ent.id)}
+                            title="Eliminar observación"
+                            className="p-1.5 text-slate-400 hover:text-rose-600 hover:bg-slate-100 rounded-lg transition"
+                          >
+                            <Trash2 className="w-3.5 h-3.5" />
+                          </button>
+                        </td>
+                      )}
                     </tr>
                   );
                 })}

@@ -9,28 +9,50 @@ import {
   Building2,
   CheckCircle,
   Filter,
+  Plus,
+  Edit2,
+  X,
+  CheckCircle2,
 } from 'lucide-react';
+
+interface SlotDetail {
+  subject: string;
+  grade: string;
+  room: string;
+  color: string;
+}
 
 interface ScheduleSlot {
   period: number;
   timeRange: string;
   isRecess?: boolean;
   days: {
-    lunes?: { subject: string; grade: string; room: string; color: string };
-    martes?: { subject: string; grade: string; room: string; color: string };
-    miercoles?: { subject: string; grade: string; room: string; color: string };
-    jueves?: { subject: string; grade: string; room: string; color: string };
-    viernes?: { subject: string; grade: string; room: string; color: string };
+    lunes?: SlotDetail;
+    martes?: SlotDetail;
+    miercoles?: SlotDetail;
+    jueves?: SlotDetail;
+    viernes?: SlotDetail;
   };
 }
 
 export const SchedulePage: React.FC = () => {
   const { isMaestro, isDirector, isSuperAdmin, user } = useAuth();
   const [selectedView, setSelectedView] = useState<'teacher' | 'classroom'>('teacher');
-  const [selectedCourse, setSelectedCourse] = useState<string>('1A');
+  const [feedback, setFeedback] = useState<string | null>(null);
+
+  // Modal State for adding/modifying slot
+  const [showModal, setShowModal] = useState(false);
+  const [slotForm, setSlotForm] = useState({
+    period: 1,
+    day: 'lunes' as 'lunes' | 'martes' | 'miercoles' | 'jueves' | 'viernes',
+    subject: 'Comunicación y Lenguajes',
+    grade: '1º Sec "A"',
+    room: 'Aula 101',
+    color: 'bg-emerald-50 border-emerald-300 text-emerald-900',
+  });
 
   // Exact period slots from sheet HOR in REGISTRO_MODERNO.xlsb
-  const scheduleSlots: ScheduleSlot[] = [
+  const [slots, setSlots] = useState<ScheduleSlot[]>([
     {
       period: 1,
       timeRange: '08:00 - 08:45',
@@ -103,7 +125,48 @@ export const SchedulePage: React.FC = () => {
         viernes: { subject: 'Cierre de Jornada y Turno', grade: 'Institucional', room: 'Dirección', color: 'bg-slate-100 border-slate-300 text-slate-800' },
       },
     },
-  ];
+  ]);
+
+  const handleSaveSlot = (e: React.FormEvent) => {
+    e.preventDefault();
+    setSlots((prev) =>
+      prev.map((s) => {
+        if (s.period === slotForm.period && !s.isRecess) {
+          return {
+            ...s,
+            days: {
+              ...s.days,
+              [slotForm.day]: {
+                subject: slotForm.subject,
+                grade: slotForm.grade,
+                room: slotForm.room,
+                color: slotForm.color,
+              },
+            },
+          };
+        }
+        return s;
+      })
+    );
+    setShowModal(false);
+    setFeedback('¡Período pedagógico asignado y actualizado en el cronograma semanal!');
+    setTimeout(() => setFeedback(null), 3000);
+  };
+
+  const handleClearSlot = (periodNum: number, dayKey: 'lunes' | 'martes' | 'miercoles' | 'jueves' | 'viernes') => {
+    setSlots((prev) =>
+      prev.map((s) => {
+        if (s.period === periodNum) {
+          const updatedDays = { ...s.days };
+          delete updatedDays[dayKey];
+          return { ...s, days: updatedDays };
+        }
+        return s;
+      })
+    );
+    setFeedback('Período liberado del horario.');
+    setTimeout(() => setFeedback(null), 3000);
+  };
 
   return (
     <div className="space-y-6">
@@ -131,8 +194,25 @@ export const SchedulePage: React.FC = () => {
             <Printer className="w-4 h-4" />
             <span>Imprimir Horario</span>
           </button>
+
+          {(isDirector || isSuperAdmin) && (
+            <button
+              onClick={() => setShowModal(true)}
+              className="inline-flex items-center space-x-2 px-4 py-2 bg-emerald-600 hover:bg-emerald-700 text-white rounded-lg text-xs font-bold transition shadow-sm"
+            >
+              <Plus className="w-4 h-4" />
+              <span>+ Asignar Período</span>
+            </button>
+          )}
         </div>
       </div>
+
+      {feedback && (
+        <div className="p-3.5 bg-emerald-50 border border-emerald-200 rounded-xl text-xs text-emerald-800 flex items-center space-x-2 animate-fadeIn">
+          <CheckCircle2 className="w-4 h-4 text-emerald-600 flex-shrink-0" />
+          <span>{feedback}</span>
+        </div>
+      )}
 
       {/* Controls & Summary Cards */}
       <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
@@ -218,7 +298,7 @@ export const SchedulePage: React.FC = () => {
               </tr>
             </thead>
             <tbody className="divide-y divide-slate-200">
-              {scheduleSlots.map((slot, index) => {
+              {slots.map((slot, index) => {
                 if (slot.isRecess) {
                   return (
                     <tr key={`recess-${index}`} className="bg-amber-50/80 border-y-2 border-amber-200">
@@ -244,12 +324,21 @@ export const SchedulePage: React.FC = () => {
                     {/* Lunes */}
                     <td className="p-2 border-r border-slate-200">
                       {slot.days.lunes ? (
-                        <div className={`p-2 rounded-lg border ${slot.days.lunes.color}`}>
+                        <div className={`p-2 rounded-lg border group relative ${slot.days.lunes.color}`}>
                           <div className="font-bold">{slot.days.lunes.subject}</div>
                           <div className="flex justify-between text-[11px] text-slate-600 mt-1">
                             <span>{slot.days.lunes.grade}</span>
                             <span className="font-mono">{slot.days.lunes.room}</span>
                           </div>
+                          {(isDirector || isSuperAdmin) && (
+                            <button
+                              onClick={() => handleClearSlot(slot.period, 'lunes')}
+                              title="Quitar"
+                              className="absolute top-1 right-1 opacity-0 group-hover:opacity-100 text-slate-400 hover:text-rose-600 transition"
+                            >
+                              <X className="w-3 h-3" />
+                            </button>
+                          )}
                         </div>
                       ) : (
                         <div className="text-center text-slate-300">-</div>
@@ -259,12 +348,21 @@ export const SchedulePage: React.FC = () => {
                     {/* Martes */}
                     <td className="p-2 border-r border-slate-200">
                       {slot.days.martes ? (
-                        <div className={`p-2 rounded-lg border ${slot.days.martes.color}`}>
+                        <div className={`p-2 rounded-lg border group relative ${slot.days.martes.color}`}>
                           <div className="font-bold">{slot.days.martes.subject}</div>
                           <div className="flex justify-between text-[11px] text-slate-600 mt-1">
                             <span>{slot.days.martes.grade}</span>
                             <span className="font-mono">{slot.days.martes.room}</span>
                           </div>
+                          {(isDirector || isSuperAdmin) && (
+                            <button
+                              onClick={() => handleClearSlot(slot.period, 'martes')}
+                              title="Quitar"
+                              className="absolute top-1 right-1 opacity-0 group-hover:opacity-100 text-slate-400 hover:text-rose-600 transition"
+                            >
+                              <X className="w-3 h-3" />
+                            </button>
+                          )}
                         </div>
                       ) : (
                         <div className="text-center text-slate-300">-</div>
@@ -274,12 +372,21 @@ export const SchedulePage: React.FC = () => {
                     {/* Miercoles */}
                     <td className="p-2 border-r border-slate-200">
                       {slot.days.miercoles ? (
-                        <div className={`p-2 rounded-lg border ${slot.days.miercoles.color}`}>
+                        <div className={`p-2 rounded-lg border group relative ${slot.days.miercoles.color}`}>
                           <div className="font-bold">{slot.days.miercoles.subject}</div>
                           <div className="flex justify-between text-[11px] text-slate-600 mt-1">
                             <span>{slot.days.miercoles.grade}</span>
                             <span className="font-mono">{slot.days.miercoles.room}</span>
                           </div>
+                          {(isDirector || isSuperAdmin) && (
+                            <button
+                              onClick={() => handleClearSlot(slot.period, 'miercoles')}
+                              title="Quitar"
+                              className="absolute top-1 right-1 opacity-0 group-hover:opacity-100 text-slate-400 hover:text-rose-600 transition"
+                            >
+                              <X className="w-3 h-3" />
+                            </button>
+                          )}
                         </div>
                       ) : (
                         <div className="text-center text-slate-300">-</div>
@@ -289,12 +396,21 @@ export const SchedulePage: React.FC = () => {
                     {/* Jueves */}
                     <td className="p-2 border-r border-slate-200">
                       {slot.days.jueves ? (
-                        <div className={`p-2 rounded-lg border ${slot.days.jueves.color}`}>
+                        <div className={`p-2 rounded-lg border group relative ${slot.days.jueves.color}`}>
                           <div className="font-bold">{slot.days.jueves.subject}</div>
                           <div className="flex justify-between text-[11px] text-slate-600 mt-1">
                             <span>{slot.days.jueves.grade}</span>
                             <span className="font-mono">{slot.days.jueves.room}</span>
                           </div>
+                          {(isDirector || isSuperAdmin) && (
+                            <button
+                              onClick={() => handleClearSlot(slot.period, 'jueves')}
+                              title="Quitar"
+                              className="absolute top-1 right-1 opacity-0 group-hover:opacity-100 text-slate-400 hover:text-rose-600 transition"
+                            >
+                              <X className="w-3 h-3" />
+                            </button>
+                          )}
                         </div>
                       ) : (
                         <div className="text-center text-slate-300">-</div>
@@ -304,12 +420,21 @@ export const SchedulePage: React.FC = () => {
                     {/* Viernes */}
                     <td className="p-2">
                       {slot.days.viernes ? (
-                        <div className={`p-2 rounded-lg border ${slot.days.viernes.color}`}>
+                        <div className={`p-2 rounded-lg border group relative ${slot.days.viernes.color}`}>
                           <div className="font-bold">{slot.days.viernes.subject}</div>
                           <div className="flex justify-between text-[11px] text-slate-600 mt-1">
                             <span>{slot.days.viernes.grade}</span>
                             <span className="font-mono">{slot.days.viernes.room}</span>
                           </div>
+                          {(isDirector || isSuperAdmin) && (
+                            <button
+                              onClick={() => handleClearSlot(slot.period, 'viernes')}
+                              title="Quitar"
+                              className="absolute top-1 right-1 opacity-0 group-hover:opacity-100 text-slate-400 hover:text-rose-600 transition"
+                            >
+                              <X className="w-3 h-3" />
+                            </button>
+                          )}
                         </div>
                       ) : (
                         <div className="text-center text-slate-300">-</div>
@@ -322,7 +447,127 @@ export const SchedulePage: React.FC = () => {
           </table>
         </div>
       </div>
+
+      {/* MODAL: ASIGNAR / CONFIGURAR PERÍODO */}
+      {showModal && (
+        <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+          <div className="bg-white rounded-2xl max-w-md w-full p-6 shadow-2xl border border-slate-200 space-y-4 animate-scaleUp">
+            <div className="flex justify-between items-center border-b border-slate-200 pb-3">
+              <h2 className="text-sm font-bold text-slate-900 uppercase">Asignar Período al Horario</h2>
+              <button onClick={() => setShowModal(false)} className="text-slate-400 hover:text-slate-600">
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+            <form onSubmit={handleSaveSlot} className="space-y-3 text-xs">
+              <div className="grid grid-cols-2 gap-3">
+                <div>
+                  <label className="font-bold text-slate-700 block mb-1">Día:</label>
+                  <select
+                    value={slotForm.day}
+                    onChange={(e) => setSlotForm({ ...slotForm, day: e.target.value as any })}
+                    className="w-full bg-slate-50 border border-slate-200 rounded-lg p-2 font-bold"
+                  >
+                    <option value="lunes">Lunes</option>
+                    <option value="martes">Martes</option>
+                    <option value="miercoles">Miércoles</option>
+                    <option value="jueves">Jueves</option>
+                    <option value="viernes">Viernes</option>
+                  </select>
+                </div>
+                <div>
+                  <label className="font-bold text-slate-700 block mb-1">Período:</label>
+                  <select
+                    value={slotForm.period}
+                    onChange={(e) => setSlotForm({ ...slotForm, period: Number(e.target.value) })}
+                    className="w-full bg-slate-50 border border-slate-200 rounded-lg p-2 font-bold"
+                  >
+                    <option value={1}>1º (08:00 - 08:45)</option>
+                    <option value={2}>2º (08:45 - 09:30)</option>
+                    <option value={3}>3º (09:30 - 10:15)</option>
+                    <option value={4}>4º (10:15 - 11:00)</option>
+                    <option value={5}>5º (11:15 - 12:00)</option>
+                    <option value={6}>6º (12:00 - 12:45)</option>
+                  </select>
+                </div>
+              </div>
+
+              <div>
+                <label className="font-bold text-slate-700 block mb-1">Asignatura:</label>
+                <select
+                  value={slotForm.subject}
+                  onChange={(e) => setSlotForm({ ...slotForm, subject: e.target.value })}
+                  className="w-full bg-slate-50 border border-slate-200 rounded-lg p-2 font-medium"
+                >
+                  <option value="Comunicación y Lenguajes">Comunicación y Lenguajes</option>
+                  <option value="Lengua Originaria (Guaraní)">Lengua Originaria (Guaraní)</option>
+                  <option value="Lengua Extranjera (Inglés)">Lengua Extranjera (Inglés)</option>
+                  <option value="Literatura y Redacción">Literatura y Redacción</option>
+                  <option value="Ciencias Sociales e Historia">Ciencias Sociales e Historia</option>
+                  <option value="Planificación Curricular">Planificación Curricular</option>
+                  <option value="Consejo de Evaluación">Consejo de Evaluación</option>
+                </select>
+              </div>
+
+              <div className="grid grid-cols-2 gap-3">
+                <div>
+                  <label className="font-bold text-slate-700 block mb-1">Curso / Paralelo:</label>
+                  <input
+                    type="text"
+                    required
+                    value={slotForm.grade}
+                    onChange={(e) => setSlotForm({ ...slotForm, grade: e.target.value })}
+                    className="w-full bg-slate-50 border border-slate-200 rounded-lg p-2"
+                    placeholder='ej. 1º Sec "A"'
+                  />
+                </div>
+                <div>
+                  <label className="font-bold text-slate-700 block mb-1">Aula / Espacio:</label>
+                  <input
+                    type="text"
+                    required
+                    value={slotForm.room}
+                    onChange={(e) => setSlotForm({ ...slotForm, room: e.target.value })}
+                    className="w-full bg-slate-50 border border-slate-200 rounded-lg p-2"
+                    placeholder="ej. Aula 101"
+                  />
+                </div>
+              </div>
+
+              <div>
+                <label className="font-bold text-slate-700 block mb-1">Color de Etiqueta:</label>
+                <select
+                  value={slotForm.color}
+                  onChange={(e) => setSlotForm({ ...slotForm, color: e.target.value })}
+                  className="w-full bg-slate-50 border border-slate-200 rounded-lg p-2 font-medium"
+                >
+                  <option value="bg-emerald-50 border-emerald-300 text-emerald-900">Verde Esmeralda (Lenguajes)</option>
+                  <option value="bg-sky-50 border-sky-300 text-sky-900">Azul Cielo (Idiomas)</option>
+                  <option value="bg-amber-50 border-amber-300 text-amber-900">Ámbar (Sociales / Historia)</option>
+                  <option value="bg-purple-50 border-purple-300 text-purple-900">Púrpura (Literatura)</option>
+                  <option value="bg-rose-50 border-rose-300 text-rose-900">Rosa (Talleres)</option>
+                  <option value="bg-slate-100 border-slate-300 text-slate-800">Gris (Institucional / Consejos)</option>
+                </select>
+              </div>
+
+              <div className="flex justify-end space-x-2 pt-3 border-t border-slate-100">
+                <button
+                  type="button"
+                  onClick={() => setShowModal(false)}
+                  className="px-4 py-2 text-slate-600 hover:bg-slate-100 rounded-lg"
+                >
+                  Cancelar
+                </button>
+                <button
+                  type="submit"
+                  className="px-4 py-2 bg-emerald-600 hover:bg-emerald-700 text-white font-bold rounded-lg shadow-sm"
+                >
+                  Guardar Período
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
     </div>
   );
 };
-

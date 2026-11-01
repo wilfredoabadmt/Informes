@@ -136,6 +136,7 @@ enum DimensionEvaluacion {
   HACER
   DECIDIR
   AUTOEVALUACION
+  PUNTOS_EXTRAS
 }
 
 // -------------------------------------------------------------
@@ -180,6 +181,7 @@ model Usuario {
   refreshTokens          RefreshToken[]
   auditorias             RegistroAuditoria[]
   asistenciasRegistradas RegistroAsistencia[]
+  kardexRegistrados      RegistroKardex[]
 
   @@index([email])
   @@map("usuarios")
@@ -233,6 +235,8 @@ model UnidadEducativa {
   evaluaciones       Evaluacion[]
   calificaciones     Calificacion[]
   auditorias         RegistroAuditoria[]
+  registrosKardex    RegistroKardex[]
+  horariosPeriodos   HorarioPeriodo[]
 
   @@index([sie])
   @@index([departamento])
@@ -369,8 +373,9 @@ model AsignacionAcademica {
   vinculacion  VinculacionInstitucional @relation(fields: [vinculacionId], references: [id], onDelete: Cascade)
   paralelo     Paralelo                 @relation(fields: [paraleloId], references: [id], onDelete: Cascade)
   materia      Materia                  @relation(fields: [materiaId], references: [id], onDelete: Cascade)
-  asistencias  RegistroAsistencia[]
-  evaluaciones Evaluacion[]
+  asistencias      RegistroAsistencia[]
+  evaluaciones     Evaluacion[]
+  horariosPeriodos HorarioPeriodo[]
 
   @@unique([gestionId, paraleloId, materiaId, vinculacionId])
   @@index([institucionId])
@@ -400,6 +405,7 @@ model Estudiante {
   inscripciones      Inscripcion[]
   detallesAsistencia DetalleAsistencia[]
   calificaciones     Calificacion[]
+  registrosKardex    RegistroKardex[]
 
   @@index([codigoRude])
   @@map("estudiantes")
@@ -472,6 +478,7 @@ model Inscripcion {
   gestion     GestionEscolar  @relation(fields: [gestionId], references: [id], onDelete: Cascade)
   paralelo    Paralelo        @relation(fields: [paraleloId], references: [id], onDelete: Cascade)
 
+  @@unique([gestionId, estudianteId])
   @@index([institucionId])
   @@index([estudianteId])
   @@index([gestionId])
@@ -594,4 +601,83 @@ model Calificacion {
   @@index([evaluacionId])
   @@index([estudianteId])
   @@map("calificaciones")
+}
+
+// -------------------------------------------------------------
+// SEGUIMIENTO DISCIPLINARIO Y KARDEX PEDAGÓGICO (HOJA KARDEX)
+// -------------------------------------------------------------
+
+model RegistroKardex {
+  id              String   @id @default(uuid()) @db.Uuid
+  institucionId   String   @map("institucion_id") @db.Uuid
+  estudianteId    String   @map("estudiante_id") @db.Uuid
+  registradoPorId String   @map("registrado_por_id") @db.Uuid
+  fecha           DateTime @db.Date
+
+  // 1. Asistencia
+  faltaConLicencia     Boolean @default(false) @map("falta_con_licencia")
+  faltaSinLicencia     Boolean @default(false) @map("falta_sin_licencia")
+  fueraDeHorario       Boolean @default(false) @map("fuera_de_horario")
+  abandonoClase        Boolean @default(false) @map("abandono_clase")
+
+  // 2. Responsabilidad
+  noPresentoDeber        Boolean @default(false) @map("no_presento_deber")
+  noDioEvaluacion        Boolean @default(false) @map("no_dio_evaluacion")
+  noExpuso               Boolean @default(false) @map("no_expuso")
+  noTrajoMateriales      Boolean @default(false) @map("no_trajo_materiales")
+  danoMobiliario         Boolean @default(false) @map("dano_mobiliario")
+  trajoCelularSinPermiso Boolean @default(false) @map("trajo_celular_sin_permiso")
+
+  // 3. Participación
+  noParticipa      Boolean @default(false) @map("no_participa")
+  noPrestaAtencion Boolean @default(false) @map("no_presta_atencion")
+
+  // 4. Conducta
+  faltoRespetoDocente    Boolean @default(false) @map("falto_respeto_docente")
+  faltoRespetoCompaneros Boolean @default(false) @map("falto_respeto_companeros")
+  lenguajeInapropiado    Boolean @default(false) @map("lenguaje_inapropiado")
+
+  observacionDetalle   String    @map("observacion_detalle") @db.VarChar(500)
+  compromisoEstudiante String?   @map("compromiso_estudiante") @db.VarChar(500)
+  citacionPadres       Boolean   @default(false) @map("citacion_padres")
+  fechaCitacion        DateTime? @map("fecha_citacion") @db.Date
+  horaCitacion         String?   @map("hora_citacion") @db.VarChar(10)
+
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  institucion   UnidadEducativa @relation(fields: [institucionId], references: [id], onDelete: Cascade)
+  estudiante    Estudiante      @relation(fields: [estudianteId], references: [id], onDelete: Cascade)
+  registradoPor Usuario         @relation(fields: [registradoPorId], references: [id], onDelete: Restrict)
+
+  @@index([institucionId])
+  @@index([estudianteId])
+  @@index([fecha])
+  @@map("registros_kardex")
+}
+
+// -------------------------------------------------------------
+// HORARIOS Y DISTRIBUCIÓN DE PERÍODOS DOCENTES (HOJA HOR)
+// -------------------------------------------------------------
+
+model HorarioPeriodo {
+  id            String   @id @default(uuid()) @db.Uuid
+  institucionId String   @map("institucion_id") @db.Uuid
+  asignacionId  String   @map("asignacion_id") @db.Uuid
+  diaSemana     Int      @map("dia_semana") // 1: Lunes, 2: Martes, 3: Miércoles, 4: Jueves, 5: Viernes, 6: Sábado
+  periodo       Int      // 1 al 6
+  horaInicio    String   @map("hora_inicio") @db.VarChar(5) // ej. "08:00"
+  horaFin       String   @map("hora_fin") @db.VarChar(5)    // ej. "08:45"
+  aula          String?  @db.VarChar(50)
+
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  institucion UnidadEducativa     @relation(fields: [institucionId], references: [id], onDelete: Cascade)
+  asignacion  AsignacionAcademica @relation(fields: [asignacionId], references: [id], onDelete: Cascade)
+
+  @@unique([asignacionId, diaSemana, periodo])
+  @@index([institucionId])
+  @@index([asignacionId])
+  @@map("horarios_periodos")
 }
