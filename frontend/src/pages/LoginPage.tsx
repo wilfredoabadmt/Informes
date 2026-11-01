@@ -150,8 +150,14 @@ export const LoginPage: React.FC = () => {
                 Maestro
               </button>
             </div>
-            <div className="mt-2 text-[10px] text-slate-400 text-center">
-              Credenciales oficiales verificadas (Gestión 2026) • Clave demo: <span className="font-mono font-semibold text-slate-600">Bolivia2026!</span>
+            <div className="mt-3 text-[11px] text-slate-500 bg-slate-50 p-2.5 rounded-xl border border-slate-200 text-center space-y-1">
+              <div>
+                <span className="font-semibold text-slate-700">Contraseña única: </span>
+                <span className="font-mono font-bold text-emerald-700">Bolivia2026!</span>
+              </div>
+              <div className="text-[10px] text-slate-400">
+                Directora acepta <span className="font-mono">directora@franztamayo.edu.bo</span> o <span className="font-mono">elena.flores@minedu.gob.bo</span>
+              </div>
             </div>
           </div>
         </div>

@@ -52,6 +52,22 @@ export class AuthService {
       },
     });
 
+    // Alias institucionales para compatibilidad directa y accesos rápidos
+    if (!user) {
+      const lower = trimmedIdentifier.toLowerCase();
+      if (lower === 'directora@franztamayo.edu.bo' || lower === 'director@franztamayo.edu.bo') {
+        user = await this.prisma.usuario.findFirst({
+          where: { email: 'elena.flores@minedu.gob.bo' },
+          include: { persona: true },
+        });
+      } else if (lower === 'maestro@franztamayo.edu.bo' || lower === 'profesor@franztamayo.edu.bo') {
+        user = await this.prisma.usuario.findFirst({
+          where: { email: 'carlos.mamani@minedu.gob.bo' },
+          include: { persona: true },
+        });
+      }
+    }
+
     if (!user) {
       await this.auditService.log({
         tipo: TipoAuditoria.LOGIN_FAILED,
