@@ -1,0 +1,169 @@
+openapi: 3.0.3
+info:
+  title: API de Auditoría del Sistema e Inspección de Seguridad
+  description: Endpoints de consulta inmutable de la bitácora de eventos y estadísticas de auditoría para Nivel 1 y Nivel 2.
+  version: 1.0.0
+servers:
+  - url: /api/v1
+paths:
+  /audit/logs:
+    get:
+      summary: Consulta paginada de registros de auditoría
+      parameters:
+        - in: query
+          name: page
+          schema:
+            type: integer
+            default: 1
+        - in: query
+          name: limit
+          schema:
+            type: integer
+            default: 20
+        - in: query
+          name: tipo
+          schema:
+            type: string
+            enum: [LOGIN_SUCCESS, LOGIN_FAILED, CONTEXT_SWITCH, SECURITY_VIOLATION, USER_CREATE, USER_UPDATE, TEACHER_LINK, TEACHER_UNLINK]
+        - in: query
+          name: accion
+          schema:
+            type: string
+        - in: query
+          name: usuarioId
+          schema:
+            type: string
+            format: uuid
+        - in: query
+          name: institucionId
+          schema:
+            type: string
+            format: uuid
+        - in: query
+          name: fechaDesde
+          schema:
+            type: string
+            format: date-time
+        - in: query
+          name: fechaHasta
+          schema:
+            type: string
+            format: date-time
+      responses:
+        '200':
+          description: Lista paginada de eventos de auditoría
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PaginatedAuditLogs'
+        '403':
+          description: Permisos insuficientes para consultar auditoría de otra institución
+
+  /audit/logs/{id}:
+    get:
+      summary: Obtiene el detalle de un evento de auditoría específico
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '200':
+          description: Detalle del evento de auditoría
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AuditLogDetail'
+        '404':
+          description: Registro de auditoría no encontrado o inaccesible
+
+  /audit/stats:
+    get:
+      summary: Resumen estadístico de eventos de auditoría
+      parameters:
+        - in: query
+          name: institucionId
+          schema:
+            type: string
+            format: uuid
+        - in: query
+          name: fechaDesde
+          schema:
+            type: string
+            format: date-time
+        - in: query
+          name: fechaHasta
+          schema:
+            type: string
+            format: date-time
+      responses:
+        '200':
+          description: Métricas agregadas de auditoría
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AuditStats'
+
+components:
+  schemas:
+    PaginatedAuditLogs:
+      type: object
+      properties:
+        data:
+          type: array
+          items:
+            $ref: '#/components/schemas/AuditLogDetail'
+        meta:
+          type: object
+          properties:
+            total:
+              type: integer
+            page:
+              type: integer
+            limit:
+              type: integer
+            totalPages:
+              type: integer
+
+    AuditLogDetail:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        tipo:
+          type: string
+        accion:
+          type: string
+        detalle:
+          type: object
+        ip:
+          type: string
+        userAgent:
+          type: string
+        timestamp:
+          type: string
+          format: date-time
+        usuario:
+          type: object
+        institucion:
+          type: object
+
+    AuditStats:
+      type: object
+      properties:
+        totalEventos:
+          type: integer
+        porTipo:
+          type: object
+        topAcciones:
+          type: array
+          items:
+            type: object
+            properties:
+              accion:
+                type: string
+              cantidad:
+                type: integer
