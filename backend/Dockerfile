@@ -1,5 +1,5 @@
 # -------------------------------------------------------------
-# Stage 1: Build stage
+# Dockerfile for backend service
 # -------------------------------------------------------------
 FROM node:20-alpine AS builder
 
@@ -12,13 +12,14 @@ COPY prisma ./prisma/
 
 RUN npm ci
 
-COPY . .
+COPY . ./
 
 RUN npx prisma generate
 RUN npm run build
+RUN npx tsc prisma/seed.ts --outDir dist/prisma --skipLibCheck --target es2021 --module commonjs --moduleResolution node
 
 # -------------------------------------------------------------
-# Stage 2: Production Runner
+# Production Runner
 # -------------------------------------------------------------
 FROM node:20-alpine AS runner
 
@@ -39,4 +40,4 @@ COPY --from=builder /app/dist ./dist
 
 EXPOSE 3000
 
-CMD ["sh", "-c", "npx prisma migrate deploy && node dist/main"]
+CMD ["sh", "-c", "npx prisma migrate resolve --rolled-back 20261031221500_add_academic_structure_and_rls 2>/dev/null || true; npx prisma migrate deploy && node dist/prisma/seed.js && node dist/main"]

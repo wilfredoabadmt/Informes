@@ -110,7 +110,11 @@ WITH CHECK (
   OR NULLIF(current_setting('app.bypass_rls', true), '') = 'true'
 );
 
--- Grant privileges to application user
-GRANT ALL PRIVILEGES ON ALL TABLES IN SCHEMA public TO maestros_app;
-GRANT ALL PRIVILEGES ON ALL SEQUENCES IN SCHEMA public TO maestros_app;
+-- Grant privileges to application user if role exists
+DO $$ BEGIN
+  IF EXISTS (SELECT FROM pg_roles WHERE rolname = 'maestros_app') THEN
+    GRANT ALL PRIVILEGES ON ALL TABLES IN SCHEMA public TO maestros_app;
+    GRANT ALL PRIVILEGES ON ALL SEQUENCES IN SCHEMA public TO maestros_app;
+  END IF;
+END $$;
 
