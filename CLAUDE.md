@@ -8,13 +8,15 @@
 ## Estado del Proyecto
 
 - **Constitución:** V1.1.0 Ratificada ([specs/constitution.md](specs/constitution.md)).
-- **Fase Actual:** Preparación de especificaciones de arquitectura base y MVP.
-- **Active feature:** Ninguna activa (en fase de especificación inicial).
+- **Fase Actual:** Features 001–010 implementadas (Calificaciones y Centralizadores Anuales completos).
+- **Active feature:** Ninguna activa.
 
 <!--
 ## Historial de Features:
-- [specs/NNN-.../plan.md](...): Resumen de feature completada.
+- [specs/010-grades-centralizers/tasks.md](...): Feature completada — Centralizadores trimestral/anual, cierre anual oficial con Situación Final (PROMOVIDO/RETENIDO) en inscripciones, auditoría CIERRE_ANUAL_PARALELO. 136 pruebas E2E + 106 unitarias en verde.
+- [specs/009-grades-recording/plan.md](...): Feature completada.
 -->
+
 
 ---
 
