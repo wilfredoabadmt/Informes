@@ -1,7 +1,8 @@
 import React, { useEffect, useState } from 'react';
 import { apiClient } from '../api/client';
-import { Building2, Plus, Search, MapPin, Phone, Users, ShieldAlert } from 'lucide-react';
+import { Building2, Plus, Search, MapPin, Phone, Users } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
+import { formatTipoInstitucion, formatNivelEducativo } from '../utils/formatters';
 
 interface Institution {
   id: string;
@@ -36,7 +37,7 @@ export const InstitutionsPage: React.FC = () => {
     tipo: 'FISCAL',
     nivel: 'INTEGRADO',
   });
-  const { user } = useAuth();
+  const { isSuperAdmin } = useAuth();
 
   const fetchInstitutions = async () => {
     setLoading(true);
@@ -89,16 +90,16 @@ export const InstitutionsPage: React.FC = () => {
       {/* Header */}
       <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
         <div>
-          <h1 className="text-xl font-bold text-slate-900">Unidades Educativas (Tenants)</h1>
+          <h1 className="text-xl font-bold text-slate-900">Unidades Educativas del Subsistema Regular</h1>
           <p className="text-xs text-slate-500 mt-0.5">
-            Colegios registrados bajo el Subsistema de Educación Regular (SEP)
+            Registro Centralizado de Colegios y Unidades Educativas Fiscales, de Convenio y Privadas
           </p>
         </div>
 
-        {user?.globalRole === 'SUPERADMIN' && (
+        {isSuperAdmin && (
           <button
             onClick={() => setShowModal(true)}
-            className="flex items-center space-x-2 px-4 py-2 bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl text-xs font-semibold shadow-sm transition"
+            className="flex items-center space-x-2 px-4 py-2 bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl text-xs font-semibold shadow-sm transition cursor-pointer"
           >
             <Plus className="w-4 h-4" />
             <span>Nueva Unidad Educativa</span>
@@ -113,7 +114,7 @@ export const InstitutionsPage: React.FC = () => {
           type="text"
           value={searchTerm}
           onChange={(e) => setSearchTerm(e.target.value)}
-          placeholder="Buscar por código SIE, nombre o departamento..."
+          placeholder="Buscar por código SIE oficial, nombre del colegio o departamento..."
           className="w-full text-xs bg-transparent border-none focus:outline-none text-slate-800 placeholder-slate-400"
         />
       </div>
@@ -140,27 +141,32 @@ export const InstitutionsPage: React.FC = () => {
                   <div>
                     <h3 className="font-bold text-slate-900 text-sm">{inst.nombre}</h3>
                     <div className="text-[11px] font-semibold text-emerald-700 mt-0.5">
-                      SIE: {inst.sie}
+                      Código SIE: <span className="font-mono">{inst.sie}</span>
                     </div>
                   </div>
                 </div>
-                <span className="text-[10px] uppercase font-extrabold px-2 py-0.5 rounded-full bg-slate-100 text-slate-700">
-                  {inst.tipo}
+                <span className="text-[10px] font-bold px-2.5 py-1 rounded-full bg-slate-100 text-slate-700">
+                  {formatTipoInstitucion(inst.tipo)}
                 </span>
+              </div>
+
+              <div className="mt-3 text-xs text-slate-500">
+                <span className="font-semibold text-slate-600">Nivel Educativo: </span>
+                {formatNivelEducativo(inst.nivel)}
               </div>
 
               <div className="mt-4 pt-4 border-t border-slate-100 grid grid-cols-2 gap-2 text-xs text-slate-600">
                 <div className="flex items-center space-x-1.5">
                   <MapPin className="w-3.5 h-3.5 text-slate-400" />
-                  <span className="truncate">{inst.departamento} - {inst.distrito}</span>
+                  <span className="truncate">{inst.departamento} • {inst.distrito}</span>
                 </div>
                 <div className="flex items-center space-x-1.5">
                   <Phone className="w-3.5 h-3.5 text-slate-400" />
-                  <span>{inst.telefono || 'Sin teléfono'}</span>
+                  <span>{inst.telefono ? `Telf: ${inst.telefono}` : 'Sin teléfono registrado'}</span>
                 </div>
-                <div className="flex items-center space-x-1.5 col-span-2">
-                  <Users className="w-3.5 h-3.5 text-slate-400" />
-                  <span>{inst.totalMaestrosVinculados} maestros vinculados</span>
+                <div className="flex items-center space-x-1.5 col-span-2 pt-1 text-slate-700 font-medium">
+                  <Users className="w-3.5 h-3.5 text-emerald-600" />
+                  <span>{inst.totalMaestrosVinculados} docentes con vinculación activa</span>
                 </div>
               </div>
             </div>
@@ -168,11 +174,14 @@ export const InstitutionsPage: React.FC = () => {
         </div>
       )}
 
-      {/* Modal for creating an Institution */}
+      {/* Modal for creating an Institution (Superadmin only) */}
       {showModal && (
         <div className="fixed inset-0 z-50 bg-slate-900/40 backdrop-blur-sm flex justify-center items-center p-4">
           <div className="bg-white rounded-2xl max-w-lg w-full p-6 shadow-2xl">
-            <h2 className="text-base font-bold text-slate-900 mb-4">Registrar Unidad Educativa</h2>
+            <h2 className="text-base font-bold text-slate-900 mb-1">Registrar Nueva Unidad Educativa</h2>
+            <p className="text-xs text-slate-500 mb-4">
+              Ingreso de un nuevo colegio al sistema con código SIE emitido por el Ministerio de Educación
+            </p>
             <form onSubmit={handleCreate} className="space-y-3">
               <div className="grid grid-cols-2 gap-3">
                 <div>
@@ -191,15 +200,15 @@ export const InstitutionsPage: React.FC = () => {
                 </div>
                 <div>
                   <label className="block text-[11px] font-semibold text-slate-700 mb-1">
-                    Dependencia
+                    Tipo de Dependencia
                   </label>
                   <select
                     value={formData.tipo}
                     onChange={(e) => setFormData({ ...formData, tipo: e.target.value })}
-                    className="w-full text-xs p-2 bg-slate-50 border border-slate-200 rounded-lg"
+                    className="w-full text-xs p-2 bg-slate-50 border border-slate-200 rounded-lg text-slate-800"
                   >
-                    <option value="FISCAL">Fiscal</option>
-                    <option value="CONVENIO">Convenio</option>
+                    <option value="FISCAL">Fiscal (Pública del Estado)</option>
+                    <option value="CONVENIO">Convenio (Iglesia / Institucional)</option>
                     <option value="PRIVADA">Privada</option>
                   </select>
                 </div>
@@ -207,7 +216,7 @@ export const InstitutionsPage: React.FC = () => {
 
               <div>
                 <label className="block text-[11px] font-semibold text-slate-700 mb-1">
-                  Nombre Oficial
+                  Nombre Oficial de la Unidad Educativa
                 </label>
                 <input
                   type="text"
@@ -224,13 +233,21 @@ export const InstitutionsPage: React.FC = () => {
                   <label className="block text-[11px] font-semibold text-slate-700 mb-1">
                     Departamento
                   </label>
-                  <input
-                    type="text"
-                    required
+                  <select
                     value={formData.departamento}
                     onChange={(e) => setFormData({ ...formData, departamento: e.target.value })}
                     className="w-full text-xs p-2 bg-slate-50 border border-slate-200 rounded-lg"
-                  />
+                  >
+                    <option value="La Paz">La Paz</option>
+                    <option value="Cochabamba">Cochabamba</option>
+                    <option value="Santa Cruz">Santa Cruz</option>
+                    <option value="Oruro">Oruro</option>
+                    <option value="Potosí">Potosí</option>
+                    <option value="Chuquisaca">Chuquisaca</option>
+                    <option value="Tarija">Tarija</option>
+                    <option value="Beni">Beni</option>
+                    <option value="Pando">Pando</option>
+                  </select>
                 </div>
                 <div>
                   <label className="block text-[11px] font-semibold text-slate-700 mb-1">
@@ -250,15 +267,15 @@ export const InstitutionsPage: React.FC = () => {
                 <button
                   type="button"
                   onClick={() => setShowModal(false)}
-                  className="px-3 py-1.5 text-xs text-slate-600 hover:bg-slate-100 rounded-lg"
+                  className="px-3 py-1.5 text-xs text-slate-600 hover:bg-slate-100 rounded-lg cursor-pointer"
                 >
                   Cancelar
                 </button>
                 <button
                   type="submit"
-                  className="px-4 py-1.5 text-xs bg-emerald-600 hover:bg-emerald-700 text-white font-semibold rounded-lg"
+                  className="px-4 py-1.5 text-xs bg-emerald-600 hover:bg-emerald-700 text-white font-semibold rounded-lg cursor-pointer"
                 >
-                  Guardar
+                  Registrar Colegio
                 </button>
               </div>
             </form>
@@ -268,4 +285,3 @@ export const InstitutionsPage: React.FC = () => {
     </div>
   );
 };
-

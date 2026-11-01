@@ -23,6 +23,8 @@ export interface User {
   }>;
 }
 
+export type EffectiveRole = 'SUPERADMIN' | 'DIRECTOR' | 'MAESTRO' | 'USER';
+
 interface AuthContextType {
   user: User | null;
   loading: boolean;
@@ -30,6 +32,10 @@ interface AuthContextType {
   logout: () => void;
   currentInstitutionId: string | null;
   setCurrentInstitutionId: (id: string | null) => void;
+  effectiveRole: EffectiveRole;
+  isSuperAdmin: boolean;
+  isDirector: boolean;
+  isMaestro: boolean;
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
@@ -100,6 +106,27 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     setCurrentInstitutionId(id);
   };
 
+  // Determine effective role based on global role & active institution
+  let effectiveRole: EffectiveRole = 'USER';
+  if (user?.globalRole === 'SUPERADMIN' || user?.globalRole === 'CENTRAL_ADMIN') {
+    effectiveRole = 'SUPERADMIN';
+  } else if (user?.institutions && user.institutions.length > 0) {
+    const currentInst = user.institutions.find(
+      (i) => (i.institutionId || i.id) === currentInstitutionId
+    ) || user.institutions[0];
+
+    const instRole = (currentInst.role || currentInst.rol || '').toUpperCase();
+    if (instRole === 'DIRECTOR' || instRole === 'ADMIN_INSTITUCIONAL') {
+      effectiveRole = 'DIRECTOR';
+    } else if (instRole === 'MAESTRO') {
+      effectiveRole = 'MAESTRO';
+    }
+  }
+
+  const isSuperAdmin = effectiveRole === 'SUPERADMIN';
+  const isDirector = effectiveRole === 'DIRECTOR';
+  const isMaestro = effectiveRole === 'MAESTRO';
+
   return (
     <AuthContext.Provider
       value={{
@@ -109,6 +136,10 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         logout,
         currentInstitutionId,
         setCurrentInstitutionId: handleSetInstitution,
+        effectiveRole,
+        isSuperAdmin,
+        isDirector,
+        isMaestro,
       }}
     >
       {children}
@@ -123,4 +154,3 @@ export const useAuth = () => {
   }
   return context;
 };
-

@@ -18,7 +18,10 @@ dist/
 build/
 *.tsbuildinfo
 
-# --- Logs y temporales ---
+# --- Archivos de modelo o binarios grandes ---
+modelo/
+*.xlsb
+
 *.log
 npm-debug.log*
 pnpm-debug.log*

@@ -1,6 +1,7 @@
 import React from 'react';
 import { Outlet, Link, useLocation } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
+import { formatRol } from '../utils/formatters';
 import {
   LayoutDashboard,
   Building2,
@@ -15,18 +16,49 @@ import {
 } from 'lucide-react';
 
 export const Layout: React.FC = () => {
-  const { user, logout, currentInstitutionId, setCurrentInstitutionId } = useAuth();
+  const {
+    user,
+    logout,
+    currentInstitutionId,
+    setCurrentInstitutionId,
+    effectiveRole,
+    isSuperAdmin,
+    isDirector,
+    isMaestro,
+  } = useAuth();
   const location = useLocation();
 
-  const navItems = [
-    { label: 'Panel Principal', path: '/', icon: LayoutDashboard },
-    { label: 'Unidades Educativas', path: '/institutions', icon: Building2 },
-    { label: 'Estructura & Docentes', path: '/academic', icon: GraduationCap },
-    { label: 'Estudiantes & Matrícula', path: '/students', icon: Users },
-    { label: 'Planilla de Calificaciones', path: '/grades', icon: BookOpenCheck },
-    { label: 'Centralizadores & Reportes', path: '/reports', icon: FileSpreadsheet },
-    { label: 'Auditoría del Sistema', path: '/audit', icon: ShieldCheck },
-  ];
+  // Define role-specific navigation menus
+  let navItems: Array<{ label: string; path: string; icon: any }> = [];
+
+  if (isSuperAdmin) {
+    navItems = [
+      { label: 'Panel Nacional', path: '/', icon: LayoutDashboard },
+      { label: 'Unidades Educativas (Tenants)', path: '/institutions', icon: Building2 },
+      { label: 'Currículo & Estructura Base', path: '/academic', icon: GraduationCap },
+      { label: 'Auditoría del Sistema', path: '/audit', icon: ShieldCheck },
+    ];
+  } else if (isDirector) {
+    navItems = [
+      { label: 'Panel Institucional', path: '/', icon: LayoutDashboard },
+      { label: 'Cursos & Docentes', path: '/academic', icon: GraduationCap },
+      { label: 'Estudiantes & Matrícula', path: '/students', icon: Users },
+      { label: 'Supervisión de Calificaciones', path: '/grades', icon: BookOpenCheck },
+      { label: 'Centralizadores & Boletines', path: '/reports', icon: FileSpreadsheet },
+      { label: 'Trazabilidad de Colegio', path: '/audit', icon: ShieldCheck },
+    ];
+  } else if (isMaestro) {
+    navItems = [
+      { label: 'Mis Asignaciones', path: '/', icon: LayoutDashboard },
+      { label: 'Planilla de Calificaciones (Ley 070)', path: '/grades', icon: BookOpenCheck },
+      { label: 'Nómina de Mis Cursos', path: '/students', icon: Users },
+      { label: 'Boletines & Listas Oficiales', path: '/reports', icon: FileSpreadsheet },
+    ];
+  } else {
+    navItems = [
+      { label: 'Panel de Usuario', path: '/', icon: LayoutDashboard },
+    ];
+  }
 
   const currentInstitution = user?.institutions?.find(
     (i) => (i.institutionId || i.id) === currentInstitutionId
@@ -59,7 +91,7 @@ export const Layout: React.FC = () => {
           </div>
 
           <div className="flex items-center space-x-4">
-            {/* Institution Switcher */}
+            {/* Institution Switcher (Only if user has institutions linked) */}
             {user?.institutions && user.institutions.length > 0 && (
               <div className="relative hidden md:block">
                 <div className="flex items-center space-x-2 bg-slate-100 hover:bg-slate-200 py-1.5 px-3 rounded-lg text-xs font-medium text-slate-700 transition">
@@ -71,7 +103,7 @@ export const Layout: React.FC = () => {
                   >
                     {user.institutions.map((inst) => {
                       const instId = inst.institutionId || inst.id;
-                      const instRol = inst.role || inst.rol;
+                      const instRol = formatRol(inst.role || inst.rol);
                       return (
                         <option key={instId} value={instId}>
                           SIE: {inst.sie} - {inst.nombre} ({instRol})
@@ -84,20 +116,20 @@ export const Layout: React.FC = () => {
               </div>
             )}
 
-            {/* User profile badge */}
+            {/* User profile badge with descriptive translated role */}
             <div className="flex items-center space-x-3 pl-3 border-l border-slate-200">
               <div className="text-right">
                 <div className="text-xs font-semibold text-slate-800">
                   {user?.persona?.nombres} {user?.persona?.primerApellido}
                 </div>
-                <div className="text-[10px] uppercase font-bold text-emerald-700 bg-emerald-50 px-1.5 py-0.5 rounded inline-block">
-                  {user?.globalRole}
+                <div className="text-[10px] font-bold text-emerald-800 bg-emerald-100/70 px-2 py-0.5 rounded-full inline-block">
+                  {formatRol(effectiveRole)}
                 </div>
               </div>
               <button
                 onClick={logout}
                 title="Cerrar Sesión"
-                className="p-2 text-slate-400 hover:text-red-600 hover:bg-red-50 rounded-lg transition"
+                className="p-2 text-slate-400 hover:text-red-600 hover:bg-red-50 rounded-lg transition cursor-pointer"
               >
                 <LogOut className="w-4 h-4" />
               </button>
@@ -112,7 +144,11 @@ export const Layout: React.FC = () => {
         <aside className="w-64 flex-shrink-0 hidden md:block">
           <nav className="bg-white rounded-xl border border-slate-200 p-3 shadow-sm space-y-1 sticky top-24">
             <div className="px-3 py-2 text-[11px] font-bold text-slate-400 uppercase tracking-wider">
-              Navegación General
+              {isSuperAdmin
+                ? 'Administración Nacional'
+                : isDirector
+                ? 'Gestión Institucional'
+                : 'Gestión Docente de Aula'}
             </div>
             {navItems.map((item) => {
               const Icon = item.icon;
@@ -138,7 +174,10 @@ export const Layout: React.FC = () => {
               <div className="mt-6 p-3 bg-slate-50 border border-slate-200 rounded-lg text-xs">
                 <div className="text-slate-400 font-semibold mb-1">Unidad Educativa Activa:</div>
                 <div className="font-bold text-slate-800 truncate">{currentInstitution.nombre}</div>
-                <div className="text-slate-500 mt-0.5">SIE: {currentInstitution.sie}</div>
+                <div className="text-slate-500 mt-0.5">Código SIE: {currentInstitution.sie}</div>
+                <div className="text-emerald-700 font-semibold mt-1">
+                  Rol: {formatRol(currentInstitution.role || currentInstitution.rol)}
+                </div>
               </div>
             )}
           </nav>
@@ -159,4 +198,3 @@ export const Layout: React.FC = () => {
     </div>
   );
 };
-
