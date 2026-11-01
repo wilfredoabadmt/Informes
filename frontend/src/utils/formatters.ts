@@ -101,3 +101,68 @@ export const formatDimension = (dim?: string): string => {
   return map[dim] || dim;
 };
 
+export interface EscalaCualitativaInfo {
+  codigo: 'ED' | 'DA' | 'DO' | 'DP';
+  label: string;
+  rango: string;
+  descripcion: string;
+  badgeClass: string;
+}
+
+/**
+ * Escala Cualitativa Oficial del Subsistema de Educación Regular (SEP - Ley 070)
+ * Extraída de los Cuadernos Pedagógicos Oficiales de Primaria y Secundaria
+ */
+export const getEscalaCualitativa = (nota: number): EscalaCualitativaInfo => {
+  const n = Math.round(nota);
+  if (n >= 85) {
+    return {
+      codigo: 'DP',
+      label: 'Desarrollo Pleno',
+      rango: '85 - 100',
+      descripcion: 'Demuestra capacidades y potencialidades con excelencia y creatividad comunitaria.',
+      badgeClass: 'bg-purple-100 text-purple-800 border-purple-200',
+    };
+  }
+  if (n >= 69) {
+    return {
+      codigo: 'DO',
+      label: 'Desarrollo Óptimo',
+      rango: '69 - 84',
+      descripcion: 'Demuestra cumplimiento satisfactorio de los objetivos holísticos planificados.',
+      badgeClass: 'bg-emerald-100 text-emerald-800 border-emerald-200',
+    };
+  }
+  if (n >= 51) {
+    return {
+      codigo: 'DA',
+      label: 'Desarrollo Aceptable',
+      rango: '51 - 68',
+      descripcion: 'Demuestra suficiencia en el aprendizaje y desarrollo de los saberes requeridos.',
+      badgeClass: 'bg-blue-100 text-blue-800 border-blue-200',
+    };
+  }
+  return {
+    codigo: 'ED',
+    label: 'En Desarrollo',
+    rango: '1 - 50',
+    descripcion: 'Requiere acompañamiento pedagógico prioritario y apoyo complementario continuo.',
+    badgeClass: 'bg-rose-100 text-rose-800 border-rose-200',
+  };
+};
+
+/**
+ * 9 Áreas Curriculares Oficiales de Primaria Comunitaria Vocacional (SEP - Bolivia)
+ */
+export const AREAS_PRIMARIA_OFICIALES = [
+  { id: 'LEN', codigo: 'LEN', nombre: 'Comunicación y Lenguajes (Lengua Castellana, Originaria y Extranjera)', campo: 'COMUNIDAD_Y_SOCIEDAD' },
+  { id: 'SOC', codigo: 'SOC', nombre: 'Ciencias Sociales', campo: 'COMUNIDAD_Y_SOCIEDAD' },
+  { id: 'EFD', codigo: 'EFD', nombre: 'Educación Física y Deportes', campo: 'COMUNIDAD_Y_SOCIEDAD' },
+  { id: 'EMU', codigo: 'EMU', nombre: 'Educación Musical', campo: 'COMUNIDAD_Y_SOCIEDAD' },
+  { id: 'APV', codigo: 'APV', nombre: 'Artes Plásticas y Visuales', campo: 'COMUNIDAD_Y_SOCIEDAD' },
+  { id: 'MAT', codigo: 'MAT', nombre: 'Matemática', campo: 'CIENCIA_TECNOLOGIA_PRODUCCION' },
+  { id: 'TEC', codigo: 'TEC', nombre: 'Técnica Tecnológica', campo: 'CIENCIA_TECNOLOGIA_PRODUCCION' },
+  { id: 'NAT', codigo: 'NAT', nombre: 'Ciencias Naturales', campo: 'VIDA_TIERRA_TERRITORIO' },
+  { id: 'VER', codigo: 'VER', nombre: 'Valores, Espiritualidad y Religiones', campo: 'COSMOS_Y_PENSAMIENTO' },
+];
+

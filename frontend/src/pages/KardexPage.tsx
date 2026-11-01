@@ -31,7 +31,11 @@ import {
   ArrowRight,
   Users,
 } from 'lucide-react';
-import { exportParentalCitationPdf } from '../utils/exportHelpers';
+import {
+  exportParentalCitationPdf,
+  exportActaCompromisoPdf,
+  exportAutoevaluacionPrimariaPdf,
+} from '../utils/exportHelpers';
 
 interface KardexEntry {
   id: string;
@@ -565,6 +569,33 @@ export const KardexPage: React.FC = () => {
     setTimeout(() => setFeedback(null), 3500);
   };
 
+  const handleExportActaCompromiso = () => {
+    if (!selectedStudent) return;
+    const teacherName = user?.persona?.nombres
+      ? `Prof. ${user.persona.nombres} ${user.persona.primerApellido}`
+      : 'Docente / Tutor de Aula';
+    exportActaCompromisoPdf(
+      selectedStudent.nombreCompleto,
+      selectedStudent.curso,
+      selectedStudent.tutorNombre || 'Padre / Madre / Tutor',
+      selectedStudent.ci || '',
+      teacherName
+    );
+    setFeedback(`✅ Acta de Compromiso oficial (SEP Ley 070) generada y descargada en PDF.`);
+    setTimeout(() => setFeedback(null), 3500);
+  };
+
+  const handleExportAutoevaluacion = () => {
+    if (!selectedStudent) return;
+    exportAutoevaluacionPrimariaPdf(
+      selectedStudent.nombreCompleto,
+      selectedStudent.curso,
+      '1'
+    );
+    setFeedback(`✅ Ficha Oficial de Autoevaluación Infantil (SEP) descargada en PDF.`);
+    setTimeout(() => setFeedback(null), 3500);
+  };
+
   if (cursosDisponibles.length === 0) {
     return (
       <div className="space-y-6">
@@ -845,6 +876,39 @@ export const KardexPage: React.FC = () => {
                     <span className="font-bold text-slate-700">Fecha Nacimiento:</span>{' '}
                     <span>{selectedStudent.fechaNacimiento}</span>
                   </div>
+                </div>
+
+                {/* Instrumentos Pedagógicos SEP Ley 070 (Extraídos de Primaria.xlsm) */}
+                <div className="pt-3 border-t border-slate-100 flex flex-wrap items-center gap-2">
+                  <button
+                    type="button"
+                    onClick={handleExportActaCompromiso}
+                    className="inline-flex items-center space-x-1.5 px-3 py-1.5 bg-amber-50 hover:bg-amber-100 text-amber-800 border border-amber-200 rounded-lg text-xs font-bold transition shadow-2xs cursor-pointer"
+                    title="Emitir Acta de Compromiso Oficial con los 11 acuerdos pedagógicos del hogar (Hoja COMP)"
+                  >
+                    <FileText className="w-3.5 h-3.5 text-amber-600" />
+                    <span>Acta de Compromiso (COMP)</span>
+                  </button>
+
+                  <button
+                    type="button"
+                    onClick={() => setShowCitationModal(true)}
+                    className="inline-flex items-center space-x-1.5 px-3 py-1.5 bg-rose-50 hover:bg-rose-100 text-rose-800 border border-rose-200 rounded-lg text-xs font-bold transition shadow-2xs cursor-pointer"
+                    title="Convocar citación formal al apoderado con fecha, hora y antecedentes (Hoja CIT)"
+                  >
+                    <Send className="w-3.5 h-3.5 text-rose-600" />
+                    <span>Citación a Padres (CIT)</span>
+                  </button>
+
+                  <button
+                    type="button"
+                    onClick={handleExportAutoevaluacion}
+                    className="inline-flex items-center space-x-1.5 px-3 py-1.5 bg-purple-50 hover:bg-purple-100 text-purple-800 border border-purple-200 rounded-lg text-xs font-bold transition shadow-2xs cursor-pointer"
+                    title="Descargar Ficha Oficial de Autoevaluación Infantil (Hoja AUTO)"
+                  >
+                    <CheckSquare className="w-3.5 h-3.5 text-purple-600" />
+                    <span>Ficha Autoevaluación (AUTO)</span>
+                  </button>
                 </div>
               </div>
 

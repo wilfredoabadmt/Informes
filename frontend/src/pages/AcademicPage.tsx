@@ -181,6 +181,79 @@ export const AcademicPage: React.FC = () => {
       nivel: 'SECUNDARIA',
       esTroncal: true,
     },
+    // 9 Áreas Oficiales de Primaria Comunitaria Vocacional (Modelo Primaria.xlsm SEP)
+    {
+      id: 'm-pri-1',
+      codigo: 'LEN-PRI',
+      nombre: 'Comunicación y Lenguajes (Lengua Castellana, Originaria y Extranjera)',
+      campo: 'COMUNIDAD_Y_SOCIEDAD',
+      nivel: 'PRIMARIA',
+      esTroncal: true,
+    },
+    {
+      id: 'm-pri-2',
+      codigo: 'SOC-PRI',
+      nombre: 'Ciencias Sociales',
+      campo: 'COMUNIDAD_Y_SOCIEDAD',
+      nivel: 'PRIMARIA',
+      esTroncal: true,
+    },
+    {
+      id: 'm-pri-3',
+      codigo: 'EFD-PRI',
+      nombre: 'Educación Física y Deportes',
+      campo: 'COMUNIDAD_Y_SOCIEDAD',
+      nivel: 'PRIMARIA',
+      esTroncal: true,
+    },
+    {
+      id: 'm-pri-4',
+      codigo: 'EMU-PRI',
+      nombre: 'Educación Musical',
+      campo: 'COMUNIDAD_Y_SOCIEDAD',
+      nivel: 'PRIMARIA',
+      esTroncal: true,
+    },
+    {
+      id: 'm-pri-5',
+      codigo: 'APV-PRI',
+      nombre: 'Artes Plásticas y Visuales',
+      campo: 'COMUNIDAD_Y_SOCIEDAD',
+      nivel: 'PRIMARIA',
+      esTroncal: true,
+    },
+    {
+      id: 'm-pri-6',
+      codigo: 'MAT-PRI',
+      nombre: 'Matemática',
+      campo: 'CIENCIA_TECNOLOGIA_PRODUCCION',
+      nivel: 'PRIMARIA',
+      esTroncal: true,
+    },
+    {
+      id: 'm-pri-7',
+      codigo: 'TEC-PRI',
+      nombre: 'Técnica Tecnológica',
+      campo: 'CIENCIA_TECNOLOGIA_PRODUCCION',
+      nivel: 'PRIMARIA',
+      esTroncal: true,
+    },
+    {
+      id: 'm-pri-8',
+      codigo: 'NAT-PRI',
+      nombre: 'Ciencias Naturales',
+      campo: 'VIDA_TIERRA_TERRITORIO',
+      nivel: 'PRIMARIA',
+      esTroncal: true,
+    },
+    {
+      id: 'm-pri-9',
+      codigo: 'VER-PRI',
+      nombre: 'Valores, Espiritualidad y Religiones',
+      campo: 'COSMOS_Y_PENSAMIENTO',
+      nivel: 'PRIMARIA',
+      esTroncal: true,
+    },
   ]);
 
   // 4. Asignaciones Docentes State (Multi-tenant scoped)
@@ -305,6 +378,34 @@ export const AcademicPage: React.FC = () => {
     setParalelos(updated);
     saveCoursesForInstitution(activeSie, updated);
     triggerFeedback('Paralelo retirado de la gestión escolar.');
+  };
+
+  const handleQuickInitPrimaria = () => {
+    const list: ParaleloItem[] = [
+      { id: `c-${Date.now()}-p1`, cursoNombre: '1° de Primaria Comunitaria Vocacional', nivel: 'PRIMARIA', grado: 1, letra: 'A', turno: 'Mañana', cupo: 35, inscritos: 0 },
+      { id: `c-${Date.now()}-p2`, cursoNombre: '2° de Primaria Comunitaria Vocacional', nivel: 'PRIMARIA', grado: 2, letra: 'A', turno: 'Mañana', cupo: 35, inscritos: 0 },
+      { id: `c-${Date.now()}-p3`, cursoNombre: '3° de Primaria Comunitaria Vocacional', nivel: 'PRIMARIA', grado: 3, letra: 'A', turno: 'Mañana', cupo: 35, inscritos: 0 },
+      { id: `c-${Date.now()}-p4`, cursoNombre: '4° de Primaria Comunitaria Vocacional', nivel: 'PRIMARIA', grado: 4, letra: 'A', turno: 'Mañana', cupo: 35, inscritos: 0 },
+      { id: `c-${Date.now()}-p5`, cursoNombre: '5° de Primaria Comunitaria Vocacional', nivel: 'PRIMARIA', grado: 5, letra: 'A', turno: 'Mañana', cupo: 35, inscritos: 0 },
+      { id: `c-${Date.now()}-p6`, cursoNombre: '6° de Primaria Comunitaria Vocacional', nivel: 'PRIMARIA', grado: 6, letra: 'A', turno: 'Mañana', cupo: 35, inscritos: 0 },
+    ];
+    setParalelos(list);
+    saveCoursesForInstitution(activeSie, list);
+    triggerFeedback('¡Estructura de 1° a 6° de Primaria Comunitaria Vocacional habilitada con éxito!');
+  };
+
+  const handleQuickInitSecundaria = () => {
+    const list: ParaleloItem[] = [
+      { id: `c-${Date.now()}-s1`, cursoNombre: '1° de Secundaria Comunitaria Productiva', nivel: 'SECUNDARIA', grado: 1, letra: 'A', turno: 'Mañana', cupo: 35, inscritos: 0 },
+      { id: `c-${Date.now()}-s2`, cursoNombre: '2° de Secundaria Comunitaria Productiva', nivel: 'SECUNDARIA', grado: 2, letra: 'A', turno: 'Mañana', cupo: 35, inscritos: 0 },
+      { id: `c-${Date.now()}-s3`, cursoNombre: '3° de Secundaria Comunitaria Productiva', nivel: 'SECUNDARIA', grado: 3, letra: 'A', turno: 'Mañana', cupo: 35, inscritos: 0 },
+      { id: `c-${Date.now()}-s4`, cursoNombre: '4° de Secundaria Comunitaria Productiva', nivel: 'SECUNDARIA', grado: 4, letra: 'A', turno: 'Mañana', cupo: 35, inscritos: 0 },
+      { id: `c-${Date.now()}-s5`, cursoNombre: '5° de Secundaria Comunitaria Productiva', nivel: 'SECUNDARIA', grado: 5, letra: 'A', turno: 'Mañana', cupo: 35, inscritos: 0 },
+      { id: `c-${Date.now()}-s6`, cursoNombre: '6° de Secundaria Comunitaria Productiva', nivel: 'SECUNDARIA', grado: 6, letra: 'A', turno: 'Mañana', cupo: 35, inscritos: 0 },
+    ];
+    setParalelos(list);
+    saveCoursesForInstitution(activeSie, list);
+    triggerFeedback('¡Estructura de 1° a 6° de Secundaria Comunitaria Productiva habilitada con éxito!');
   };
 
   // Handlers for Plantel Docente CRUD
@@ -620,13 +721,31 @@ export const AcademicPage: React.FC = () => {
                           <span className="font-semibold text-slate-700">Esta Unidad Educativa no tiene cursos ni paralelos registrados aún.</span>
                           <p className="text-xs text-slate-400">Habilita los grados correspondientes para poder matricular alumnos y asignar profesores.</p>
                           {!isMaestro && (
-                            <button
-                              onClick={() => setShowCursoModal(true)}
-                              className="mt-2 inline-flex items-center space-x-1 px-3 py-1.5 bg-emerald-600 hover:bg-emerald-700 text-white rounded-lg text-xs font-bold transition shadow-sm cursor-pointer"
-                            >
-                              <Plus className="w-3.5 h-3.5" />
-                              <span>Habilitar Primer Curso</span>
-                            </button>
+                            <div className="flex flex-wrap items-center justify-center gap-2 mt-3">
+                              <button
+                                onClick={handleQuickInitPrimaria}
+                                className="inline-flex items-center space-x-1.5 px-3.5 py-2 bg-purple-600 hover:bg-purple-700 text-white rounded-xl text-xs font-bold transition shadow-sm cursor-pointer"
+                              >
+                                <Sparkles className="w-3.5 h-3.5" />
+                                <span>⚡ Cargar 1° a 6° Primaria</span>
+                              </button>
+
+                              <button
+                                onClick={handleQuickInitSecundaria}
+                                className="inline-flex items-center space-x-1.5 px-3.5 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-xl text-xs font-bold transition shadow-sm cursor-pointer"
+                              >
+                                <Sparkles className="w-3.5 h-3.5" />
+                                <span>⚡ Cargar 1° a 6° Secundaria</span>
+                              </button>
+
+                              <button
+                                onClick={() => setShowCursoModal(true)}
+                                className="inline-flex items-center space-x-1 px-3 py-2 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-xl text-xs font-semibold transition cursor-pointer"
+                              >
+                                <Plus className="w-3.5 h-3.5 text-emerald-600" />
+                                <span>+ Crear Curso Manual</span>
+                              </button>
+                            </div>
                           )}
                         </div>
                       </td>

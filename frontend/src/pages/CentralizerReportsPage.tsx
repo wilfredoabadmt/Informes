@@ -29,8 +29,11 @@ import {
   exportCentralizerToExcel,
   exportBulletinPdf,
   exportSchoolReportCardPdf,
+  exportActaCompromisoPdf,
+  exportAutoevaluacionPrimariaPdf,
 } from '../utils/exportHelpers';
 import type { StudentExportRow, CentralizerRow } from '../utils/exportHelpers';
+import { getEscalaCualitativa } from '../utils/formatters';
 
 // Data por curso para los reportes
 const DATA_POR_CURSO: Record<
@@ -258,8 +261,8 @@ export const CentralizerReportsPage: React.FC = () => {
     selectedTrimestre === '1'
       ? 'Primer Trimestre'
       : selectedTrimestre === '2'
-      ? 'Segundo Trimestre'
-      : 'Tercer Trimestre';
+        ? 'Segundo Trimestre'
+        : 'Tercer Trimestre';
 
   // Descarga directa e instantánea de la Lista en PDF
   const handleDownloadListaPdf = () => {
@@ -521,6 +524,35 @@ export const CentralizerReportsPage: React.FC = () => {
     setFeedback(`✅ Libreta Escolar Oficial Anual generada con Código SIE y QR para ${est.apellidosNombres}.`);
   };
 
+  const handleDownloadActaCompromiso = () => {
+    const est = dataActual.estudiantes.find((e) => e.rude === selectedEstudianteId) || dataActual.estudiantes[0];
+    if (!est) return;
+    const teacherName = user?.persona?.nombres
+      ? `Prof. ${user.persona.nombres} ${user.persona.primerApellido}`
+      : 'Maestro(a) / Tutor de Aula';
+    exportActaCompromisoPdf(
+      est.apellidosNombres,
+      cursoInfo?.nombre || selectedCurso,
+      est.tutor || 'Padre / Madre / Tutor',
+      est.ci || '',
+      teacherName
+    );
+    setFeedback(`✅ Acta de Compromiso oficial (Hoja COMP de Primaria) descargada en PDF.`);
+    setTimeout(() => setFeedback(null), 3500);
+  };
+
+  const handleDownloadAutoevaluacion = () => {
+    const est = dataActual.estudiantes.find((e) => e.rude === selectedEstudianteId) || dataActual.estudiantes[0];
+    if (!est) return;
+    exportAutoevaluacionPrimariaPdf(
+      est.apellidosNombres,
+      cursoInfo?.nombre || selectedCurso,
+      selectedTrimestre
+    );
+    setFeedback(`✅ Ficha Oficial de Autoevaluación Infantil (Hoja AUTO de Primaria) descargada en PDF.`);
+    setTimeout(() => setFeedback(null), 3500);
+  };
+
   if (cursosDisponibles.length === 0) {
     return (
       <div className="space-y-6">
@@ -655,7 +687,7 @@ export const CentralizerReportsPage: React.FC = () => {
       </div>
 
       {/* PDF & Excel Action Cards */}
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
         {/* Course Roster Card */}
         <div className="bg-white p-5 rounded-2xl border border-slate-200 shadow-sm flex flex-col justify-between hover:border-slate-300 transition">
           <div>
@@ -724,6 +756,37 @@ export const CentralizerReportsPage: React.FC = () => {
             <span>Emitir Libreta Oficial en PDF</span>
           </button>
         </div>
+
+        {/* Official Pedagogical Instruments (From Primaria.xlsm model) */}
+        <div className="bg-white p-5 rounded-2xl border border-slate-200 shadow-sm flex flex-col justify-between hover:border-slate-300 transition">
+          <div>
+            <div className="p-2.5 bg-amber-50 text-amber-600 rounded-xl inline-block mb-3">
+              <Sparkles className="w-5 h-5" />
+            </div>
+            <h3 className="font-bold text-slate-900 text-sm">Instrumentos Pedagógicos SEP</h3>
+            <p className="text-xs text-slate-500 mt-1">
+              Actas de compromiso oficial (11 puntos en hogar) y ficha de autoevaluación (escala SER y DECIDIR).
+            </p>
+          </div>
+          <div className="grid grid-cols-2 gap-2 mt-4">
+            <button
+              onClick={handleDownloadActaCompromiso}
+              className="flex items-center justify-center space-x-1 py-2 px-2 bg-amber-50 hover:bg-amber-100 text-amber-800 border border-amber-200 rounded-xl text-[11px] font-bold transition cursor-pointer"
+              title="Acta de Compromiso Oficial con los 11 puntos (Hoja COMP)"
+            >
+              <FileText className="w-3 h-3 text-amber-600" />
+              <span>Acta COMP</span>
+            </button>
+            <button
+              onClick={handleDownloadAutoevaluacion}
+              className="flex items-center justify-center space-x-1 py-2 px-2 bg-purple-50 hover:bg-purple-100 text-purple-800 border border-purple-200 rounded-xl text-[11px] font-bold transition cursor-pointer"
+              title="Ficha Oficial de Autoevaluación (Hoja AUTO)"
+            >
+              <Award className="w-3 h-3 text-purple-600" />
+              <span>Ficha AUTO</span>
+            </button>
+          </div>
+        </div>
       </div>
 
       {/* Centralizer Preview Grid */}
@@ -734,7 +797,7 @@ export const CentralizerReportsPage: React.FC = () => {
               Centralizador Consolidado de Calificaciones ({trimLabel} - Gestión 2026)
             </h2>
             <p className="text-xs text-slate-500">
-              {cursoInfo?.nombre} • Unidad Educativa Franz Tamayo (SIE 80730045)
+              {cursoInfo?.nombre} • {institutionName} (SIE {activeSie})
             </p>
           </div>
           <div className="flex items-center space-x-2">
@@ -757,33 +820,40 @@ export const CentralizerReportsPage: React.FC = () => {
                 <th className="py-2.5 px-2 text-center">Artes Plásticas</th>
                 <th className="py-2.5 px-2 text-center">Lengua Guaraní</th>
                 <th className="py-2.5 px-3 text-center bg-slate-200/70 font-black">PROMEDIO</th>
-                <th className="py-2.5 px-3 text-center">SITUACIÓN ACADÉMICA</th>
+                <th className="py-2.5 px-3 text-center">VALORACIÓN CUALITATIVA</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-slate-100">
-              {dataActual.centralizador.map((r) => (
-                <tr key={r.rude} className="hover:bg-slate-50 transition">
-                  <td className="py-2.5 px-3 font-semibold text-slate-400">{r.numero}</td>
-                  <td className="py-2.5 px-3 font-semibold text-slate-800">
-                    <div>{r.estudiante}</div>
-                    <div className="text-[10px] text-slate-400 font-mono">RUDE: {r.rude}</div>
-                  </td>
-                  <td className="py-2.5 px-2 text-center font-medium">{r.matematica}</td>
-                  <td className="py-2.5 px-2 text-center font-medium">{r.lenguaje}</td>
-                  <td className="py-2.5 px-2 text-center font-medium">{r.ciencias}</td>
-                  <td className="py-2.5 px-2 text-center font-medium">{r.sociales}</td>
-                  <td className="py-2.5 px-2 text-center font-medium">{r.artes}</td>
-                  <td className="py-2.5 px-2 text-center font-medium">{r.guarani}</td>
-                  <td className="py-2.5 px-3 text-center font-black text-emerald-700 bg-emerald-50/50">
-                    {r.promedio.toFixed(1)}
-                  </td>
-                  <td className="py-2.5 px-3 text-center">
-                    <span className="text-[10px] font-extrabold px-2.5 py-0.5 rounded-full bg-emerald-100 text-emerald-800">
-                      {r.situacion}
-                    </span>
-                  </td>
-                </tr>
-              ))}
+              {dataActual.centralizador.map((r) => {
+                const escala = getEscalaCualitativa(r.promedio);
+                return (
+                  <tr key={r.rude} className="hover:bg-slate-50 transition">
+                    <td className="py-2.5 px-3 font-semibold text-slate-400">{r.numero}</td>
+                    <td className="py-2.5 px-3 font-semibold text-slate-800">
+                      <div>{r.estudiante}</div>
+                      <div className="text-[10px] text-slate-400 font-mono">RUDE: {r.rude}</div>
+                    </td>
+                    <td className="py-2.5 px-2 text-center font-medium">{r.matematica}</td>
+                    <td className="py-2.5 px-2 text-center font-medium">{r.lenguaje}</td>
+                    <td className="py-2.5 px-2 text-center font-medium">{r.ciencias}</td>
+                    <td className="py-2.5 px-2 text-center font-medium">{r.sociales}</td>
+                    <td className="py-2.5 px-2 text-center font-medium">{r.artes}</td>
+                    <td className="py-2.5 px-2 text-center font-medium">{r.guarani}</td>
+                    <td className="py-2.5 px-3 text-center font-black text-emerald-700 bg-emerald-50/50">
+                      {r.promedio.toFixed(1)}
+                    </td>
+                    <td className="py-2.5 px-3 text-center">
+                      <span
+                        title={`${escala.label}: ${escala.descripcion}`}
+                        className={`text-[10px] font-black px-2.5 py-1 rounded-full border inline-flex items-center gap-1 ${escala.badgeClass}`}
+                      >
+                        <span className="font-extrabold">{escala.codigo}</span>
+                        <span className="hidden sm:inline font-semibold">· {escala.label}</span>
+                      </span>
+                    </td>
+                  </tr>
+                );
+              })}
             </tbody>
           </table>
         </div>

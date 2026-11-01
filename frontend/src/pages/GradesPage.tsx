@@ -27,6 +27,7 @@ import {
 } from 'lucide-react';
 import { exportGradesToExcel, exportGradesToPdf } from '../utils/exportHelpers';
 import type { GradeExportRow } from '../utils/exportHelpers';
+import { getEscalaCualitativa, AREAS_PRIMARIA_OFICIALES } from '../utils/formatters';
 
 export interface StudentGradeRow {
   inscripcionId: string;
@@ -190,16 +191,21 @@ export const GradesPage: React.FC = () => {
     letra: c.letra,
   }));
 
-  const isMaestroOnly = isMaestro && !isDirector && !isSuperAdmin;
-  const asignaturasVisibles = isMaestroOnly
-    ? ASIGNATURAS_DISPONIBLES.filter((a) => ['LEN', 'MAT'].includes(a.id))
-    : ASIGNATURAS_DISPONIBLES;
-
   // Selectores de Navegación Dinámica
   const [selectedCurso, setSelectedCurso] = useState('');
-  const [selectedAsignatura, setSelectedAsignatura] = useState(isMaestroOnly ? 'LEN' : 'MAT');
   const [selectedTrimestre, setSelectedTrimestre] = useState('1');
   const [viewMode, setViewMode] = useState<'summary' | 'detailed'>('summary');
+
+  const currentCursoObj = cursosVisibles.find((c) => c.id === selectedCurso);
+  const isCursoPrimaria = currentCursoObj?.nivel === 'PRIMARIA' || currentCursoObj?.nombre?.toLowerCase().includes('primaria');
+
+  const isMaestroOnly = isMaestro && !isDirector && !isSuperAdmin;
+  const asignaturasBase = isCursoPrimaria ? AREAS_PRIMARIA_OFICIALES : ASIGNATURAS_DISPONIBLES;
+  const asignaturasVisibles = isMaestroOnly
+    ? asignaturasBase.filter((a) => ['LEN', 'MAT'].includes(a.id))
+    : asignaturasBase;
+
+  const [selectedAsignatura, setSelectedAsignatura] = useState(isMaestroOnly ? 'LEN' : 'MAT');
 
   // Asegurar selección inicial del primer curso si cambia la institución o carga cursos
   useEffect(() => {
@@ -211,6 +217,13 @@ export const GradesPage: React.FC = () => {
       setSelectedCurso('');
     }
   }, [cursosVisibles, selectedCurso]);
+
+  // Asegurar que la asignatura seleccionada pertenezca a la malla del curso activo (Primaria / Secundaria)
+  useEffect(() => {
+    if (asignaturasVisibles.length > 0 && !asignaturasVisibles.some(a => a.id === selectedAsignatura)) {
+      setSelectedAsignatura(asignaturasVisibles[0].id);
+    }
+  }, [asignaturasVisibles, selectedAsignatura]);
 
   // Almacén reactivo de planillas por llave: sie_curso_materia_trimestre
   const [gradesStore, setGradesStore] = useState<Record<string, StudentGradeRow[]>>({});
@@ -299,8 +312,7 @@ export const GradesPage: React.FC = () => {
     return Math.min(100, rawSum);
   };
 
-  const currentCursoObj = CURSOS_DISPONIBLES.find((c) => c.id === selectedCurso);
-  const currentAsigObj = ASIGNATURAS_DISPONIBLES.find((a) => a.id === selectedAsignatura);
+  const currentAsigObj = asignaturasBase.find((a) => a.id === selectedAsignatura) || ASIGNATURAS_DISPONIBLES.find((a) => a.id === selectedAsignatura);
   const trimLabel =
     selectedTrimestre === '1'
       ? 'Primer Trimestre'
@@ -405,14 +417,16 @@ export const GradesPage: React.FC = () => {
     setShowQuickModal(false);
   };
 
-  const handleQuickInitStandardCourses = () => {
+  const handleQuickInitStandardCourses = (nivel: 'PRIMARIA' | 'SECUNDARIA' = 'SECUNDARIA') => {
+    const isPrim = nivel === 'PRIMARIA';
+    const nivelLabel = isPrim ? 'Primaria Comunitaria Vocacional' : 'Secundaria Comunitaria Productiva';
     const defaultCourses: TenantParalelo[] = [
-      { id: `c-${Date.now()}-1`, cursoNombre: '1° de Secundaria Comunitaria Productiva', nivel: 'SECUNDARIA', grado: 1, letra: 'A', turno: 'Mañana', cupo: 35, inscritos: 0 },
-      { id: `c-${Date.now()}-2`, cursoNombre: '2° de Secundaria Comunitaria Productiva', nivel: 'SECUNDARIA', grado: 2, letra: 'A', turno: 'Mañana', cupo: 35, inscritos: 0 },
-      { id: `c-${Date.now()}-3`, cursoNombre: '3° de Secundaria Comunitaria Productiva', nivel: 'SECUNDARIA', grado: 3, letra: 'A', turno: 'Mañana', cupo: 35, inscritos: 0 },
-      { id: `c-${Date.now()}-4`, cursoNombre: '4° de Secundaria Comunitaria Productiva', nivel: 'SECUNDARIA', grado: 4, letra: 'A', turno: 'Mañana', cupo: 35, inscritos: 0 },
-      { id: `c-${Date.now()}-5`, cursoNombre: '5° de Secundaria Comunitaria Productiva', nivel: 'SECUNDARIA', grado: 5, letra: 'A', turno: 'Mañana', cupo: 35, inscritos: 0 },
-      { id: `c-${Date.now()}-6`, cursoNombre: '6° de Secundaria Comunitaria Productiva', nivel: 'SECUNDARIA', grado: 6, letra: 'A', turno: 'Mañana', cupo: 35, inscritos: 0 },
+      { id: `c-${Date.now()}-1`, cursoNombre: `1° de ${nivelLabel}`, nivel, grado: 1, letra: 'A', turno: 'Mañana', cupo: 35, inscritos: 0 },
+      { id: `c-${Date.now()}-2`, cursoNombre: `2° de ${nivelLabel}`, nivel, grado: 2, letra: 'A', turno: 'Mañana', cupo: 35, inscritos: 0 },
+      { id: `c-${Date.now()}-3`, cursoNombre: `3° de ${nivelLabel}`, nivel, grado: 3, letra: 'A', turno: 'Mañana', cupo: 35, inscritos: 0 },
+      { id: `c-${Date.now()}-4`, cursoNombre: `4° de ${nivelLabel}`, nivel, grado: 4, letra: 'A', turno: 'Mañana', cupo: 35, inscritos: 0 },
+      { id: `c-${Date.now()}-5`, cursoNombre: `5° de ${nivelLabel}`, nivel, grado: 5, letra: 'A', turno: 'Mañana', cupo: 35, inscritos: 0 },
+      { id: `c-${Date.now()}-6`, cursoNombre: `6° de ${nivelLabel}`, nivel, grado: 6, letra: 'A', turno: 'Mañana', cupo: 35, inscritos: 0 },
     ];
     saveCoursesForInstitution(activeSie, defaultCourses);
     setCoursesList(defaultCourses);
@@ -439,13 +453,22 @@ export const GradesPage: React.FC = () => {
               className="w-full sm:w-auto inline-flex items-center justify-center space-x-2 px-5 py-2.5 bg-emerald-600 hover:bg-emerald-700 text-white font-bold rounded-xl text-xs shadow-md shadow-emerald-200 transition cursor-pointer"
             >
               <Plus className="w-4 h-4" />
-              <span>Habilitar Cursos & Docentes</span>
+              <span>Habilitar Curso & Docentes</span>
               <ArrowRight className="w-4 h-4" />
             </button>
 
             <button
               type="button"
-              onClick={handleQuickInitStandardCourses}
+              onClick={() => handleQuickInitStandardCourses('PRIMARIA')}
+              className="w-full sm:w-auto inline-flex items-center justify-center space-x-2 px-4 py-2.5 bg-purple-50 hover:bg-purple-100 text-purple-800 font-bold rounded-xl text-xs border border-purple-200 transition cursor-pointer"
+            >
+              <Sparkles className="w-4 h-4 text-purple-600" />
+              <span>⚡ Cargar 1° a 6° Primaria</span>
+            </button>
+
+            <button
+              type="button"
+              onClick={() => handleQuickInitStandardCourses('SECUNDARIA')}
               className="w-full sm:w-auto inline-flex items-center justify-center space-x-2 px-4 py-2.5 bg-blue-50 hover:bg-blue-100 text-blue-700 font-bold rounded-xl text-xs border border-blue-200 transition cursor-pointer"
             >
               <Sparkles className="w-4 h-4 text-blue-600" />
@@ -772,15 +795,14 @@ export const GradesPage: React.FC = () => {
       <div className="p-3 bg-slate-50 border border-slate-200 rounded-xl flex flex-col sm:flex-row items-start sm:items-center justify-between text-xs text-slate-600 gap-2">
         <div className="flex items-center space-x-2">
           <Info className="w-4 h-4 text-emerald-600 flex-shrink-0" />
-          <span className="font-semibold text-slate-800">Cálculo Oficial SEP:</span>
-          <span>SER (10) + SABER (35) + HACER (35) + DECIDIR (10) + AUTOEVALUACIÓN (10) + PUNTOS EXTRAS = NOTA FINAL</span>
+          <span className="font-semibold text-slate-800">Cálculo Oficial SEP (Ley 070):</span>
+          <span>SER + SABER + HACER + DECIDIR + AUTOEVALUACIÓN + PUNTOS EXTRAS = NOTA FINAL</span>
         </div>
-        <div className="flex items-center space-x-3 text-[11px] font-semibold">
-          <span className="text-emerald-700">● Mínimo Aprobatorio: 51 pts</span>
-          <span className="text-amber-700">● Máximo Trimestral: 100 pts</span>
-          <span className="px-2 py-0.5 bg-slate-200 rounded text-slate-800 font-mono">
-            {rows.length} estudiantes
-          </span>
+        <div className="flex flex-wrap items-center gap-1.5 text-[10px] font-bold">
+          <span className="px-2 py-0.5 bg-purple-100 text-purple-800 rounded border border-purple-200" title="Desarrollo Pleno (85-100 pts)">DP: 85-100 Pleno</span>
+          <span className="px-2 py-0.5 bg-emerald-100 text-emerald-800 rounded border border-emerald-200" title="Desarrollo Óptimo (69-84 pts)">DO: 69-84 Óptimo</span>
+          <span className="px-2 py-0.5 bg-blue-100 text-blue-800 rounded border border-blue-200" title="Desarrollo Aceptable (51-68 pts)">DA: 51-68 Aceptable</span>
+          <span className="px-2 py-0.5 bg-rose-100 text-rose-800 rounded border border-rose-200" title="En Desarrollo (1-50 pts)">ED: 1-50 En Desarr.</span>
         </div>
       </div>
 
@@ -835,7 +857,7 @@ export const GradesPage: React.FC = () => {
                 <th className="py-3 px-3 text-center bg-slate-200/60 font-extrabold text-slate-900 min-w-[70px]">
                   NOTA FINAL<br /><span className="text-[10px] font-normal">(Sobre 100)</span>
                 </th>
-                <th className="py-3 px-4 text-center min-w-[140px]">ESTADO TRIMESTRAL</th>
+                <th className="py-3 px-4 text-center min-w-[170px]">VALORACIÓN CUALITATIVA (SEP)</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-slate-100">
@@ -1002,17 +1024,20 @@ export const GradesPage: React.FC = () => {
                       </span>
                     </td>
 
-                    {/* VALORACIÓN CUALITATIVA */}
+                    {/* VALORACIÓN CUALITATIVA OFICIAL (LEY 070 - MODELO SEP) */}
                     <td className="py-3 px-4 text-center">
-                      <span
-                        className={`text-[10px] font-extrabold px-2.5 py-1 rounded-full ${
-                          isPassing
-                            ? 'bg-emerald-100 text-emerald-800'
-                            : 'bg-red-100 text-red-800'
-                        }`}
-                      >
-                        {isPassing ? 'APROBADO' : 'EN DESARROLLO'}
-                      </span>
+                      {(() => {
+                        const escala = getEscalaCualitativa(total);
+                        return (
+                          <span
+                            title={`${escala.label} (${escala.rango} pts): ${escala.descripcion}`}
+                            className={`text-[10px] font-black px-2.5 py-1 rounded-full border inline-flex items-center gap-1.5 shadow-2xs ${escala.badgeClass}`}
+                          >
+                            <span className="font-extrabold">{escala.codigo}</span>
+                            <span className="font-semibold">· {escala.label}</span>
+                          </span>
+                        );
+                      })()}
                     </td>
                   </tr>
                 );

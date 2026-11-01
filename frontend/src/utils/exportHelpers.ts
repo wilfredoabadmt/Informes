@@ -954,3 +954,238 @@ export function exportParentalCitationPdf(
   const clean = estudiante.replace(/[^a-zA-Z0-9]/g, '_').substring(0, 20);
   doc.save(`Citacion_Oficial_${clean}.pdf`);
 }
+
+/**
+ * MODELO 4: ACTA OFICIAL DE COMPROMISO DEL PADRE/MADRE DE FAMILIA O TUTOR
+ * Extraído fielmente de la Hoja 'COMP' del Cuaderno Pedagógico de Primaria (SEP)
+ */
+export function exportActaCompromisoPdf(
+  estudiante: string,
+  curso: string,
+  tutor: string,
+  ciTutor: string,
+  maestroNombre?: string
+) {
+  const instInfo = getActiveInstitutionInfo();
+  const doc = new jsPDF({ orientation: 'portrait', unit: 'pt', format: 'letter' });
+
+  // Tricolor Boliviano
+  doc.setFillColor(213, 43, 30);
+  doc.rect(40, 25, 170, 4, 'F');
+  doc.setFillColor(252, 209, 22);
+  doc.rect(210, 25, 170, 4, 'F');
+  doc.setFillColor(0, 121, 52);
+  doc.rect(380, 25, 180, 4, 'F');
+
+  // Encabezado
+  doc.setFont('helvetica', 'bold');
+  doc.setFontSize(14);
+  doc.setTextColor(24, 30, 40);
+  doc.text('ACTA DE COMPROMISO DE PADRE / MADRE DE FAMILIA', 40, 55);
+
+  doc.setFontSize(9);
+  doc.setFont('helvetica', 'normal');
+  doc.setTextColor(80, 90, 100);
+  doc.text(`UNIDAD EDUCATIVA: ${instInfo.nombre.toUpperCase()} (SIE: ${instInfo.sie}) • SUBSISTEMA DE EDUCACIÓN REGULAR`, 40, 70);
+
+  // Recuadro de datos
+  doc.setFillColor(248, 250, 252);
+  doc.setDrawColor(203, 213, 225);
+  doc.roundedRect(40, 85, 520, 50, 4, 4, 'FD');
+
+  doc.setFont('helvetica', 'bold');
+  doc.setFontSize(9);
+  doc.setTextColor(15, 23, 42);
+  doc.text(`Padre / Madre / Tutor: ${tutor.toUpperCase()} (C.I. ${ciTutor || 'S/N'})`, 50, 103);
+  doc.text(`Estudiante: ${estudiante.toUpperCase()}  |  Curso: ${curso}`, 50, 120);
+
+  // Declaración formal
+  doc.setFont('helvetica', 'normal');
+  doc.setFontSize(8.5);
+  doc.setTextColor(51, 65, 85);
+  const textoCompromiso = `Por medio de la presente, yo ${tutor || 'padre/tutor legal'}, padre/madre de familia o tutor de el/la estudiante ${estudiante}, del curso ${curso}, consciente de que la educación implica la acción conjunta de la familia y la Unidad Educativa, me comprometo a realizar el seguimiento permanente de mi hijo/a para que pueda superar las falencias en su proceso de aprendizaje y mejorar su nivel académico en las diferentes áreas de estudio.`;
+  doc.text(doc.splitTextToSize(textoCompromiso, 520), 40, 155);
+
+  doc.setFont('helvetica', 'bold');
+  doc.setFontSize(9);
+  doc.setTextColor(16, 120, 75);
+  doc.text('ESTRATEGIAS COMPROMETIDAS EN EL HOGAR (MODELO OFICIAL SEP):', 40, 205);
+
+  const compromisos = [
+    'a) Brindar y fijar horarios de estudio en la casa de forma regular y estructurada.',
+    'b) Hacer seguimiento a los horarios de estudio para que los mismos se cumplan estrictamente.',
+    'c) Conocer el horario de materias (áreas de conocimiento) de mi hijo/a.',
+    'd) Controlar los cuadernos periódicamente (idealmente a diario) para verificar tareas y deberes.',
+    'e) Verificar la hora de regreso a casa de mi hijo/a luego del horario de salida de clases.',
+    'f) Dialogar diariamente con mi hijo/a sobre sus estudios antes de tomar decisiones.',
+    'g) Inculcar siempre una actitud positiva hacia la realización de las tareas escolares.',
+    'h) Escuchar a los hijos para conocer sus dificultades o éxitos académicos.',
+    'i) Expresar cariño, afecto verbal y físico que fortalezca su autoestima y seguridad escolar.',
+    'j) Valorar el esfuerzo y superación de limitaciones en sus trabajos escolares.',
+    'k) Entrevistarse periódicamente con los maestros y la Comisión Técnico-Pedagógica.',
+  ];
+
+  doc.setFont('helvetica', 'normal');
+  doc.setFontSize(8);
+  doc.setTextColor(30, 41, 59);
+  let yPos = 222;
+  compromisos.forEach((comp) => {
+    doc.text(comp, 45, yPos);
+    yPos += 16;
+  });
+
+  const textoCierre = `Estas propuestas tienen el firme propósito de que el o la estudiante supere las debilidades en su formación académica, fortaleciendo sus dimensiones del SER, SABER, HACER y DECIDIR en el marco de la Ley 070 Avelino Siñani - Elizardo Pérez.`;
+  doc.setFont('helvetica', 'italic');
+  doc.setFontSize(8);
+  doc.setTextColor(100, 116, 139);
+  doc.text(doc.splitTextToSize(textoCierre, 520), 40, yPos + 10);
+
+  // Firmas oficiales
+  const firmasY = 500;
+  doc.setDrawColor(148, 163, 184);
+  doc.line(50, firmasY, 190, firmasY);
+  doc.setFont('helvetica', 'bold');
+  doc.setFontSize(8);
+  doc.setTextColor(30, 41, 59);
+  doc.text('Firma Padre / Madre / Tutor', 58, firmasY + 12);
+  doc.setFont('helvetica', 'normal');
+  doc.text(`C.I.: ${ciTutor || '....................'}`, 75, firmasY + 22);
+
+  doc.line(220, firmasY, 360, firmasY);
+  doc.setFont('helvetica', 'bold');
+  doc.text(maestroNombre || 'Maestro(a) / Tutor de Aula', 230, firmasY + 12);
+  doc.setFont('helvetica', 'normal');
+  doc.text('Docente Asignado', 260, firmasY + 22);
+
+  doc.line(390, firmasY, 530, firmasY);
+  doc.setFont('helvetica', 'bold');
+  doc.text(`Dirección ${instInfo.nombre}`, 405, firmasY + 12);
+  doc.setFont('helvetica', 'normal');
+  doc.text('Sello y Visto Bueno Institucional', 400, firmasY + 22);
+
+  const clean = estudiante.replace(/[^a-zA-Z0-9]/g, '_').substring(0, 20);
+  doc.save(`Acta_Compromiso_${clean}.pdf`);
+}
+
+/**
+ * MODELO 5: FICHA DE AUTOEVALUACIÓN DEL ESTUDIANTE (SEP - PRIMARIA)
+ * Extraído fielmente de la Hoja 'AUTO' del Cuaderno Pedagógico de Primaria
+ */
+export function exportAutoevaluacionPrimariaPdf(
+  estudiante: string,
+  curso: string,
+  trimestre: string
+) {
+  const instInfo = getActiveInstitutionInfo();
+  const doc = new jsPDF({ orientation: 'portrait', unit: 'pt', format: 'letter' });
+
+  // Tricolor
+  doc.setFillColor(213, 43, 30);
+  doc.rect(40, 25, 170, 4, 'F');
+  doc.setFillColor(252, 209, 22);
+  doc.rect(210, 25, 170, 4, 'F');
+  doc.setFillColor(0, 121, 52);
+  doc.rect(380, 25, 180, 4, 'F');
+
+  doc.setFont('helvetica', 'bold');
+  doc.setFontSize(13);
+  doc.setTextColor(24, 30, 40);
+  doc.text('FICHA OFICIAL DE AUTOEVALUACIÓN DEL ESTUDIANTE', 40, 55);
+
+  doc.setFontSize(9);
+  doc.setFont('helvetica', 'normal');
+  doc.setTextColor(80, 90, 100);
+  doc.text(`${instInfo.nombre.toUpperCase()} • EDUCACIÓN PRIMARIA COMUNITARIA VOCACIONAL (LEY 070)`, 40, 70);
+
+  // Datos
+  doc.setFillColor(248, 250, 252);
+  doc.roundedRect(40, 85, 520, 45, 4, 4, 'F');
+  doc.setFont('helvetica', 'bold');
+  doc.setFontSize(8.5);
+  doc.setTextColor(15, 23, 42);
+  doc.text(`ESTUDIANTE: ${estudiante.toUpperCase()}`, 50, 102);
+  doc.text(`CURSO: ${curso}  |  PERIODO: ${trimestre}º Trimestre (Gestión 2026)`, 50, 118);
+
+  doc.setFont('helvetica', 'italic');
+  doc.setFontSize(8);
+  doc.setTextColor(100, 116, 139);
+  doc.text('Instrucción: Lee cada pregunta y marca con una "X": Sí (1 pto), A veces (0.5 pts), No (0 pts). Luego suma el total.', 40, 145);
+
+  autoTable(doc, {
+    startY: 155,
+    head: [[
+      'Nº',
+      'CRITERIOS - DIMENSIÓN DEL SER (Valores y Principios)',
+      'SÍ\n(1 pto)',
+      'A VECES\n(0.5 pts)',
+      'NO\n(0 pts)',
+    ]],
+    body: [
+      ['1', '¿Asisto puntualmente a clases y cumplo mis responsabilidades?', '', '', ''],
+      ['2', '¿Soy responsable con todas mis tareas y actividades académicas?', '', '', ''],
+      ['3', '¿Demuestro respeto hacia mis maestros, compañeros y entorno escolar?', '', '', ''],
+      ['4', '¿Demuestro interés, curiosidad y motivación constante por aprender?', '', '', ''],
+      ['5', '¿Evito poner apodos o palabras ofensivas a mis compañeros(as)?', '', '', ''],
+      ['', 'PUNTAJE TOTAL DIMENSIÓN DEL SER (Máx. 5 puntos):', '', '', '____ / 5'],
+    ],
+    theme: 'grid',
+    headStyles: { fillColor: [16, 120, 75], textColor: [255, 255, 255], fontStyle: 'bold', fontSize: 8 },
+    styles: { fontSize: 8, cellPadding: 4 },
+    columnStyles: {
+      0: { cellWidth: 25, halign: 'center' },
+      1: { cellWidth: 355 },
+      2: { cellWidth: 45, halign: 'center' },
+      3: { cellWidth: 50, halign: 'center' },
+      4: { cellWidth: 45, halign: 'center' },
+    },
+  });
+
+  const lastY = (doc as any).lastAutoTable?.finalY || 300;
+
+  autoTable(doc, {
+    startY: lastY + 15,
+    head: [[
+      'Nº',
+      'CRITERIOS - DIMENSIÓN DEL DECIDIR (Impacto y Comunidad)',
+      'SÍ\n(1 pto)',
+      'A VECES\n(0.5 pts)',
+      'NO\n(0 pts)',
+    ]],
+    body: [
+      ['1', '¿Contribuyo al trabajo en equipo y comparto materiales con mis compañeros?', '', '', ''],
+      ['2', '¿Propongo soluciones creativas para resolver problemas en el aula?', '', '', ''],
+      ['3', '¿Cuido el mobiliario, los libros y la limpieza de mi aula y colegio?', '', '', ''],
+      ['4', '¿Aplico lo aprendido en la escuela en mi hogar y con mi familia?', '', '', ''],
+      ['5', '¿Participo activamente en las actividades culturales y cívicas de la U.E.?', '', '', ''],
+      ['', 'PUNTAJE TOTAL DIMENSIÓN DEL DECIDIR (Máx. 5 puntos):', '', '', '____ / 5'],
+    ],
+    theme: 'grid',
+    headStyles: { fillColor: [139, 92, 246], textColor: [255, 255, 255], fontStyle: 'bold', fontSize: 8 },
+    styles: { fontSize: 8, cellPadding: 4 },
+    columnStyles: {
+      0: { cellWidth: 25, halign: 'center' },
+      1: { cellWidth: 355 },
+      2: { cellWidth: 45, halign: 'center' },
+      3: { cellWidth: 50, halign: 'center' },
+      4: { cellWidth: 45, halign: 'center' },
+    },
+  });
+
+  const finalTableY = (doc as any).lastAutoTable?.finalY || 450;
+  doc.setFont('helvetica', 'bold');
+  doc.setFontSize(9);
+  doc.setTextColor(15, 23, 42);
+  doc.text('NOTA FINAL CONSOLIDADA DE AUTOEVALUACIÓN (SER + DECIDIR):  ________ / 10 PUNTOS', 40, finalTableY + 30);
+
+  // Firmas
+  const firmasY = finalTableY + 80;
+  doc.line(70, firmasY, 230, firmasY);
+  doc.text('Firma del Estudiante', 110, firmasY + 14);
+
+  doc.line(330, firmasY, 490, firmasY);
+  doc.text('Firma Padre / Madre de Familia', 350, firmasY + 14);
+
+  const clean = estudiante.replace(/[^a-zA-Z0-9]/g, '_').substring(0, 20);
+  doc.save(`Autoevaluacion_${clean}.pdf`);
+}
+
