@@ -12,6 +12,7 @@ import { EvaluationsModule } from './modules/evaluations/evaluations.module';
 import { GradesModule } from './modules/grades/grades.module';
 import { CentralizersModule } from './modules/centralizers/centralizers.module';
 import { ReportsModule } from './modules/reports/reports.module';
+import { DataExchangeModule } from './modules/data-exchange/data-exchange.module';
 
 @Module({
   imports: [
@@ -31,6 +32,7 @@ import { ReportsModule } from './modules/reports/reports.module';
     GradesModule,
     CentralizersModule,
     ReportsModule,
+    DataExchangeModule,
   ],
 })
 export class AppModule {}

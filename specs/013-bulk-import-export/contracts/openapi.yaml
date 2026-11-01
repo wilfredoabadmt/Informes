@@ -1,0 +1,151 @@
+openapi: 3.0.3
+info:
+  title: API de Importación y Exportación Masiva (Excel/CSV)
+  description: Endpoints para carga por lotes de estudiantes y docentes, y exportación de planillas oficiales.
+  version: 1.0.0
+servers:
+  - url: /api/v1
+paths:
+  /data-exchange/import/students:
+    post:
+      summary: Importa por lotes estudiantes e inscripciones desde un archivo Excel o CSV
+      parameters:
+        - in: query
+          name: paraleloId
+          required: true
+          schema:
+            type: string
+            format: uuid
+      requestBody:
+        required: true
+        content:
+          multipart/form-data:
+            schema:
+              type: object
+              properties:
+                file:
+                  type: string
+                  format: binary
+      responses:
+        '201':
+          description: Resultado de la importación masiva
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ImportResult'
+        '400':
+          description: Archivo inválido o columnas faltantes
+
+  /data-exchange/import/teachers:
+    post:
+      summary: Importa por lotes docentes y vinculaciones desde un archivo Excel o CSV
+      requestBody:
+        required: true
+        content:
+          multipart/form-data:
+            schema:
+              type: object
+              properties:
+                file:
+                  type: string
+                  format: binary
+      responses:
+        '201':
+          description: Resultado de la importación masiva
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ImportResult'
+        '400':
+          description: Archivo inválido o columnas faltantes
+
+  /data-exchange/export/students:
+    get:
+      summary: Exporta la nómina de estudiantes en Excel o CSV
+      parameters:
+        - in: query
+          name: paraleloId
+          required: true
+          schema:
+            type: string
+            format: uuid
+        - in: query
+          name: format
+          schema:
+            type: string
+            enum: [xlsx, csv]
+            default: xlsx
+      responses:
+        '200':
+          description: Archivo descargable
+          content:
+            application/vnd.openxmlformats-officedocument.spreadsheetml.sheet:
+              schema:
+                type: string
+                format: binary
+            text/csv:
+              schema:
+                type: string
+
+  /data-exchange/export/teachers:
+    get:
+      summary: Exporta la lista de docentes vinculados en Excel o CSV
+      parameters:
+        - in: query
+          name: format
+          schema:
+            type: string
+            enum: [xlsx, csv]
+            default: xlsx
+      responses:
+        '200':
+          description: Archivo descargable
+
+  /data-exchange/templates/students:
+    get:
+      summary: Descarga plantilla oficial en blanco para estudiantes
+      parameters:
+        - in: query
+          name: format
+          schema:
+            type: string
+            enum: [xlsx, csv]
+            default: xlsx
+      responses:
+        '200':
+          description: Plantilla descargable
+
+  /data-exchange/templates/teachers:
+    get:
+      summary: Descarga plantilla oficial en blanco para docentes
+      parameters:
+        - in: query
+          name: format
+          schema:
+            type: string
+            enum: [xlsx, csv]
+            default: xlsx
+      responses:
+        '200':
+          description: Plantilla descargable
+
+components:
+  schemas:
+    ImportResult:
+      type: object
+      properties:
+        totalFilas:
+          type: integer
+        creados:
+          type: integer
+        duplicados:
+          type: integer
+        errores:
+          type: array
+          items:
+            type: object
+            properties:
+              fila:
+                type: integer
+              error:
+                type: string
