@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { apiClient } from '../api/client';
 import { useAuth } from '../context/AuthContext';
 import { formatEstadoInscripcion } from '../utils/formatters';
+import { exportCourseRosterToExcel, exportCourseRosterToPdf } from '../utils/exportHelpers';
 import {
   Users,
   FileSpreadsheet,
@@ -225,20 +226,21 @@ export const StudentsPage: React.FC = () => {
     }
   };
 
-  const handleExportStudents = async () => {
-    try {
-      const res = await apiClient.get('/data-exchange/export/students?format=xlsx', {
-        responseType: 'blob',
-      });
-      const url = window.URL.createObjectURL(new Blob([res.data]));
-      const link = document.createElement('a');
-      link.href = url;
-      link.setAttribute('download', 'Nomina_Oficial_Estudiantes_Matriculados.xlsx');
-      document.body.appendChild(link);
-      link.click();
-    } catch (e) {
-      alert('Generando exportación de nómina de estudiantes...');
-    }
+  const handleExportStudents = () => {
+    const exportList = filtered.map((s, idx) => ({
+      numero: idx + 1,
+      rude: s.rude,
+      ci: s.ci,
+      apellidosNombres: `${s.primerApellido} ${s.segundoApellido} ${s.nombres}`.trim(),
+      genero: s.genero,
+      tutor: `${s.nombreTutor} (${s.parentescoTutor})`,
+      telefono: s.telefonoTutor,
+      estado: s.estado,
+    }));
+
+    exportCourseRosterToExcel(filterCurso === 'ALL' ? 'Todos los Cursos' : filterCurso, exportList);
+    setFeedbackMessage('✅ Nómina oficial de estudiantes exportada a Excel (.xlsx) exitosamente.');
+    setTimeout(() => setFeedbackMessage(null), 3000);
   };
 
   const filtered = students.filter((s) => {

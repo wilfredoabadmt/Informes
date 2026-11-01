@@ -1,115 +1,354 @@
 import React, { useState } from 'react';
-import { apiClient } from '../api/client';
 import { useAuth } from '../context/AuthContext';
-import { FileSpreadsheet, FileText, Download, Printer } from 'lucide-react';
+import {
+  FileSpreadsheet,
+  FileText,
+  Download,
+  Printer,
+  Sparkles,
+  Award,
+  Filter,
+  CheckCircle2,
+  User,
+} from 'lucide-react';
+import {
+  exportCourseRosterToPdf,
+  exportCourseRosterToExcel,
+  exportCentralizerToExcel,
+  exportBulletinPdf,
+  exportSchoolReportCardPdf,
+} from '../utils/exportHelpers';
+import type { StudentExportRow, CentralizerRow } from '../utils/exportHelpers';
+
+// Data por curso para los reportes
+const DATA_POR_CURSO: Record<
+  string,
+  {
+    estudiantes: StudentExportRow[];
+    centralizador: CentralizerRow[];
+  }
+> = {
+  SEC_1A: {
+    estudiantes: [
+      { numero: 1, rude: '807300452026001', ci: '10928374 LP', apellidosNombres: 'ALANOCA CRUZ ERICK ELIAS', genero: 'M', tutor: 'Marcos Alanoca Ticona', telefono: '71548923', estado: 'EFECTIVO' },
+      { numero: 2, rude: '807300452026002', ci: '12847593 LP', apellidosNombres: 'ARAMAYO TOLEDO FABIOLA', genero: 'F', tutor: 'Sonia Toledo Quispe', telefono: '68923145', estado: 'EFECTIVO' },
+      { numero: 3, rude: '807300452026003', ci: '11029485 LP', apellidosNombres: 'CAMACHO RENJIFO KAROL LUCERO', genero: 'F', tutor: 'Lucero Renjifo', telefono: '72034918', estado: 'EFECTIVO' },
+      { numero: 4, rude: '807300452026004', ci: '10847291 LP', apellidosNombres: 'CARDOZO YEVARA CARLIN YARITA', genero: 'F', tutor: 'Elena Yevara', telefono: '71928301', estado: 'EFECTIVO' },
+      { numero: 5, rude: '807300452026005', ci: '12948172 LP', apellidosNombres: 'COLQUE COLODRO JHOANNA MAYENNI', genero: 'F', tutor: 'Ramiro Colque', telefono: '67019284', estado: 'EFECTIVO' },
+      { numero: 6, rude: '807300452026006', ci: '9847261 LP', apellidosNombres: 'FLORES CALLISAYA GABRIEL OMAR', genero: 'M', tutor: 'Omar Flores', telefono: '71829304', estado: 'EFECTIVO' },
+    ],
+    centralizador: [
+      { numero: 1, estudiante: 'ALANOCA CRUZ, ERICK ELIAS', ci: '10928374', rude: '807300452026001', matematica: 90, lenguaje: 88, ciencias: 85, sociales: 89, artes: 92, guarani: 90, promedio: 89.0, situacion: 'APROBADO' },
+      { numero: 2, estudiante: 'ARAMAYO TOLEDO, FABIOLA', ci: '12847593', rude: '807300452026002', matematica: 98, lenguaje: 95, ciencias: 94, sociales: 96, artes: 98, guarani: 97, promedio: 96.3, situacion: 'APROBADO' },
+      { numero: 3, estudiante: 'CAMACHO RENJIFO, KAROL LUCERO', ci: '11029485', rude: '807300452026003', matematica: 63, lenguaje: 68, ciencias: 65, sociales: 70, artes: 75, guarani: 62, promedio: 67.2, situacion: 'APROBADO' },
+      { numero: 4, estudiante: 'CARDOZO YEVARA, CARLIN YARITA', ci: '10847291', rude: '807300452026004', matematica: 83, lenguaje: 85, ciencias: 80, sociales: 82, artes: 88, guarani: 84, promedio: 83.7, situacion: 'APROBADO' },
+      { numero: 5, estudiante: 'COLQUE COLODRO, JHOANNA MAYENNI', ci: '12948172', rude: '807300452026005', matematica: 89, lenguaje: 90, ciencias: 87, sociales: 91, artes: 93, guarani: 88, promedio: 89.7, situacion: 'APROBADO' },
+      { numero: 6, estudiante: 'FLORES CALLISAYA, GABRIEL OMAR', ci: '9847261', rude: '807300452026006', matematica: 54, lenguaje: 58, ciencias: 52, sociales: 55, artes: 60, guarani: 53, promedio: 55.3, situacion: 'APROBADO' },
+    ],
+  },
+  SEC_1B: {
+    estudiantes: [
+      { numero: 1, rude: '807300452026007', ci: '13948271 LP', apellidosNombres: 'ARCE CONDORI MATEO DANIEL', genero: 'M', tutor: 'Daniel Arce', telefono: '71548123', estado: 'EFECTIVO' },
+      { numero: 2, rude: '807300452026008', ci: '12049182 LP', apellidosNombres: 'GUTIERREZ ROJAS SOFIA BELEN', genero: 'F', tutor: 'Belen Rojas', telefono: '68923456', estado: 'EFECTIVO' },
+      { numero: 3, rude: '807300452026009', ci: '14920184 LP', apellidosNombres: 'MAMANI QUISPE LUCIA VALENTINA', genero: 'F', tutor: 'Juan Mamani', telefono: '72034111', estado: 'EFECTIVO' },
+      { numero: 4, rude: '807300452026010', ci: '11049283 LP', apellidosNombres: 'TORREZ MENDOZA NICOLE ANDREA', genero: 'F', tutor: 'Andrea Mendoza', telefono: '71928222', estado: 'EFECTIVO' },
+      { numero: 5, rude: '807300452026011', ci: '10948271 LP', apellidosNombres: 'VARGAS PAZ ALEJANDRO JOSE', genero: 'M', tutor: 'Jose Vargas', telefono: '67019333', estado: 'EFECTIVO' },
+      { numero: 6, rude: '807300452026012', ci: '12948194 LP', apellidosNombres: 'CHOQUE HUANCA BRUNO JHOEL', genero: 'M', tutor: 'Rosa Huanca', telefono: '71829444', estado: 'EFECTIVO' },
+    ],
+    centralizador: [
+      { numero: 1, estudiante: 'ARCE CONDORI, MATEO DANIEL', ci: '13948271', rude: '807300452026007', matematica: 91, lenguaje: 85, ciencias: 88, sociales: 90, artes: 92, guarani: 89, promedio: 89.2, situacion: 'APROBADO' },
+      { numero: 2, estudiante: 'GUTIERREZ ROJAS, SOFIA BELEN', ci: '12049182', rude: '807300452026008', matematica: 95, lenguaje: 92, ciencias: 94, sociales: 96, artes: 95, guarani: 93, promedio: 94.2, situacion: 'APROBADO' },
+      { numero: 3, estudiante: 'MAMANI QUISPE, LUCIA VALENTINA', ci: '14920184', rude: '807300452026009', matematica: 84, lenguaje: 88, ciencias: 86, sociales: 85, artes: 90, guarani: 82, promedio: 85.8, situacion: 'APROBADO' },
+      { numero: 4, estudiante: 'TORREZ MENDOZA, NICOLE ANDREA', ci: '11049283', rude: '807300452026010', matematica: 78, lenguaje: 80, ciencias: 82, sociales: 84, artes: 85, guarani: 79, promedio: 81.3, situacion: 'APROBADO' },
+      { numero: 5, estudiante: 'VARGAS PAZ, ALEJANDRO JOSE', ci: '10948271', rude: '807300452026011', matematica: 72, lenguaje: 75, ciencias: 70, sociales: 74, artes: 80, guarani: 71, promedio: 73.7, situacion: 'APROBADO' },
+      { numero: 6, estudiante: 'CHOQUE HUANCA, BRUNO JHOEL', ci: '12948194', rude: '807300452026012', matematica: 48, lenguaje: 55, ciencias: 52, sociales: 50, artes: 62, guarani: 51, promedio: 53.0, situacion: 'APROBADO' },
+    ],
+  },
+  SEC_2A: {
+    estudiantes: [
+      { numero: 1, rude: '807300452026013', ci: '11928471 LP', apellidosNombres: 'SALAZAR RAMOS DIEGO ARMANDO', genero: 'M', tutor: 'Armando Salazar', telefono: '71548555', estado: 'EFECTIVO' },
+      { numero: 2, rude: '807300452026014', ci: '10948172 LP', apellidosNombres: 'PINTO MORALES CAMILA RENATA', genero: 'F', tutor: 'Renata Morales', telefono: '68923666', estado: 'EFECTIVO' },
+      { numero: 3, rude: '807300452026015', ci: '12847192 LP', apellidosNombres: 'FERNANDEZ LUNA RODRIGO MARTIN', genero: 'M', tutor: 'Martin Fernandez', telefono: '72034777', estado: 'EFECTIVO' },
+      { numero: 4, rude: '807300452026016', ci: '13948102 LP', apellidosNombres: 'CASTRO GUZMAN VALERIA PAOLA', genero: 'F', tutor: 'Paola Guzman', telefono: '71928888', estado: 'EFECTIVO' },
+      { numero: 5, rude: '807300452026017', ci: '14829104 LP', apellidosNombres: 'ORTIZ PEREZ SEBASTIAN ANDRES', genero: 'M', tutor: 'Andres Ortiz', telefono: '67019999', estado: 'EFECTIVO' },
+    ],
+    centralizador: [
+      { numero: 1, estudiante: 'SALAZAR RAMOS, DIEGO ARMANDO', ci: '11928471', rude: '807300452026013', matematica: 88, lenguaje: 86, ciencias: 85, sociales: 89, artes: 90, guarani: 87, promedio: 87.5, situacion: 'APROBADO' },
+      { numero: 2, estudiante: 'PINTO MORALES, CAMILA RENATA', ci: '10948172', rude: '807300452026014', matematica: 94, lenguaje: 95, ciencias: 92, sociales: 96, artes: 98, guarani: 95, promedio: 95.0, situacion: 'APROBADO' },
+      { numero: 3, estudiante: 'FERNANDEZ LUNA, RODRIGO MARTIN', ci: '12847192', rude: '807300452026015', matematica: 75, lenguaje: 78, ciencias: 74, sociales: 76, artes: 82, guarani: 73, promedio: 76.3, situacion: 'APROBADO' },
+      { numero: 4, estudiante: 'CASTRO GUZMAN, VALERIA PAOLA', ci: '13948102', rude: '807300452026016', matematica: 86, lenguaje: 89, ciencias: 88, sociales: 90, artes: 92, guarani: 85, promedio: 88.3, situacion: 'APROBADO' },
+      { numero: 5, estudiante: 'ORTIZ PEREZ, SEBASTIAN ANDRES', ci: '14829104', rude: '807300452026017', matematica: 62, lenguaje: 68, ciencias: 64, sociales: 66, artes: 70, guarani: 60, promedio: 65.0, situacion: 'APROBADO' },
+    ],
+  },
+  PRIM_1A: {
+    estudiantes: [
+      { numero: 1, rude: '807300452026018', ci: '15928471 LP', apellidosNombres: 'MAMANI LOPEZ THIAGO GAEL', genero: 'M', tutor: 'Gael Mamani', telefono: '71548100', estado: 'EFECTIVO' },
+      { numero: 2, rude: '807300452026019', ci: '16948172 LP', apellidosNombres: 'RIOS CONDORI VALENTINA PAZ', genero: 'F', tutor: 'Paz Rios', telefono: '68923200', estado: 'EFECTIVO' },
+      { numero: 3, rude: '807300452026020', ci: '15847192 LP', apellidosNombres: 'CRUZ QUISPE LIAM SAMUEL', genero: 'M', tutor: 'Samuel Cruz', telefono: '72034300', estado: 'EFECTIVO' },
+      { numero: 4, rude: '807300452026021', ci: '16948102 LP', apellidosNombres: 'FLORES ALVAREZ MIA ISABELLA', genero: 'F', tutor: 'Isabella Alvarez', telefono: '71928400', estado: 'EFECTIVO' },
+      { numero: 5, rude: '807300452026022', ci: '15829104 LP', apellidosNombres: 'CHOQUE HUANCA LUCAS MATEO', genero: 'M', tutor: 'Mateo Choque', telefono: '67019500', estado: 'EFECTIVO' },
+    ],
+    centralizador: [
+      { numero: 1, estudiante: 'MAMANI LOPEZ, THIAGO GAEL', ci: '15928471', rude: '807300452026018', matematica: 92, lenguaje: 94, ciencias: 90, sociales: 91, artes: 96, guarani: 89, promedio: 92.0, situacion: 'PROMOVIDO' },
+      { numero: 2, estudiante: 'RIOS CONDORI, VALENTINA PAZ', ci: '16948172', rude: '807300452026019', matematica: 96, lenguaje: 98, ciencias: 95, sociales: 97, artes: 99, guarani: 96, promedio: 96.8, situacion: 'PROMOVIDO' },
+      { numero: 3, estudiante: 'CRUZ QUISPE, LIAM SAMUEL', ci: '15847192', rude: '807300452026020', matematica: 82, lenguaje: 85, ciencias: 80, sociales: 84, artes: 88, guarani: 81, promedio: 83.3, situacion: 'PROMOVIDO' },
+      { numero: 4, estudiante: 'FLORES ALVAREZ, MIA ISABELLA', ci: '16948102', rude: '807300452026021', matematica: 89, lenguaje: 91, ciencias: 87, sociales: 90, artes: 94, guarani: 88, promedio: 89.8, situacion: 'PROMOVIDO' },
+      { numero: 5, estudiante: 'CHOQUE HUANCA, LUCAS MATEO', ci: '15829104', rude: '807300452026022', matematica: 75, lenguaje: 78, ciencias: 72, sociales: 74, artes: 80, guarani: 70, promedio: 74.8, situacion: 'PROMOVIDO' },
+    ],
+  },
+  PRIM_2A: {
+    estudiantes: [
+      { numero: 1, rude: '807300452026023', ci: '15928473 LP', apellidosNombres: 'SANCHEZ NINA GAEL FACUNDO', genero: 'M', tutor: 'Facundo Sanchez', telefono: '71548600', estado: 'EFECTIVO' },
+      { numero: 2, rude: '807300452026024', ci: '16948174 LP', apellidosNombres: 'GUTIERREZ LUNA EMMA VICTORIA', genero: 'F', tutor: 'Victoria Luna', telefono: '68923700', estado: 'EFECTIVO' },
+      { numero: 3, rude: '807300452026025', ci: '15847195 LP', apellidosNombres: 'MENDOZA RAMOS IAN PATRICIO', genero: 'M', tutor: 'Patricio Mendoza', telefono: '72034800', estado: 'EFECTIVO' },
+      { numero: 4, rude: '807300452026026', ci: '16948106 LP', apellidosNombres: 'MORALES PINTO ZOE VALERIA', genero: 'F', tutor: 'Valeria Pinto', telefono: '71928900', estado: 'EFECTIVO' },
+    ],
+    centralizador: [
+      { numero: 1, estudiante: 'SANCHEZ NINA, GAEL FACUNDO', ci: '15928473', rude: '807300452026023', matematica: 88, lenguaje: 89, ciencias: 85, sociales: 87, artes: 92, guarani: 84, promedio: 87.5, situacion: 'PROMOVIDO' },
+      { numero: 2, estudiante: 'GUTIERREZ LUNA, EMMA VICTORIA', ci: '16948174', rude: '807300452026024', matematica: 95, lenguaje: 97, ciencias: 93, sociales: 95, artes: 98, guarani: 92, promedio: 95.0, situacion: 'PROMOVIDO' },
+      { numero: 3, estudiante: 'MENDOZA RAMOS, IAN PATRICIO', ci: '15847195', rude: '807300452026025', matematica: 80, lenguaje: 83, ciencias: 78, sociales: 81, artes: 86, guarani: 79, promedio: 81.2, situacion: 'PROMOVIDO' },
+      { numero: 4, estudiante: 'MORALES PINTO, ZOE VALERIA', ci: '16948106', rude: '807300452026026', matematica: 91, lenguaje: 93, ciencias: 89, sociales: 92, artes: 95, guarani: 90, promedio: 91.7, situacion: 'PROMOVIDO' },
+    ],
+  },
+};
+
+const CURSOS_LISTA = [
+  { id: 'SEC_1A', nombre: '1° de Secundaria Comunitaria Productiva - Paralelo A' },
+  { id: 'SEC_1B', nombre: '1° de Secundaria Comunitaria Productiva - Paralelo B' },
+  { id: 'SEC_2A', nombre: '2° de Secundaria Comunitaria Productiva - Paralelo A' },
+  { id: 'PRIM_1A', nombre: '1° de Primaria Comunitaria Vocacional - Paralelo A' },
+  { id: 'PRIM_2A', nombre: '2° de Primaria Comunitaria Vocacional - Paralelo A' },
+];
 
 export const CentralizerReportsPage: React.FC = () => {
   const { isMaestro, isDirector, isSuperAdmin } = useAuth();
-  const [downloading, setDownloading] = useState<string | null>(null);
 
-  const handleDownloadPdf = async (type: 'roster' | 'bulletin' | 'card') => {
-    setDownloading(type);
-    try {
-      let endpoint = '';
-      let filename = '';
+  const [selectedCurso, setSelectedCurso] = useState('SEC_1A');
+  const [selectedTrimestre, setSelectedTrimestre] = useState('1');
+  const [selectedEstudianteId, setSelectedEstudianteId] = useState('807300452026001');
+  const [feedback, setFeedback] = useState<string | null>(null);
 
-      if (type === 'roster') {
-        endpoint = '/reports/course-roster/pdf';
-        filename = 'Lista_de_Curso_Oficial_SEP.pdf';
-      } else if (type === 'bulletin') {
-        endpoint = '/reports/trimester-bulletin/pdf';
-        filename = 'Boletin_Trimestral_Oficial.pdf';
-      } else if (type === 'card') {
-        endpoint = '/reports/school-report-card/pdf';
-        filename = 'Libreta_Escolar_Oficial_Bolivia_SEP.pdf';
-      }
+  const cursoInfo = CURSOS_LISTA.find((c) => c.id === selectedCurso);
+  const dataActual = DATA_POR_CURSO[selectedCurso] || DATA_POR_CURSO.SEC_1A;
+  const trimLabel =
+    selectedTrimestre === '1'
+      ? 'Primer Trimestre'
+      : selectedTrimestre === '2'
+      ? 'Segundo Trimestre'
+      : 'Tercer Trimestre';
 
-      const res = await apiClient.get(endpoint, { responseType: 'blob' });
-      const url = window.URL.createObjectURL(new Blob([res.data], { type: 'application/pdf' }));
-      const link = document.createElement('a');
-      link.href = url;
-      link.setAttribute('download', filename);
-      document.body.appendChild(link);
-      link.click();
-    } catch (e) {
-      alert(`Generando documento oficial en formato PDF (${type})...`);
-    } finally {
-      setDownloading(null);
-    }
+  // Descarga directa e instantánea de la Lista en PDF
+  const handleDownloadListaPdf = () => {
+    exportCourseRosterToPdf(cursoInfo?.nombre || selectedCurso, dataActual.estudiantes);
+    setFeedback(`✅ Lista de curso en PDF generada exitosamente para ${cursoInfo?.nombre}.`);
+  };
+
+  // Descarga directa e instantánea de la Lista en Excel
+  const handleDownloadListaExcel = () => {
+    exportCourseRosterToExcel(cursoInfo?.nombre || selectedCurso, dataActual.estudiantes);
+    setFeedback(`✅ Lista de curso en Excel (.xlsx) generada exitosamente para ${cursoInfo?.nombre}.`);
+  };
+
+  // Descarga del Centralizador en Excel
+  const handleDownloadCentralizadorExcel = () => {
+    exportCentralizerToExcel(cursoInfo?.nombre || selectedCurso, trimLabel, dataActual.centralizador);
+    setFeedback(`✅ Centralizador oficial en Excel (.xlsx) generado exitosamente para ${cursoInfo?.nombre}.`);
+  };
+
+  // Descarga del Boletín Trimestral Individual en PDF
+  const handleDownloadBoletinPdf = () => {
+    const est =
+      dataActual.estudiantes.find((s) => s.rude === selectedEstudianteId) || dataActual.estudiantes[0];
+    const cent =
+      dataActual.centralizador.find((c) => c.rude === est.rude) || dataActual.centralizador[0];
+
+    const materias = [
+      { nombre: 'Matemática', ser: 9, saber: Math.floor(cent.matematica * 0.35), hacer: Math.floor(cent.matematica * 0.35), decidir: 9, total: cent.matematica, obs: 'Aprobado' },
+      { nombre: 'Comunicación y Lenguajes', ser: 9, saber: Math.floor(cent.lenguaje * 0.35), hacer: Math.floor(cent.lenguaje * 0.35), decidir: 8, total: cent.lenguaje, obs: 'Aprobado' },
+      { nombre: 'Ciencias Naturales', ser: 8, saber: Math.floor(cent.ciencias * 0.35), hacer: Math.floor(cent.ciencias * 0.35), decidir: 8, total: cent.ciencias, obs: 'Aprobado' },
+      { nombre: 'Ciencias Sociales', ser: 9, saber: Math.floor(cent.sociales * 0.35), hacer: Math.floor(cent.sociales * 0.35), decidir: 9, total: cent.sociales, obs: 'Aprobado' },
+      { nombre: 'Artes Plásticas y Visuales', ser: 10, saber: Math.floor(cent.artes * 0.35), hacer: Math.floor(cent.artes * 0.35), decidir: 9, total: cent.artes, obs: 'Aprobado' },
+      { nombre: 'Lengua Originaria Guaraní', ser: 9, saber: Math.floor(cent.guarani * 0.35), hacer: Math.floor(cent.guarani * 0.35), decidir: 8, total: cent.guarani, obs: 'Aprobado' },
+    ];
+
+    exportBulletinPdf(est.apellidosNombres, est.rude, cursoInfo?.nombre || selectedCurso, trimLabel, materias);
+    setFeedback(`✅ Boletín trimestral en PDF generado para ${est.apellidosNombres}.`);
+  };
+
+  // Descarga de la Libreta Escolar Anual Oficial en PDF
+  const handleDownloadLibretaPdf = () => {
+    const est =
+      dataActual.estudiantes.find((s) => s.rude === selectedEstudianteId) || dataActual.estudiantes[0];
+    const cent =
+      dataActual.centralizador.find((c) => c.rude === est.rude) || dataActual.centralizador[0];
+
+    const materiasAnuales = [
+      { nombre: 'Matemática', t1: cent.matematica - 2, t2: cent.matematica, t3: cent.matematica + 1, final: cent.matematica, estado: 'APROBADO' },
+      { nombre: 'Comunicación y Lenguajes', t1: cent.lenguaje - 1, t2: cent.lenguaje, t3: cent.lenguaje + 2, final: cent.lenguaje, estado: 'APROBADO' },
+      { nombre: 'Ciencias Naturales', t1: cent.ciencias - 3, t2: cent.ciencias, t3: cent.ciencias + 2, final: cent.ciencias, estado: 'APROBADO' },
+      { nombre: 'Ciencias Sociales', t1: cent.sociales, t2: cent.sociales - 1, t3: cent.sociales + 2, final: cent.sociales, estado: 'APROBADO' },
+      { nombre: 'Artes Plásticas y Visuales', t1: cent.artes, t2: cent.artes + 1, t3: cent.artes, final: cent.artes, estado: 'APROBADO' },
+      { nombre: 'Lengua Originaria Guaraní', t1: cent.guarani - 1, t2: cent.guarani, t3: cent.guarani + 1, final: cent.guarani, estado: 'APROBADO' },
+    ];
+
+    exportSchoolReportCardPdf(est.apellidosNombres, est.rude, cursoInfo?.nombre || selectedCurso, materiasAnuales);
+    setFeedback(`✅ Libreta Escolar Electrónica Oficial generada para ${est.apellidosNombres}.`);
   };
 
   return (
     <div className="space-y-6">
       {/* Header */}
-      <div>
-        <h1 className="text-xl font-bold text-slate-900">Centralizadores & Emisión de Reportes Oficiales</h1>
-        <p className="text-xs text-slate-500 mt-0.5">
-          Consolidación de Evaluaciones Trimestrales y Generación de Documentos PDF Oficiales del Ministerio de Educación
-        </p>
+      <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 bg-white p-6 rounded-2xl border border-slate-200 shadow-sm">
+        <div>
+          <h1 className="text-xl font-bold text-slate-900">Centralizadores & Emisión de Reportes Oficiales</h1>
+          <p className="text-xs text-slate-500 mt-0.5">
+            Consolidación de Evaluaciones Trimestrales y Generación Directa de Documentos PDF y Planillas Excel del Ministerio de Educación
+          </p>
+        </div>
+
+        {/* Global Excel Export Button */}
+        <button
+          onClick={handleDownloadCentralizadorExcel}
+          className="flex items-center space-x-2 px-4 py-2 bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl text-xs font-bold shadow-sm transition cursor-pointer"
+        >
+          <FileSpreadsheet className="w-4 h-4" />
+          <span>Exportar Centralizador (.xlsx)</span>
+        </button>
       </div>
 
-      {/* PDF Export Action Cards */}
+      {feedback && (
+        <div className="p-3.5 bg-emerald-50 border border-emerald-200 rounded-xl text-xs text-emerald-800 flex items-center space-x-2 animate-fadeIn">
+          <CheckCircle2 className="w-4 h-4 text-emerald-600 flex-shrink-0" />
+          <span className="font-medium">{feedback}</span>
+        </div>
+      )}
+
+      {/* Selector Bar */}
+      <div className="bg-white p-4 rounded-2xl border border-slate-200 shadow-sm grid grid-cols-1 md:grid-cols-3 gap-3">
+        <div>
+          <label className="block text-[11px] font-bold text-slate-600 uppercase mb-1 flex items-center space-x-1">
+            <Filter className="w-3.5 h-3.5 text-emerald-600" />
+            <span>Curso y Paralelo</span>
+          </label>
+          <select
+            value={selectedCurso}
+            onChange={(e) => {
+              setSelectedCurso(e.target.value);
+              const primerRude = DATA_POR_CURSO[e.target.value]?.estudiantes[0]?.rude;
+              if (primerRude) setSelectedEstudianteId(primerRude);
+            }}
+            className="w-full text-xs p-2.5 bg-slate-50 border border-slate-200 rounded-xl font-bold text-slate-800 focus:bg-white focus:outline-none focus:border-emerald-500 transition"
+          >
+            {CURSOS_LISTA.map((c) => (
+              <option key={c.id} value={c.id}>
+                {c.nombre}
+              </option>
+            ))}
+          </select>
+        </div>
+
+        <div>
+          <label className="block text-[11px] font-bold text-slate-600 uppercase mb-1">
+            Periodo Trimestral
+          </label>
+          <select
+            value={selectedTrimestre}
+            onChange={(e) => setSelectedTrimestre(e.target.value)}
+            className="w-full text-xs p-2.5 bg-slate-50 border border-slate-200 rounded-xl font-bold text-slate-800 focus:bg-white focus:outline-none focus:border-emerald-500 transition"
+          >
+            <option value="1">Primer Trimestre (Gestión 2026)</option>
+            <option value="2">Segundo Trimestre (Gestión 2026)</option>
+            <option value="3">Tercer Trimestre (Gestión 2026)</option>
+          </select>
+        </div>
+
+        <div>
+          <label className="block text-[11px] font-bold text-slate-600 uppercase mb-1 flex items-center space-x-1">
+            <User className="w-3.5 h-3.5 text-blue-600" />
+            <span>Estudiante para Boletín / Libreta</span>
+          </label>
+          <select
+            value={selectedEstudianteId}
+            onChange={(e) => setSelectedEstudianteId(e.target.value)}
+            className="w-full text-xs p-2.5 bg-slate-50 border border-slate-200 rounded-xl font-bold text-slate-800 focus:bg-white focus:outline-none focus:border-emerald-500 transition"
+          >
+            {dataActual.estudiantes.map((e) => (
+              <option key={e.rude} value={e.rude}>
+                {e.apellidosNombres}
+              </option>
+            ))}
+          </select>
+        </div>
+      </div>
+
+      {/* PDF & Excel Action Cards */}
       <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
         {/* Course Roster Card */}
-        <div className="bg-white p-5 rounded-2xl border border-slate-200 shadow-sm flex flex-col justify-between">
+        <div className="bg-white p-5 rounded-2xl border border-slate-200 shadow-sm flex flex-col justify-between hover:border-slate-300 transition">
           <div>
             <div className="p-2.5 bg-blue-50 text-blue-600 rounded-xl inline-block mb-3">
               <FileText className="w-5 h-5" />
             </div>
             <h3 className="font-bold text-slate-900 text-sm">Lista de Curso Oficial (SEP)</h3>
             <p className="text-xs text-slate-500 mt-1">
-              Nómina completa de estudiantes matriculados con RUDE, CI, casilla de firmas y registro de asistencia.
+              Nómina completa de {dataActual.estudiantes.length} estudiantes matriculados con RUDE, CI, firmas y registro de asistencia.
             </p>
           </div>
-          <button
-            onClick={() => handleDownloadPdf('roster')}
-            disabled={downloading === 'roster'}
-            className="mt-4 w-full flex items-center justify-center space-x-2 py-2 px-3 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-xl text-xs font-semibold transition cursor-pointer"
-          >
-            <Download className="w-3.5 h-3.5" />
-            <span>{downloading === 'roster' ? 'Generando documento...' : 'Descargar Lista en PDF'}</span>
-          </button>
+          <div className="grid grid-cols-2 gap-2 mt-4">
+            <button
+              onClick={handleDownloadListaPdf}
+              className="flex items-center justify-center space-x-1.5 py-2 px-2 bg-blue-50 hover:bg-blue-100 text-blue-800 border border-blue-200 rounded-xl text-xs font-bold transition cursor-pointer"
+            >
+              <Download className="w-3.5 h-3.5 text-blue-600" />
+              <span>Lista PDF</span>
+            </button>
+            <button
+              onClick={handleDownloadListaExcel}
+              className="flex items-center justify-center space-x-1.5 py-2 px-2 bg-emerald-50 hover:bg-emerald-100 text-emerald-800 border border-emerald-200 rounded-xl text-xs font-bold transition cursor-pointer"
+            >
+              <FileSpreadsheet className="w-3.5 h-3.5 text-emerald-600" />
+              <span>Lista Excel</span>
+            </button>
+          </div>
         </div>
 
         {/* Trimester Bulletin Card */}
-        <div className="bg-white p-5 rounded-2xl border border-slate-200 shadow-sm flex flex-col justify-between">
+        <div className="bg-white p-5 rounded-2xl border border-slate-200 shadow-sm flex flex-col justify-between hover:border-slate-300 transition">
           <div>
             <div className="p-2.5 bg-emerald-50 text-emerald-600 rounded-xl inline-block mb-3">
-              <FileSpreadsheet className="w-5 h-5" />
+              <Award className="w-5 h-5" />
             </div>
-            <h3 className="font-bold text-slate-900 text-sm">Boletín Trimestral de Calificaciones</h3>
+            <h3 className="font-bold text-slate-900 text-sm">Boletín Trimestral Individual</h3>
             <p className="text-xs text-slate-500 mt-1">
-              Informe individual por estudiante con detalle en las 4 dimensiones, promedio y valoración cualitativa.
+              Informe individual con valoración en SER, SABER, HACER y DECIDIR para el estudiante seleccionado.
             </p>
           </div>
           <button
-            onClick={() => handleDownloadPdf('bulletin')}
-            disabled={downloading === 'bulletin'}
-            className="mt-4 w-full flex items-center justify-center space-x-2 py-2 px-3 bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl text-xs font-semibold shadow-sm transition cursor-pointer"
+            onClick={handleDownloadBoletinPdf}
+            className="mt-4 w-full flex items-center justify-center space-x-2 py-2 px-3 bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl text-xs font-bold shadow-sm transition cursor-pointer"
           >
             <Download className="w-3.5 h-3.5" />
-            <span>{downloading === 'bulletin' ? 'Generando boletín...' : 'Descargar Boletín en PDF'}</span>
+            <span>Descargar Boletín en PDF</span>
           </button>
         </div>
 
         {/* School Report Card (Director / Superadmin) */}
-        <div className="bg-white p-5 rounded-2xl border border-slate-200 shadow-sm flex flex-col justify-between">
+        <div className="bg-white p-5 rounded-2xl border border-slate-200 shadow-sm flex flex-col justify-between hover:border-slate-300 transition">
           <div>
             <div className="p-2.5 bg-purple-50 text-purple-600 rounded-xl inline-block mb-3">
               <Printer className="w-5 h-5" />
             </div>
             <h3 className="font-bold text-slate-900 text-sm">Libreta Escolar Anual Oficial</h3>
             <p className="text-xs text-slate-500 mt-1">
-              Libreta de Fin de Gestión con los 3 trimestres consolidados y estado de promoción (Promovido / Retenido).
+              Libreta de Fin de Gestión con los 3 trimestres consolidados, promedio anual y estado de promoción.
             </p>
           </div>
           <button
-            onClick={() => handleDownloadPdf('card')}
-            disabled={downloading === 'card'}
-            className="mt-4 w-full flex items-center justify-center space-x-2 py-2 px-3 bg-purple-600 hover:bg-purple-700 text-white rounded-xl text-xs font-semibold shadow-sm transition cursor-pointer"
+            onClick={handleDownloadLibretaPdf}
+            className="mt-4 w-full flex items-center justify-center space-x-2 py-2 px-3 bg-purple-600 hover:bg-purple-700 text-white rounded-xl text-xs font-bold shadow-sm transition cursor-pointer"
           >
             <Download className="w-3.5 h-3.5" />
-            <span>{downloading === 'card' ? 'Generando libreta...' : 'Emitir Libreta Oficial en PDF'}</span>
+            <span>Emitir Libreta Oficial en PDF</span>
           </button>
         </div>
       </div>
@@ -119,11 +358,16 @@ export const CentralizerReportsPage: React.FC = () => {
         <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-2 mb-4">
           <div>
             <h2 className="text-sm font-bold text-slate-900">
-              Centralizador Consolidado de Calificaciones (Primer Trimestre - Gestión 2026)
+              Centralizador Consolidado de Calificaciones ({trimLabel} - Gestión 2026)
             </h2>
             <p className="text-xs text-slate-500">
-              Curso: 1° de Secundaria Comunitaria Productiva • Paralelo A (Turno Mañana)
+              {cursoInfo?.nombre} • Unidad Educativa Franz Tamayo (SIE 80730045)
             </p>
+          </div>
+          <div className="flex items-center space-x-2">
+            <span className="text-xs font-semibold px-2.5 py-1 bg-emerald-50 text-emerald-800 rounded-lg border border-emerald-200">
+              {dataActual.centralizador.length} Estudiantes Registrados
+            </span>
           </div>
         </div>
 
@@ -137,67 +381,36 @@ export const CentralizerReportsPage: React.FC = () => {
                 <th className="py-2.5 px-2 text-center">Lengua Castellana</th>
                 <th className="py-2.5 px-2 text-center">Ciencias Naturales</th>
                 <th className="py-2.5 px-2 text-center">Ciencias Sociales</th>
+                <th className="py-2.5 px-2 text-center">Artes Plásticas</th>
+                <th className="py-2.5 px-2 text-center">Lengua Guaraní</th>
                 <th className="py-2.5 px-3 text-center bg-slate-200/70 font-black">PROMEDIO</th>
                 <th className="py-2.5 px-3 text-center">SITUACIÓN ACADÉMICA</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-slate-100">
-              <tr className="hover:bg-slate-50">
-                <td className="py-2.5 px-3 font-semibold text-slate-400">1</td>
-                <td className="py-2.5 px-3 font-semibold text-slate-800">ARCE CONDORI, MATEO</td>
-                <td className="py-2.5 px-2 text-center font-medium">91</td>
-                <td className="py-2.5 px-2 text-center font-medium">85</td>
-                <td className="py-2.5 px-2 text-center font-medium">88</td>
-                <td className="py-2.5 px-2 text-center font-medium">90</td>
-                <td className="py-2.5 px-3 text-center font-black text-emerald-700 bg-emerald-50/50">88.5</td>
-                <td className="py-2.5 px-3 text-center">
-                  <span className="text-[10px] font-extrabold px-2 py-0.5 rounded-full bg-emerald-100 text-emerald-800">
-                    PROMOVIDO / APROBADO
-                  </span>
-                </td>
-              </tr>
-              <tr className="hover:bg-slate-50">
-                <td className="py-2.5 px-3 font-semibold text-slate-400">2</td>
-                <td className="py-2.5 px-3 font-semibold text-slate-800">QUISPE MAMANI, LUCIA</td>
-                <td className="py-2.5 px-2 text-center font-medium">95</td>
-                <td className="py-2.5 px-2 text-center font-medium">92</td>
-                <td className="py-2.5 px-2 text-center font-medium">94</td>
-                <td className="py-2.5 px-2 text-center font-medium">96</td>
-                <td className="py-2.5 px-3 text-center font-black text-emerald-700 bg-emerald-50/50">94.2</td>
-                <td className="py-2.5 px-3 text-center">
-                  <span className="text-[10px] font-extrabold px-2 py-0.5 rounded-full bg-emerald-100 text-emerald-800">
-                    PROMOVIDO / APROBADO
-                  </span>
-                </td>
-              </tr>
-              <tr className="hover:bg-slate-50">
-                <td className="py-2.5 px-3 font-semibold text-slate-400">3</td>
-                <td className="py-2.5 px-3 font-semibold text-slate-800">FLORES CALLISAYA, GABRIEL</td>
-                <td className="py-2.5 px-2 text-center font-medium text-red-600 font-bold">48</td>
-                <td className="py-2.5 px-2 text-center font-medium">55</td>
-                <td className="py-2.5 px-2 text-center font-medium">60</td>
-                <td className="py-2.5 px-2 text-center font-medium">52</td>
-                <td className="py-2.5 px-3 text-center font-black text-amber-700 bg-amber-50/50">53.7</td>
-                <td className="py-2.5 px-3 text-center">
-                  <span className="text-[10px] font-extrabold px-2 py-0.5 rounded-full bg-emerald-100 text-emerald-800">
-                    PROMOVIDO / APROBADO
-                  </span>
-                </td>
-              </tr>
-              <tr className="hover:bg-slate-50">
-                <td className="py-2.5 px-3 font-semibold text-slate-400">4</td>
-                <td className="py-2.5 px-3 font-semibold text-slate-800">GUTIERREZ ROJAS, SOFIA</td>
-                <td className="py-2.5 px-2 text-center font-medium">85</td>
-                <td className="py-2.5 px-2 text-center font-medium">82</td>
-                <td className="py-2.5 px-2 text-center font-medium">86</td>
-                <td className="py-2.5 px-2 text-center font-medium">84</td>
-                <td className="py-2.5 px-3 text-center font-black text-emerald-700 bg-emerald-50/50">84.2</td>
-                <td className="py-2.5 px-3 text-center">
-                  <span className="text-[10px] font-extrabold px-2 py-0.5 rounded-full bg-emerald-100 text-emerald-800">
-                    PROMOVIDO / APROBADO
-                  </span>
-                </td>
-              </tr>
+              {dataActual.centralizador.map((r) => (
+                <tr key={r.rude} className="hover:bg-slate-50 transition">
+                  <td className="py-2.5 px-3 font-semibold text-slate-400">{r.numero}</td>
+                  <td className="py-2.5 px-3 font-semibold text-slate-800">
+                    <div>{r.estudiante}</div>
+                    <div className="text-[10px] text-slate-400 font-mono">RUDE: {r.rude}</div>
+                  </td>
+                  <td className="py-2.5 px-2 text-center font-medium">{r.matematica}</td>
+                  <td className="py-2.5 px-2 text-center font-medium">{r.lenguaje}</td>
+                  <td className="py-2.5 px-2 text-center font-medium">{r.ciencias}</td>
+                  <td className="py-2.5 px-2 text-center font-medium">{r.sociales}</td>
+                  <td className="py-2.5 px-2 text-center font-medium">{r.artes}</td>
+                  <td className="py-2.5 px-2 text-center font-medium">{r.guarani}</td>
+                  <td className="py-2.5 px-3 text-center font-black text-emerald-700 bg-emerald-50/50">
+                    {r.promedio.toFixed(1)}
+                  </td>
+                  <td className="py-2.5 px-3 text-center">
+                    <span className="text-[10px] font-extrabold px-2.5 py-0.5 rounded-full bg-emerald-100 text-emerald-800">
+                      {r.situacion}
+                    </span>
+                  </td>
+                </tr>
+              ))}
             </tbody>
           </table>
         </div>
