@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { useNavigate, useSearchParams, Link } from 'react-router-dom';
 import { apiClient } from '../api/client';
 import { useAuth } from '../context/AuthContext';
+import { addStoredInstitution } from '../utils/multiTenantStore';
 import {
   School,
   User,
@@ -99,8 +100,26 @@ export const RegisterSchoolPage: React.FC = () => {
         localStorage.setItem('sigma_current_institution_id', data.institution.id);
         localStorage.setItem('sigma_user', JSON.stringify(data.user));
 
+        // Registrar nueva institución en el store local
+        addStoredInstitution({
+          id: data.institution.id,
+          sie: data.institution.sie,
+          nombre: data.institution.nombre,
+          departamento: formData.departamento,
+          provincia: formData.provincia,
+          municipio: formData.municipio,
+          distrito: formData.distrito,
+          direccion: 'Av. Principal',
+          telefono: formData.telefono || 'Sin teléfono',
+          tipo: formData.tipo as any,
+          nivel: formData.nivel as any,
+          activo: true,
+          totalMaestrosVinculados: 0,
+        });
+
         // Auto login en el cliente
         await login(formData.email, formData.password);
+        localStorage.setItem('currentInstitutionId', data.institution.id);
         navigate('/');
       } else {
         navigate('/login');

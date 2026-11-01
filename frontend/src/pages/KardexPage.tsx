@@ -1,5 +1,11 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
+import { Link } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
+import {
+  getCoursesForInstitution,
+  getStudentsForInstitution,
+  resolveTenantKey,
+} from '../utils/multiTenantStore';
 import {
   FileText,
   User,
@@ -18,6 +24,9 @@ import {
   Trash2,
   Filter,
   CheckCircle2,
+  School,
+  ArrowRight,
+  Users,
 } from 'lucide-react';
 import { exportParentalCitationPdf } from '../utils/exportHelpers';
 
@@ -317,17 +326,80 @@ const INITIAL_KARDEX_STUDENTS: StudentKardexInfo[] = [
 ];
 
 export const KardexPage: React.FC = () => {
-  const { isMaestro, isDirector, isSuperAdmin, user } = useAuth();
+  const { isMaestro, isDirector, isSuperAdmin, user, currentInstitutionId } = useAuth();
+  const activeSie = resolveTenantKey(currentInstitutionId);
+  const currentInst = user?.institutions?.find(i => (i.id || i.institutionId || i.sie) === currentInstitutionId) || user?.institutions?.[0];
+  const institutionName = currentInst?.nombre || 'Unidad Educativa';
 
-  // Maestro solo ve sus cursos asignados (SEC_1A, SEC_1B, SEC_2A)
-  const isMaestroOnly = isMaestro && !isDirector && !isSuperAdmin;
-  const cursosDisponibles = isMaestroOnly
-    ? CURSOS_KARDEX.filter((c) => ['SEC_1A', 'SEC_1B', 'SEC_2A'].includes(c.id))
-    : CURSOS_KARDEX;
+  const rawCourses = getCoursesForInstitution(activeSie);
+  const rawStudents = getStudentsForInstitution(activeSie);
 
-  const [selectedCursoId, setSelectedCursoId] = useState<string>('SEC_1A');
+  const cursosDisponibles = rawCourses.map((c) => ({
+    id: c.id,
+    nombre: `${c.cursoNombre} - Paralelo "${c.letra}"`,
+    turno: c.turno,
+    nivel: c.nivel,
+    grado: c.grado,
+    letra: c.letra,
+  }));
+
+  const [selectedCursoId, setSelectedCursoId] = useState<string>('');
   const [filterOnlyIncidents, setFilterOnlyIncidents] = useState<boolean>(false);
-  const [students, setStudents] = useState<StudentKardexInfo[]>(INITIAL_KARDEX_STUDENTS);
+  const [students, setStudents] = useState<StudentKardexInfo[]>([]);
+
+  // Sincronizar curso seleccionado
+  useEffect(() => {
+    if (cursosDisponibles.length > 0) {
+      if (!selectedCursoId || !cursosDisponibles.some((c) => c.id === selectedCursoId)) {
+        setSelectedCursoId(cursosDisponibles[0].id);
+      }
+    } else {
+      setSelectedCursoId('');
+    }
+  }, [cursosDisponibles, selectedCursoId]);
+
+  // Carga reactiva de Kardex por institución
+  useEffect(() => {
+    try {
+      const stored = localStorage.getItem(`sigma_kardex_${activeSie}`);
+      if (stored) {
+        setStudents(JSON.parse(stored));
+        return;
+      }
+    } catch (e) {
+      console.error(e);
+    }
+
+    if (activeSie === '80730045') {
+      setStudents(INITIAL_KARDEX_STUDENTS);
+    } else {
+      const mapped: StudentKardexInfo[] = rawStudents.map((st) => {
+        const matchingCourse = rawCourses.find((c) => {
+          const matchGrado = st.curso.includes(`${c.grado}°`);
+          const matchLetra =
+            st.curso.includes(`Paralelo ${c.letra}`) ||
+            st.curso.includes(`"${c.letra}"`) ||
+            st.curso.endsWith(` ${c.letra}`);
+          return matchGrado && matchLetra;
+        }) || rawCourses[0];
+
+        return {
+          id: `k-${st.id}`,
+          cursoId: matchingCourse ? matchingCourse.id : '',
+          rude: st.rude,
+          ci: st.ci,
+          nombreCompleto: `${st.primerApellido} ${st.segundoApellido || ''} ${st.nombres}`.trim(),
+          curso: st.curso,
+          fechaNacimiento: st.fechaNacimiento,
+          tutorNombre: st.nombreTutor || 'No registrado',
+          tutorContacto: st.telefonoTutor || 'No registrado',
+          parentesco: st.parentescoTutor || 'Tutor',
+          entries: [],
+        };
+      });
+      setStudents(mapped);
+    }
+  }, [activeSie, rawCourses, rawStudents]);
 
   // Filtrado reactivo de estudiantes según curso y opción de incidencias
   const studentsOfCourse = students.filter((s) => s.cursoId === selectedCursoId);
@@ -335,7 +407,7 @@ export const KardexPage: React.FC = () => {
     ? studentsOfCourse.filter((s) => s.entries.length > 0)
     : studentsOfCourse;
 
-  const [selectedStudentId, setSelectedStudentId] = useState<string>('k-1');
+  const [selectedStudentId, setSelectedStudentId] = useState<string>('');
   const [showCitationModal, setShowCitationModal] = useState<boolean>(false);
   const [citationDate, setCitationDate] = useState<string>('2026-04-08');
   const [citationTime, setCitationTime] = useState<string>('09:30');
@@ -378,7 +450,7 @@ export const KardexPage: React.FC = () => {
 
   const handleAddEntry = (e: React.FormEvent) => {
     e.preventDefault();
-    if (!observacionDetalle.trim()) return;
+    if (!observacionDetalle.trim() || !selectedStudent) return;
 
     const teacherName = user?.persona
       ? `${user.persona.nombres} ${user.persona.primerApellido}`
@@ -397,11 +469,13 @@ export const KardexPage: React.FC = () => {
       citacionPadres,
     };
 
-    setStudents((prev) =>
-      prev.map((s) =>
+    setStudents((prev) => {
+      const updated = prev.map((s) =>
         s.id === selectedStudent.id ? { ...s, entries: [newEntry, ...s.entries] } : s
-      )
-    );
+      );
+      localStorage.setItem(`sigma_kardex_${activeSie}`, JSON.stringify(updated));
+      return updated;
+    });
 
     setFeedback('✅ Registro de Kardex disciplinario añadido exitosamente.');
     setTimeout(() => setFeedback(null), 3000);
@@ -417,13 +491,16 @@ export const KardexPage: React.FC = () => {
   };
 
   const handleDeleteEntry = (entryId: string) => {
-    setStudents((prev) =>
-      prev.map((s) =>
+    if (!selectedStudent) return;
+    setStudents((prev) => {
+      const updated = prev.map((s) =>
         s.id === selectedStudent.id
           ? { ...s, entries: s.entries.filter((e) => e.id !== entryId) }
           : s
-      )
-    );
+      );
+      localStorage.setItem(`sigma_kardex_${activeSie}`, JSON.stringify(updated));
+      return updated;
+    });
   };
 
   // Descarga del documento formal de Citación a Padres en PDF
@@ -455,6 +532,51 @@ export const KardexPage: React.FC = () => {
     setTimeout(() => setFeedback(null), 3500);
   };
 
+  if (cursosDisponibles.length === 0) {
+    return (
+      <div className="space-y-6">
+        <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 bg-white p-6 rounded-2xl border border-slate-200 shadow-sm">
+          <div className="flex items-center space-x-3">
+            <div className="p-3 bg-red-50 rounded-xl text-red-600">
+              <ShieldAlert className="w-7 h-7" />
+            </div>
+            <div>
+              <h1 className="text-xl font-bold text-slate-900 tracking-tight">
+                Kardex & Seguimiento Disciplinario Estudiantil
+              </h1>
+              <p className="text-xs text-slate-500">
+                {institutionName} • Gestión 2026
+              </p>
+            </div>
+          </div>
+        </div>
+
+        <div className="bg-white rounded-2xl border border-dashed border-slate-300 p-12 text-center shadow-sm">
+          <div className="max-w-md mx-auto space-y-4">
+            <div className="w-16 h-16 bg-red-50 text-red-600 rounded-2xl flex items-center justify-center mx-auto shadow-inner">
+              <School className="w-8 h-8" />
+            </div>
+            <h2 className="text-lg font-bold text-slate-900">
+              Espacio en blanco: Aún no hay cursos creados
+            </h2>
+            <p className="text-xs text-slate-500 leading-relaxed">
+              Para habilitar el Kardex disciplinario, registro de observaciones y citaciones a padres de familia de <span className="font-semibold text-slate-700">{institutionName}</span>, primero debes configurar los cursos y paralelos.
+            </p>
+            <div className="pt-2">
+              <Link
+                to="/academic"
+                className="inline-flex items-center space-x-2 px-5 py-2.5 bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl text-xs font-bold transition shadow-sm"
+              >
+                <span>Habilitar Cursos y Paralelos</span>
+                <ArrowRight className="w-4 h-4" />
+              </Link>
+            </div>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div className="space-y-6">
       {/* Header */}
@@ -468,7 +590,7 @@ export const KardexPage: React.FC = () => {
               Kardex & Seguimiento Disciplinario Estudiantil
             </h1>
             <p className="text-xs text-slate-500">
-              Evaluación Integral de Convivencia y Trazabilidad de 14 Aspectos Normativos (Ley 070)
+              Evaluación Integral de Convivencia y Trazabilidad de 14 Aspectos Normativos (Ley 070) • {institutionName}
             </p>
           </div>
         </div>
@@ -566,7 +688,7 @@ export const KardexPage: React.FC = () => {
               </span>{' '}
               de {studentsOfCourse.length}
             </div>
-            <div className="text-[11px] text-slate-400">U.E. Franz Tamayo (SIE 80730045)</div>
+            <div className="text-[11px] text-slate-400">{institutionName} (SIE {activeSie})</div>
           </div>
         </div>
       </div>
@@ -586,38 +708,52 @@ export const KardexPage: React.FC = () => {
             </div>
 
             <div className="divide-y divide-slate-100 max-h-[560px] overflow-y-auto">
-              {visibleStudents.map((st) => {
-                const isSelected = selectedStudent && selectedStudent.id === st.id;
-                const incidentCount = st.entries.length;
-                return (
-                  <div
-                    key={st.id}
-                    onClick={() => setSelectedStudentId(st.id)}
-                    className={`p-3.5 cursor-pointer transition flex items-center justify-between ${
-                      isSelected
-                        ? 'bg-emerald-50/80 border-l-4 border-emerald-600'
-                        : 'hover:bg-slate-50'
-                    }`}
+              {visibleStudents.length === 0 ? (
+                <div className="p-8 text-center text-slate-400 text-xs space-y-2">
+                  <Users className="w-8 h-8 mx-auto text-slate-300" />
+                  <p className="font-semibold text-slate-600">No hay estudiantes en este curso</p>
+                  <Link
+                    to="/students"
+                    className="inline-flex items-center space-x-1 text-emerald-600 font-bold hover:underline"
                   >
-                    <div>
-                      <div className="text-xs font-bold text-slate-900">{st.nombreCompleto}</div>
-                      <div className="text-[10px] text-slate-400 font-mono">RUDE: {st.rude}</div>
+                    <span>Matricular alumnos</span>
+                    <ArrowRight className="w-3.5 h-3.5" />
+                  </Link>
+                </div>
+              ) : (
+                visibleStudents.map((st) => {
+                  const isSelected = selectedStudent && selectedStudent.id === st.id;
+                  const incidentCount = st.entries.length;
+                  return (
+                    <div
+                      key={st.id}
+                      onClick={() => setSelectedStudentId(st.id)}
+                      className={`p-3.5 cursor-pointer transition flex items-center justify-between ${
+                        isSelected
+                          ? 'bg-emerald-50/80 border-l-4 border-emerald-600'
+                          : 'hover:bg-slate-50'
+                      }`}
+                    >
+                      <div>
+                        <div className="text-xs font-bold text-slate-900">{st.nombreCompleto}</div>
+                        <div className="text-[10px] text-slate-400 font-mono">RUDE: {st.rude}</div>
+                      </div>
+                      <div>
+                        {incidentCount > 0 ? (
+                          <span className="inline-flex items-center space-x-1 px-2 py-0.5 rounded-full text-[10px] font-bold bg-red-100 text-red-700 border border-red-200">
+                            <AlertTriangle className="w-3 h-3 text-red-600" />
+                            <span>{incidentCount} {incidentCount === 1 ? 'falta' : 'faltas'}</span>
+                          </span>
+                        ) : (
+                          <span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-emerald-100 text-emerald-800">
+                            Sin faltas
+                          </span>
+                        )}
+                      </div>
                     </div>
-                    <div>
-                      {incidentCount > 0 ? (
-                        <span className="inline-flex items-center space-x-1 px-2 py-0.5 rounded-full text-[10px] font-bold bg-red-100 text-red-700 border border-red-200">
-                          <AlertTriangle className="w-3 h-3 text-red-600" />
-                          <span>{incidentCount} {incidentCount === 1 ? 'falta' : 'faltas'}</span>
-                        </span>
-                      ) : (
-                        <span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-emerald-100 text-emerald-800">
-                          Sin faltas
-                        </span>
-                      )}
-                    </div>
-                  </div>
-                );
-              })}
+                  );
+                })
+              )}
             </div>
           </div>
         </div>
@@ -961,7 +1097,7 @@ export const KardexPage: React.FC = () => {
 
                         <div className="text-[10px] text-slate-400 flex justify-between items-center pt-1 border-t border-slate-100">
                           <span>Registrado por: {entry.firmaMaestro}</span>
-                          <span className="font-semibold text-slate-500">U.E. Franz Tamayo</span>
+                          <span className="font-semibold text-slate-500">{institutionName}</span>
                         </div>
                       </div>
                     ))}

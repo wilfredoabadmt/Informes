@@ -1,5 +1,11 @@
 import React, { useState, useMemo, useEffect } from 'react';
+import { Link } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
+import {
+  getCoursesForInstitution,
+  getStudentsForInstitution,
+  resolveTenantKey,
+} from '../utils/multiTenantStore';
 import * as XLSX from 'xlsx';
 import {
   CalendarCheck,
@@ -10,6 +16,8 @@ import {
   Filter,
   Users,
   Award,
+  ArrowRight,
+  School,
 } from 'lucide-react';
 
 type AttendanceStatus = 'PRESENTE' | 'FALTA' | 'ATRASO' | 'LICENCIA';
@@ -113,34 +121,90 @@ function generateInitialAttendance(cursoId: string, month: number): StudentAtten
 }
 
 export const AttendancePage: React.FC = () => {
-  const { isMaestro, isDirector, isSuperAdmin } = useAuth();
+  const { isMaestro, isDirector, isSuperAdmin, currentInstitutionId, user } = useAuth();
+  const activeSie = resolveTenantKey(currentInstitutionId);
+  const currentInst = user?.institutions?.find(i => (i.id || i.institutionId || i.sie) === currentInstitutionId) || user?.institutions?.[0];
+  const institutionName = currentInst?.nombre || 'Unidad Educativa';
 
-  // Maestro solo ve sus cursos asignados (Secundaria 1A, 1B, 2A)
-  const isMaestroOnly = isMaestro && !isDirector && !isSuperAdmin;
-  const cursosDisponibles = isMaestroOnly
-    ? CURSOS_CATALOGO.filter((c) => ['SEC_1A', 'SEC_1B', 'SEC_2A'].includes(c.id))
-    : CURSOS_CATALOGO;
+  // Cursos y estudiantes reales de la institución activa
+  const rawCourses = getCoursesForInstitution(activeSie);
+  const rawStudents = getStudentsForInstitution(activeSie);
+
+  const cursosDisponibles = rawCourses.map((c) => ({
+    id: c.id,
+    nombre: `${c.cursoNombre} - Paralelo "${c.letra}" (${c.turno})`,
+    nivel: c.nivel,
+    grado: c.grado,
+    letra: c.letra,
+  }));
 
   const [selectedMonth, setSelectedMonth] = useState<number>(3); // Marzo default
-  const [selectedCourse, setSelectedCourse] = useState<string>('SEC_1A');
+  const [selectedCourse, setSelectedCourse] = useState<string>('');
   const [saveSuccess, setSaveSuccess] = useState<string | null>(null);
 
-  // Almacén persistente en memoria por clave: curso_mes
+  useEffect(() => {
+    if (cursosDisponibles.length > 0) {
+      if (!selectedCourse || !cursosDisponibles.some((c) => c.id === selectedCourse)) {
+        setSelectedCourse(cursosDisponibles[0].id);
+      }
+    } else {
+      setSelectedCourse('');
+    }
+  }, [cursosDisponibles, selectedCourse]);
+
+  // Almacén persistente en memoria por clave: sie_curso_mes
   const [attendanceStore, setAttendanceStore] = useState<Record<string, StudentAttendance[]>>({});
   const [students, setStudents] = useState<StudentAttendance[]>([]);
 
-  const currentKey = `${selectedCourse}_${selectedMonth}`;
+  const currentKey = `${activeSie}_${selectedCourse}_${selectedMonth}`;
 
   // Efecto reactivo al cambiar de curso o mes
   useEffect(() => {
+    if (!selectedCourse) {
+      setStudents([]);
+      return;
+    }
+
     if (attendanceStore[currentKey]) {
       setStudents(attendanceStore[currentKey]);
     } else {
-      const generated = generateInitialAttendance(selectedCourse, selectedMonth);
+      const currentC = rawCourses.find((c) => c.id === selectedCourse);
+      const matchingStudents = rawStudents.filter((s) => {
+        if (!currentC) return false;
+        const matchGrado = s.curso.includes(`${currentC.grado}°`);
+        const matchLetra =
+          s.curso.includes(`Paralelo ${currentC.letra}`) ||
+          s.curso.includes(`"${currentC.letra}"`) ||
+          s.curso.endsWith(` ${currentC.letra}`);
+        return matchGrado && matchLetra;
+      });
+
+      const pool = matchingStudents.length > 0 ? matchingStudents : rawStudents.slice(0, 8);
+      const daysInMonth = new Date(2026, selectedMonth, 0).getDate();
+      const generated: StudentAttendance[] = pool.map((st, idx) => {
+        const days: Record<number, AttendanceStatus> = {};
+        for (let d = 1; d <= daysInMonth; d++) {
+          const dayOfWeek = new Date(2026, selectedMonth - 1, d).getDay();
+          if (dayOfWeek !== 0 && dayOfWeek !== 6) {
+            const rand = (d * 7 + idx * 11) % 100;
+            if (rand > 94) days[d] = 'FALTA';
+            else if (rand > 87) days[d] = 'ATRASO';
+            else if (rand > 83) days[d] = 'LICENCIA';
+            else days[d] = 'PRESENTE';
+          }
+        }
+        return {
+          id: st.id,
+          rude: st.rude,
+          nombreCompleto: `${st.primerApellido} ${st.segundoApellido || ''} ${st.nombres}`.trim(),
+          days,
+        };
+      });
+
       setStudents(generated);
       setAttendanceStore((prev) => ({ ...prev, [currentKey]: generated }));
     }
-  }, [selectedCourse, selectedMonth]);
+  }, [selectedCourse, selectedMonth, activeSie, currentKey, rawCourses, rawStudents]);
 
   // Días laborables del mes (Lunes a Viernes)
   const workingDays = useMemo(() => {
@@ -282,6 +346,51 @@ export const AttendancePage: React.FC = () => {
     XLSX.writeFile(wb, `Asistencia_${clean}_${mesActual?.label}_2026.xlsx`);
   };
 
+  if (cursosDisponibles.length === 0) {
+    return (
+      <div className="space-y-6">
+        <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 bg-white p-6 rounded-2xl border border-slate-200 shadow-sm">
+          <div className="flex items-center space-x-3">
+            <div className="p-3 bg-emerald-50 rounded-xl text-emerald-700">
+              <CalendarCheck className="w-7 h-7" />
+            </div>
+            <div>
+              <h1 className="text-xl font-bold text-slate-900 tracking-tight">
+                Control Mensual de Asistencia Escolar
+              </h1>
+              <p className="text-xs text-slate-500">
+                {institutionName} • Gestión 2026
+              </p>
+            </div>
+          </div>
+        </div>
+
+        <div className="bg-white rounded-2xl border border-dashed border-slate-300 p-12 text-center shadow-sm">
+          <div className="max-w-md mx-auto space-y-4">
+            <div className="w-16 h-16 bg-emerald-50 text-emerald-600 rounded-2xl flex items-center justify-center mx-auto shadow-inner">
+              <School className="w-8 h-8" />
+            </div>
+            <h2 className="text-lg font-bold text-slate-900">
+              Espacio en blanco: Aún no hay cursos creados
+            </h2>
+            <p className="text-xs text-slate-500 leading-relaxed">
+              Para comenzar a controlar la asistencia mensual y generar los registros pedagógicos, primero debes registrar los cursos y paralelos de <span className="font-semibold text-slate-700">{institutionName}</span>.
+            </p>
+            <div className="pt-2">
+              <Link
+                to="/academic"
+                className="inline-flex items-center space-x-2 px-5 py-2.5 bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl text-xs font-bold transition shadow-sm"
+              >
+                <span>Habilitar Cursos y Paralelos</span>
+                <ArrowRight className="w-4 h-4" />
+              </Link>
+            </div>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div className="space-y-6">
       {/* Header */}
@@ -295,7 +404,7 @@ export const AttendancePage: React.FC = () => {
               Control Mensual de Asistencia Escolar
             </h1>
             <p className="text-xs text-slate-500">
-              {cursoActual?.nombre} • Unidad Educativa Franz Tamayo (Gestión 2026)
+              {cursoActual?.nombre || 'Seleccione un curso'} • {institutionName} (Gestión 2026)
             </p>
           </div>
         </div>
@@ -447,69 +556,88 @@ export const AttendancePage: React.FC = () => {
               </tr>
             </thead>
             <tbody className="divide-y divide-slate-100">
-              {students.map((student, studentIndex) => {
-                const stats = getStats(student.days);
-                return (
-                  <tr key={student.id} className="hover:bg-slate-50 transition">
-                    <td className="py-2 px-3 text-center font-mono text-slate-400 border-r border-slate-200 text-xs">
-                      {studentIndex + 1}
-                    </td>
-                    <td className="py-2 px-4 border-r border-slate-200">
-                      <div className="font-semibold text-slate-900">{student.nombreCompleto}</div>
-                      <div className="text-[10px] text-slate-400 font-mono">RUDE: {student.rude}</div>
-                    </td>
+              {students.length === 0 ? (
+                <tr>
+                  <td colSpan={workingDays.length + 7} className="py-12 text-center text-slate-400">
+                    <div className="flex flex-col items-center justify-center space-y-2">
+                      <Users className="w-8 h-8 text-slate-300" />
+                      <span className="font-semibold text-slate-700">No hay estudiantes matriculados en este curso.</span>
+                      <p className="text-xs text-slate-400">Inscribe alumnos en la sección "Estudiantes & Matrícula" para controlar su asistencia.</p>
+                      <Link
+                        to="/students"
+                        className="mt-2 inline-flex items-center space-x-1.5 px-3 py-1.5 bg-emerald-600 hover:bg-emerald-700 text-white rounded-lg text-xs font-bold transition shadow-sm"
+                      >
+                        <span>Matricular Estudiantes</span>
+                        <ArrowRight className="w-3.5 h-3.5" />
+                      </Link>
+                    </div>
+                  </td>
+                </tr>
+              ) : (
+                students.map((student, studentIndex) => {
+                  const stats = getStats(student.days);
+                  return (
+                    <tr key={student.id} className="hover:bg-slate-50 transition">
+                      <td className="py-2 px-3 text-center font-mono text-slate-400 border-r border-slate-200 text-xs">
+                        {studentIndex + 1}
+                      </td>
+                      <td className="py-2 px-4 border-r border-slate-200">
+                        <div className="font-semibold text-slate-900">{student.nombreCompleto}</div>
+                        <div className="text-[10px] text-slate-400 font-mono">RUDE: {student.rude}</div>
+                      </td>
 
-                    {/* Días del Mes */}
-                    {workingDays.map((wd) => {
-                      const status = student.days[wd.day] || 'PRESENTE';
-                      let badge = 'bg-emerald-100 text-emerald-700 font-bold';
-                      let letter = 'P';
-                      if (status === 'FALTA') {
-                        badge = 'bg-rose-100 text-rose-700 font-bold';
-                        letter = 'F';
-                      } else if (status === 'ATRASO') {
-                        badge = 'bg-amber-100 text-amber-700 font-bold';
-                        letter = 'A';
-                      } else if (status === 'LICENCIA') {
-                        badge = 'bg-blue-100 text-blue-700 font-bold';
-                        letter = 'L';
-                      }
+                      {/* Días del Mes */}
+                      {workingDays.map((wd) => {
+                        const status = student.days[wd.day] || 'PRESENTE';
+                        let badge = 'bg-emerald-100 text-emerald-700 font-bold';
+                        let letter = 'P';
+                        if (status === 'FALTA') {
+                          badge = 'bg-rose-100 text-rose-700 font-bold';
+                          letter = 'F';
+                        } else if (status === 'ATRASO') {
+                          badge = 'bg-amber-100 text-amber-700 font-bold';
+                          letter = 'A';
+                        } else if (status === 'LICENCIA') {
+                          badge = 'bg-blue-100 text-blue-700 font-bold';
+                          letter = 'L';
+                        }
 
-                      return (
-                        <td
-                          key={wd.day}
-                          onClick={() => toggleAttendance(studentIndex, wd.day)}
-                          className="py-1 px-0.5 text-center border-r border-slate-200 cursor-pointer select-none hover:opacity-75 transition"
-                          title={`Día ${wd.day}: ${status}. Haz clic para cambiar.`}
-                        >
-                          <div className={`w-6 h-6 mx-auto rounded flex items-center justify-center text-[10px] ${badge}`}>
-                            {letter}
-                          </div>
-                        </td>
-                      );
-                    })}
+                        return (
+                          <td
+                            key={wd.day}
+                            onClick={() => toggleAttendance(studentIndex, wd.day)}
+                            className="py-1 px-0.5 text-center border-r border-slate-200 cursor-pointer select-none hover:opacity-75 transition"
+                            title={`Día ${wd.day}: ${status}. Haz clic para cambiar.`}
+                          >
+                            <div className={`w-6 h-6 mx-auto rounded flex items-center justify-center text-[10px] ${badge}`}>
+                              {letter}
+                            </div>
+                          </td>
+                        );
+                      })}
 
-                    {/* Resumen Total */}
-                    <td className="py-2 px-2 text-center font-bold text-emerald-700 bg-emerald-50/40 border-l border-r border-emerald-100">
-                      {stats.p}
-                    </td>
-                    <td className="py-2 px-2 text-center font-bold text-rose-700 bg-rose-50/40 border-r border-rose-100">
-                      {stats.f}
-                    </td>
-                    <td className="py-2 px-2 text-center font-bold text-amber-700 bg-amber-50/40 border-r border-amber-100">
-                      {stats.a}
-                    </td>
-                    <td className="py-2 px-2 text-center font-bold text-blue-700 bg-blue-50/40 border-r border-blue-100">
-                      {stats.l}
-                    </td>
-                    <td className="py-2 px-3 text-center font-black bg-slate-100 text-slate-800">
-                      <span className={stats.percentage >= 80 ? 'text-emerald-700' : 'text-rose-600'}>
-                        {stats.percentage}%
-                      </span>
-                    </td>
-                  </tr>
-                );
-              })}
+                      {/* Resumen Total */}
+                      <td className="py-2 px-2 text-center font-bold text-emerald-700 bg-emerald-50/40 border-l border-r border-emerald-100">
+                        {stats.p}
+                      </td>
+                      <td className="py-2 px-2 text-center font-bold text-rose-700 bg-rose-50/40 border-r border-rose-100">
+                        {stats.f}
+                      </td>
+                      <td className="py-2 px-2 text-center font-bold text-amber-700 bg-amber-50/40 border-r border-amber-100">
+                        {stats.a}
+                      </td>
+                      <td className="py-2 px-2 text-center font-bold text-blue-700 bg-blue-50/40 border-r border-blue-100">
+                        {stats.l}
+                      </td>
+                      <td className="py-2 px-3 text-center font-black bg-slate-100 text-slate-800">
+                        <span className={stats.percentage >= 80 ? 'text-emerald-700' : 'text-rose-600'}>
+                          {stats.percentage}%
+                        </span>
+                      </td>
+                    </tr>
+                  );
+                })
+              )}
             </tbody>
           </table>
         </div>

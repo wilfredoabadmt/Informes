@@ -79,22 +79,54 @@ interface MateriaItem {
 type AsignacionItem = TenantAssignment;
 
 export const AcademicPage: React.FC = () => {
-  const { isMaestro, isDirector, isSuperAdmin, currentInstitutionId, setCurrentInstitutionId } = useAuth();
-  const [institutions, setInstitutions] = useState<TenantInstitution[]>(() => getStoredInstitutions());
+  const { user, isMaestro, isDirector, isSuperAdmin, currentInstitutionId, setCurrentInstitutionId } = useAuth();
+  const [storedInstitutions, setStoredInstitutions] = useState<TenantInstitution[]>(() => getStoredInstitutions());
 
   useEffect(() => {
     const handleUpdate = (e: any) => {
-      if (e.detail && Array.isArray(e.detail)) setInstitutions(e.detail);
+      if (e.detail && Array.isArray(e.detail)) setStoredInstitutions(e.detail);
     };
     window.addEventListener('sigma_institutions_updated', handleUpdate);
     return () => window.removeEventListener('sigma_institutions_updated', handleUpdate);
   }, []);
 
+  const authorizedInstitutions = React.useMemo(() => {
+    if (isSuperAdmin) {
+      return storedInstitutions;
+    }
+    if (user?.institutions && user.institutions.length > 0) {
+      return user.institutions.map((ui) => {
+        const full = storedInstitutions.find(
+          (s) => s.id === (ui.institutionId || ui.id) || s.sie === ui.sie
+        );
+        return (
+          full || {
+            id: ui.institutionId || ui.id || '',
+            sie: ui.sie,
+            nombre: ui.nombre,
+            departamento: (ui as any).departamento || '',
+            provincia: '',
+            municipio: '',
+            distrito: '',
+            tipo: 'FISCAL' as any,
+            nivel: 'INTEGRADO' as any,
+            activo: true,
+            totalMaestrosVinculados: 0,
+          }
+        );
+      });
+    }
+    const current = storedInstitutions.find(
+      (s) => s.id === currentInstitutionId || s.sie === resolveTenantKey(currentInstitutionId)
+    );
+    return current ? [current] : [];
+  }, [isSuperAdmin, user, storedInstitutions, currentInstitutionId]);
+
   const resolvedSie = resolveTenantKey(currentInstitutionId);
   const currentInst =
-    institutions.find((i) => i.id === currentInstitutionId || i.sie === resolvedSie) ||
-    institutions[0];
-  const activeSie = currentInst?.sie || '80730045';
+    authorizedInstitutions.find((i) => i.id === currentInstitutionId || i.sie === resolvedSie) ||
+    authorizedInstitutions[0];
+  const activeSie = currentInst?.sie || resolvedSie || '';
 
   const [tab, setTab] = useState<'cursos' | 'docentes' | 'asignaciones' | 'materias'>('cursos');
   const [feedback, setFeedback] = useState<string | null>(null);
@@ -391,23 +423,25 @@ export const AcademicPage: React.FC = () => {
           </div>
         </div>
 
-        {/* Quick School Selector */}
-        <div className="flex items-center gap-2 bg-slate-800/80 p-2 rounded-xl border border-slate-700">
-          <span className="text-xs font-semibold text-slate-300 whitespace-nowrap pl-2">
-            Gestionar Colegio:
-          </span>
-          <select
-            value={currentInst?.id || currentInstitutionId || institutions[0]?.id}
-            onChange={(e) => setCurrentInstitutionId(e.target.value)}
-            className="bg-slate-900 border border-slate-700 text-emerald-400 text-xs font-bold rounded-lg px-3 py-1.5 focus:outline-none focus:ring-1 focus:ring-emerald-500 cursor-pointer max-w-[260px] truncate"
-          >
-            {institutions.map((i) => (
-              <option key={i.id} value={i.id}>
-                {i.nombre} (SIE: {i.sie})
-              </option>
-            ))}
-          </select>
-        </div>
+        {/* Quick School Selector: solo visible si es Superadmin o tiene múltiples colegios asignados */}
+        {(isSuperAdmin || authorizedInstitutions.length > 1) && (
+          <div className="flex items-center gap-2 bg-slate-800/80 p-2 rounded-xl border border-slate-700">
+            <span className="text-xs font-semibold text-slate-300 whitespace-nowrap pl-2">
+              Gestionar Colegio:
+            </span>
+            <select
+              value={currentInst?.id || currentInstitutionId || authorizedInstitutions[0]?.id}
+              onChange={(e) => setCurrentInstitutionId(e.target.value)}
+              className="bg-slate-900 border border-slate-700 text-emerald-400 text-xs font-bold rounded-lg px-3 py-1.5 focus:outline-none focus:ring-1 focus:ring-emerald-500 cursor-pointer max-w-[260px] truncate"
+            >
+              {authorizedInstitutions.map((i) => (
+                <option key={i.id} value={i.id}>
+                  {i.nombre} (SIE: {i.sie})
+                </option>
+              ))}
+            </select>
+          </div>
+        )}
       </div>
       {/* Header */}
       <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 bg-white p-6 rounded-xl border border-slate-200 shadow-sm">

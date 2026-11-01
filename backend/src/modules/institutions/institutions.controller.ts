@@ -105,12 +105,14 @@ export class InstitutionsController {
   }
 
   @Get()
-  @UseGuards(JwtAuthGuard, CentralAdminGuard)
+  @UseGuards(JwtAuthGuard)
   @ApiBearerAuth()
-  @ApiOperation({ summary: 'Listar Unidades Educativas con filtros y paginación (Nivel 1)' })
-  @ApiResponse({ status: 200, description: 'Listado de instituciones' })
-  async findAll(@Query() query: QueryInstitutionsDto) {
-    return this.institutionsService.findAll(query);
+  @ApiOperation({ summary: 'Listar Unidades Educativas accesibles para el usuario autenticado' })
+  @ApiResponse({ status: 200, description: 'Listado de instituciones autorizadas' })
+  async findAll(@CurrentUser() user: any, @Query() query: QueryInstitutionsDto) {
+    const isCentral =
+      user.globalRole === 'SUPERADMIN' || user.globalRole === 'CENTRAL_ADMIN';
+    return this.institutionsService.findAll(query, user.sub, isCentral);
   }
 
   @Get(':id')

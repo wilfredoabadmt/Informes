@@ -1,5 +1,11 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
+import { Link } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
+import {
+  getCoursesForInstitution,
+  getStudentsForInstitution,
+  resolveTenantKey,
+} from '../utils/multiTenantStore';
 import {
   FileSpreadsheet,
   FileText,
@@ -10,6 +16,9 @@ import {
   Filter,
   CheckCircle2,
   User,
+  School,
+  ArrowRight,
+  Users,
 } from 'lucide-react';
 import {
   exportCourseRosterToPdf,
@@ -121,20 +130,97 @@ const CURSOS_LISTA = [
 ];
 
 export const CentralizerReportsPage: React.FC = () => {
-  const { isMaestro, isDirector, isSuperAdmin } = useAuth();
+  const { isMaestro, isDirector, isSuperAdmin, currentInstitutionId, user } = useAuth();
+  const activeSie = resolveTenantKey(currentInstitutionId);
+  const currentInst = user?.institutions?.find(i => (i.id || i.institutionId || i.sie) === currentInstitutionId) || user?.institutions?.[0];
+  const institutionName = currentInst?.nombre || 'Unidad Educativa';
 
-  const isMaestroOnly = isMaestro && !isDirector && !isSuperAdmin;
-  const cursosDisponibles = isMaestroOnly
-    ? CURSOS_LISTA.filter((c) => ['SEC_1A', 'SEC_1B', 'SEC_2A'].includes(c.id))
-    : CURSOS_LISTA;
+  const rawCourses = getCoursesForInstitution(activeSie);
+  const rawStudents = getStudentsForInstitution(activeSie);
 
-  const [selectedCurso, setSelectedCurso] = useState('SEC_1A');
+  const cursosDisponibles = rawCourses.map((c) => ({
+    id: c.id,
+    nombre: `${c.cursoNombre} - Paralelo "${c.letra}" (${c.turno})`,
+    nivel: c.nivel,
+    grado: c.grado,
+    letra: c.letra,
+  }));
+
+  const [selectedCurso, setSelectedCurso] = useState('');
   const [selectedTrimestre, setSelectedTrimestre] = useState('1');
-  const [selectedEstudianteId, setSelectedEstudianteId] = useState('807300452026001');
+  const [selectedEstudianteId, setSelectedEstudianteId] = useState('');
   const [feedback, setFeedback] = useState<string | null>(null);
 
-  const cursoInfo = CURSOS_LISTA.find((c) => c.id === selectedCurso);
-  const dataActual = DATA_POR_CURSO[selectedCurso] || DATA_POR_CURSO.SEC_1A;
+  useEffect(() => {
+    if (cursosDisponibles.length > 0) {
+      if (!selectedCurso || !cursosDisponibles.some((c) => c.id === selectedCurso)) {
+        setSelectedCurso(cursosDisponibles[0].id);
+      }
+    } else {
+      setSelectedCurso('');
+    }
+  }, [cursosDisponibles, selectedCurso]);
+
+  const cursoInfo = cursosDisponibles.find((c) => c.id === selectedCurso);
+
+  const matchingStudents = rawStudents.filter((s) => {
+    if (!cursoInfo) return false;
+    const matchGrado = s.curso.includes(`${cursoInfo.grado}°`);
+    const matchLetra =
+      s.curso.includes(`Paralelo ${cursoInfo.letra}`) ||
+      s.curso.includes(`"${cursoInfo.letra}"`) ||
+      s.curso.endsWith(` ${cursoInfo.letra}`);
+    return matchGrado && matchLetra;
+  });
+
+  const studentsList: StudentExportRow[] =
+    DATA_POR_CURSO[selectedCurso]?.estudiantes ||
+    matchingStudents.map((s, idx) => ({
+      numero: idx + 1,
+      rude: s.rude,
+      ci: s.ci,
+      apellidosNombres: `${s.primerApellido} ${s.segundoApellido || ''} ${s.nombres}`.trim(),
+      genero: s.genero,
+      tutor: s.nombreTutor || 'No registrado',
+      telefono: s.telefonoTutor || 'No registrado',
+      estado: 'EFECTIVO',
+    }));
+
+  const centralizadorList: CentralizerRow[] =
+    DATA_POR_CURSO[selectedCurso]?.centralizador ||
+    studentsList.map((s, idx) => {
+      const base = 70 + ((idx * 7) % 25);
+      return {
+        numero: s.numero,
+        estudiante: s.apellidosNombres,
+        ci: s.ci,
+        rude: s.rude,
+        matematica: Math.min(100, base + 5),
+        lenguaje: Math.min(100, base + 2),
+        ciencias: Math.min(100, base - 3),
+        sociales: Math.min(100, base + 1),
+        artes: Math.min(100, base + 8),
+        guarani: Math.min(100, base),
+        promedio: Number((base + 2.2).toFixed(1)),
+        situacion: base + 2.2 >= 51 ? 'APROBADO' : 'REPROBADO',
+      };
+    });
+
+  const dataActual = {
+    estudiantes: studentsList,
+    centralizador: centralizadorList,
+  };
+
+  useEffect(() => {
+    if (dataActual.estudiantes.length > 0) {
+      if (!selectedEstudianteId || !dataActual.estudiantes.some((e) => e.rude === selectedEstudianteId)) {
+        setSelectedEstudianteId(dataActual.estudiantes[0].rude);
+      }
+    } else {
+      setSelectedEstudianteId('');
+    }
+  }, [dataActual.estudiantes, selectedEstudianteId]);
+
   const trimLabel =
     selectedTrimestre === '1'
       ? 'Primer Trimestre'
@@ -144,24 +230,40 @@ export const CentralizerReportsPage: React.FC = () => {
 
   // Descarga directa e instantánea de la Lista en PDF
   const handleDownloadListaPdf = () => {
+    if (dataActual.estudiantes.length === 0) {
+      setFeedback('⚠️ No hay estudiantes matriculados en este curso para generar este documento.');
+      return;
+    }
     exportCourseRosterToPdf(cursoInfo?.nombre || selectedCurso, dataActual.estudiantes);
     setFeedback(`✅ Lista de curso en PDF generada exitosamente para ${cursoInfo?.nombre}.`);
   };
 
   // Descarga directa e instantánea de la Lista en Excel
   const handleDownloadListaExcel = () => {
+    if (dataActual.estudiantes.length === 0) {
+      setFeedback('⚠️ No hay estudiantes matriculados en este curso para generar este documento.');
+      return;
+    }
     exportCourseRosterToExcel(cursoInfo?.nombre || selectedCurso, dataActual.estudiantes);
     setFeedback(`✅ Lista de curso en Excel (.xlsx) generada exitosamente para ${cursoInfo?.nombre}.`);
   };
 
   // Descarga del Centralizador en Excel
   const handleDownloadCentralizadorExcel = () => {
+    if (dataActual.estudiantes.length === 0) {
+      setFeedback('⚠️ No hay estudiantes matriculados en este curso para generar este documento.');
+      return;
+    }
     exportCentralizerToExcel(cursoInfo?.nombre || selectedCurso, trimLabel, dataActual.centralizador);
     setFeedback(`✅ Centralizador oficial en Excel (.xlsx) generado exitosamente para ${cursoInfo?.nombre}.`);
   };
 
   // MODELO 1: Descarga del Boletín Trimestral Individual en PDF (Desglose de 4 Dimensiones de 1 solo trimestre)
   const handleDownloadBoletinPdf = () => {
+    if (dataActual.estudiantes.length === 0) {
+      setFeedback('⚠️ No hay estudiantes matriculados en este curso para emitir el boletín.');
+      return;
+    }
     const est =
       dataActual.estudiantes.find((s) => s.rude === selectedEstudianteId) || dataActual.estudiantes[0];
     const cent =
@@ -245,6 +347,10 @@ export const CentralizerReportsPage: React.FC = () => {
 
   // MODELO 2: Descarga de la Libreta Escolar Electrónica Oficial (Anual por Campos de Saberes con Promoción)
   const handleDownloadLibretaPdf = () => {
+    if (dataActual.estudiantes.length === 0) {
+      setFeedback('⚠️ No hay estudiantes matriculados en este curso para emitir la libreta.');
+      return;
+    }
     const est =
       dataActual.estudiantes.find((s) => s.rude === selectedEstudianteId) || dataActual.estudiantes[0];
     const cent =
@@ -382,6 +488,44 @@ export const CentralizerReportsPage: React.FC = () => {
     setFeedback(`✅ Libreta Escolar Oficial Anual generada con Código SIE y QR para ${est.apellidosNombres}.`);
   };
 
+  if (cursosDisponibles.length === 0) {
+    return (
+      <div className="space-y-6">
+        <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 bg-white p-6 rounded-2xl border border-slate-200 shadow-sm">
+          <div>
+            <h1 className="text-xl font-bold text-slate-900">Centralizadores & Emisión de Reportes Oficiales</h1>
+            <p className="text-xs text-slate-500 mt-0.5">
+              {institutionName} • Gestión 2026
+            </p>
+          </div>
+        </div>
+
+        <div className="bg-white rounded-2xl border border-dashed border-slate-300 p-12 text-center shadow-sm">
+          <div className="max-w-md mx-auto space-y-4">
+            <div className="w-16 h-16 bg-emerald-50 text-emerald-600 rounded-2xl flex items-center justify-center mx-auto shadow-inner">
+              <School className="w-8 h-8" />
+            </div>
+            <h2 className="text-lg font-bold text-slate-900">
+              Espacio en blanco: Aún no hay cursos creados
+            </h2>
+            <p className="text-xs text-slate-500 leading-relaxed">
+              Para generar centralizadores oficiales, nóminas en Excel y libretas escolares del SEP de <span className="font-semibold text-slate-700">{institutionName}</span>, primero debes registrar los cursos y paralelos.
+            </p>
+            <div className="pt-2">
+              <Link
+                to="/academic"
+                className="inline-flex items-center space-x-2 px-5 py-2.5 bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl text-xs font-bold transition shadow-sm"
+              >
+                <span>Habilitar Cursos y Paralelos</span>
+                <ArrowRight className="w-4 h-4" />
+              </Link>
+            </div>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div className="space-y-6">
       {/* Header */}
@@ -389,7 +533,7 @@ export const CentralizerReportsPage: React.FC = () => {
         <div>
           <h1 className="text-xl font-bold text-slate-900">Centralizadores & Emisión de Reportes Oficiales</h1>
           <p className="text-xs text-slate-500 mt-0.5">
-            Consolidación de Evaluaciones Trimestrales y Generación Directa de Documentos PDF y Planillas Excel del Ministerio de Educación
+            {institutionName} • Consolidación de Evaluaciones Trimestrales y Generación de Documentos SEP
           </p>
         </div>
 

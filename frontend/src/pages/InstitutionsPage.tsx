@@ -71,6 +71,12 @@ export const InstitutionsPage: React.FC = () => {
   const { isSuperAdmin, setCurrentInstitutionId } = useAuth();
   const navigate = useNavigate();
 
+  useEffect(() => {
+    if (!isSuperAdmin) {
+      navigate('/academic', { replace: true });
+    }
+  }, [isSuperAdmin, navigate]);
+
   const fetchInstitutions = async () => {
     setLoading(true);
     try {

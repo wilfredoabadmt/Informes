@@ -1,5 +1,11 @@
 import React, { useState, useEffect } from 'react';
+import { Link } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
+import {
+  getCoursesForInstitution,
+  getStudentsForInstitution,
+  resolveTenantKey,
+} from '../utils/multiTenantStore';
 import {
   BookOpenCheck,
   Save,
@@ -10,6 +16,8 @@ import {
   FileSpreadsheet,
   Download,
   Filter,
+  ArrowRight,
+  School,
 } from 'lucide-react';
 import { exportGradesToExcel, exportGradesToPdf } from '../utils/exportHelpers';
 import type { GradeExportRow } from '../utils/exportHelpers';
@@ -93,12 +101,14 @@ const ESTUDIANTES_POR_CURSO: Record<string, { rude: string; estudiante: string }
 };
 
 // Generador determinista de notas por curso/materia/trimestre
-function generateInitialRows(cursoId: string, subjectId: string, trim: string): StudentGradeRow[] {
-  const students = ESTUDIANTES_POR_CURSO[cursoId] || ESTUDIANTES_POR_CURSO.SEC_1A;
+function generateRowsForStudents(
+  students: { rude: string; estudiante: string }[],
+  cursoId: string,
+  subjectId: string,
+  trim: string
+): StudentGradeRow[] {
   const trimNum = Number(trim) || 1;
-
-  // Semilla según combinación
-  const seed = cursoId.charCodeAt(0) + subjectId.charCodeAt(0) + trimNum * 7;
+  const seed = (cursoId || 'C').charCodeAt(0) + (subjectId || 'S').charCodeAt(0) + trimNum * 7;
 
   return students.map((s, idx) => {
     const offset = (seed + idx * 13) % 20;
@@ -128,43 +138,95 @@ function generateInitialRows(cursoId: string, subjectId: string, trim: string): 
 }
 
 export const GradesPage: React.FC = () => {
-  const { isMaestro, isDirector, isSuperAdmin } = useAuth();
+  const { isMaestro, isDirector, isSuperAdmin, currentInstitutionId, user } = useAuth();
+  const activeSie = resolveTenantKey(currentInstitutionId);
+  const currentInst = user?.institutions?.find(i => (i.id || i.institutionId || i.sie) === currentInstitutionId) || user?.institutions?.[0];
+  const institutionName = currentInst?.nombre || 'Unidad Educativa';
 
-  // Rol Maestro: Solo ve los cursos y materias que tiene asignados en su carga horaria
+  // Cursos y estudiantes reales habilitados para esta institución activa
+  const rawCourses = getCoursesForInstitution(activeSie);
+  const rawStudents = getStudentsForInstitution(activeSie);
+
+  const cursosVisibles = rawCourses.map((c) => ({
+    id: c.id,
+    nombre: `${c.cursoNombre} - Paralelo "${c.letra}" (${c.turno})`,
+    nivel: c.nivel,
+    grado: c.grado,
+    letra: c.letra,
+  }));
+
   const isMaestroOnly = isMaestro && !isDirector && !isSuperAdmin;
-  const cursosVisibles = isMaestroOnly
-    ? CURSOS_DISPONIBLES.filter((c) => ['SEC_1A', 'SEC_1B', 'SEC_2A'].includes(c.id))
-    : CURSOS_DISPONIBLES;
-
   const asignaturasVisibles = isMaestroOnly
     ? ASIGNATURAS_DISPONIBLES.filter((a) => ['LEN', 'MAT'].includes(a.id))
     : ASIGNATURAS_DISPONIBLES;
 
   // Selectores de Navegación Dinámica
-  const [selectedCurso, setSelectedCurso] = useState('SEC_1A');
+  const [selectedCurso, setSelectedCurso] = useState('');
   const [selectedAsignatura, setSelectedAsignatura] = useState(isMaestroOnly ? 'LEN' : 'MAT');
   const [selectedTrimestre, setSelectedTrimestre] = useState('1');
   const [viewMode, setViewMode] = useState<'summary' | 'detailed'>('summary');
 
-  // Almacén reactivo de planillas por llave: curso_materia_trimestre
+  // Asegurar selección inicial del primer curso si cambia la institución o carga cursos
+  useEffect(() => {
+    if (cursosVisibles.length > 0) {
+      if (!selectedCurso || !cursosVisibles.some((c) => c.id === selectedCurso)) {
+        setSelectedCurso(cursosVisibles[0].id);
+      }
+    } else {
+      setSelectedCurso('');
+    }
+  }, [cursosVisibles, selectedCurso]);
+
+  // Almacén reactivo de planillas por llave: sie_curso_materia_trimestre
   const [gradesStore, setGradesStore] = useState<Record<string, StudentGradeRow[]>>({});
   const [rows, setRows] = useState<StudentGradeRow[]>([]);
   const [saving, setSaving] = useState(false);
   const [message, setMessage] = useState<string | null>(null);
 
-  const currentKey = `${selectedCurso}_${selectedAsignatura}_${selectedTrimestre}`;
+  const currentKey = `${activeSie}_${selectedCurso}_${selectedAsignatura}_${selectedTrimestre}`;
 
   // Carga o regenera las notas cuando cambia cualquier selector
   useEffect(() => {
+    if (!selectedCurso) {
+      setRows([]);
+      return;
+    }
+
     if (gradesStore[currentKey]) {
       setRows(gradesStore[currentKey]);
     } else {
-      const generated = generateInitialRows(selectedCurso, selectedAsignatura, selectedTrimestre);
+      // Buscar estudiantes del curso actual en la institución activa
+      const currentC = rawCourses.find((c) => c.id === selectedCurso);
+      const matchingStudents = rawStudents.filter((s) => {
+        if (!currentC) return false;
+        const matchGrado = s.curso.includes(`${currentC.grado}°`);
+        const matchLetra =
+          s.curso.includes(`Paralelo ${currentC.letra}`) ||
+          s.curso.includes(`"${currentC.letra}"`) ||
+          s.curso.endsWith(` ${currentC.letra}`);
+        return matchGrado && matchLetra;
+      });
+
+      let generated: StudentGradeRow[] = [];
+      if (matchingStudents.length > 0) {
+        const studentList = matchingStudents.map((s) => ({
+          rude: s.rude,
+          estudiante: `${s.primerApellido} ${s.segundoApellido || ''} ${s.nombres}`.trim(),
+        }));
+        generated = generateRowsForStudents(studentList, selectedCurso, selectedAsignatura, selectedTrimestre);
+      } else if (rawStudents.length > 0) {
+        const studentList = rawStudents.slice(0, 8).map((s) => ({
+          rude: s.rude,
+          estudiante: `${s.primerApellido} ${s.segundoApellido || ''} ${s.nombres}`.trim(),
+        }));
+        generated = generateRowsForStudents(studentList, selectedCurso, selectedAsignatura, selectedTrimestre);
+      }
+
       setRows(generated);
       setGradesStore((prev) => ({ ...prev, [currentKey]: generated }));
     }
     setMessage(null);
-  }, [selectedCurso, selectedAsignatura, selectedTrimestre]);
+  }, [selectedCurso, selectedAsignatura, selectedTrimestre, activeSie, currentKey, rawCourses, rawStudents]);
 
   const updateField = (
     index: number,
@@ -282,6 +344,27 @@ export const GradesPage: React.FC = () => {
     );
   };
 
+  if (cursosVisibles.length === 0) {
+    return (
+      <div className="bg-white rounded-2xl border border-slate-200 p-12 text-center shadow-sm max-w-2xl mx-auto my-8">
+        <div className="w-16 h-16 bg-emerald-50 text-emerald-600 rounded-2xl flex items-center justify-center mx-auto mb-4">
+          <BookOpenCheck className="w-8 h-8" />
+        </div>
+        <h2 className="text-xl font-bold text-slate-900">Espacio de Calificaciones en Blanco</h2>
+        <p className="text-xs text-slate-500 max-w-md mx-auto mt-2 leading-relaxed">
+          Esta Unidad Educativa aún no tiene cursos ni paralelos habilitados. Para comenzar a calificar en las 4 dimensiones de la Ley 070 (SER, SABER, HACER, DECIDIR), primero debes crear tus cursos y vincular a tus docentes.
+        </p>
+        <Link
+          to="/academic"
+          className="mt-6 inline-flex items-center space-x-2 px-5 py-2.5 bg-emerald-600 hover:bg-emerald-700 text-white font-bold rounded-xl text-xs shadow-md shadow-emerald-200 transition"
+        >
+          <span>Habilitar Cursos & Docentes</span>
+          <ArrowRight className="w-4 h-4" />
+        </Link>
+      </div>
+    );
+  }
+
   return (
     <div className="space-y-6">
       {/* Header */}
@@ -297,7 +380,7 @@ export const GradesPage: React.FC = () => {
                 : 'Planilla de Evaluación Trimestral'}
             </h1>
             <p className="text-xs text-slate-500">
-              Valoración Integral en SER (10), SABER (35), HACER (35), DECIDIR (10), AUTOEVALUACIÓN (10) y Puntos Extras
+              {institutionName} • Valoración Integral en SER (10), SABER (35), HACER (35), DECIDIR (10), AUTOEVALUACIÓN (10) y Puntos Extras
             </p>
           </div>
         </div>
@@ -514,7 +597,25 @@ export const GradesPage: React.FC = () => {
               </tr>
             </thead>
             <tbody className="divide-y divide-slate-100">
-              {rows.map((row, idx) => {
+              {rows.length === 0 ? (
+                <tr>
+                  <td colSpan={viewMode === 'detailed' ? 12 : 10} className="py-12 text-center text-slate-400">
+                    <div className="flex flex-col items-center justify-center space-y-2">
+                      <School className="w-8 h-8 text-slate-300" />
+                      <span className="font-semibold text-slate-700">No hay estudiantes matriculados en este curso.</span>
+                      <p className="text-xs text-slate-400">Inscribe alumnos en la sección "Estudiantes & Matrícula" para habilitar su planilla de calificaciones.</p>
+                      <Link
+                        to="/students"
+                        className="mt-2 inline-flex items-center space-x-1.5 px-3 py-1.5 bg-emerald-600 hover:bg-emerald-700 text-white rounded-lg text-xs font-bold transition shadow-sm"
+                      >
+                        <span>Matricular Estudiantes</span>
+                        <ArrowRight className="w-3.5 h-3.5" />
+                      </Link>
+                    </div>
+                  </td>
+                </tr>
+              ) : (
+                rows.map((row, idx) => {
                 const total = calculateTotal(row);
                 const isPassing = total >= 51;
                 return (
@@ -673,7 +774,7 @@ export const GradesPage: React.FC = () => {
                     </td>
                   </tr>
                 );
-              })}
+              }))}
             </tbody>
           </table>
         </div>

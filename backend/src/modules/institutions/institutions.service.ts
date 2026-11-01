@@ -89,13 +89,24 @@ export class InstitutionsService {
 
   /**
    * Consulta el padrón de instituciones con paginación y filtros.
+   * Aplica aislamiento multi-tenant estricto: usuarios no centrales sólo ven sus colegios vinculados.
    */
-  async findAll(query: QueryInstitutionsDto) {
+  async findAll(query: QueryInstitutionsDto, userId?: string, isCentralAdmin: boolean = true) {
     const page = Math.max(1, query.page || 1);
     const limit = Math.min(100, Math.max(1, query.limit || 20));
     const skip = (page - 1) * limit;
 
     const where: Prisma.UnidadEducativaWhereInput = {};
+
+    // Aislamiento Multi-Tenant: Si el usuario no es Superadmin ni Central Admin, solo ve sus instituciones
+    if (!isCentralAdmin && userId) {
+      where.vinculaciones = {
+        some: {
+          usuarioId: userId,
+          estado: EstadoVinculacion.ACTIVO,
+        },
+      };
+    }
 
     if (query.departamento) {
       where.departamento = { equals: query.departamento, mode: 'insensitive' };

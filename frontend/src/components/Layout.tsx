@@ -116,20 +116,57 @@ export const Layout: React.FC = () => {
     ];
   }
 
+  // Instituciones estrictamente accesibles para el usuario actual:
+  // Si es Superadmin o Administrador Central -> Ve todas las instituciones registradas.
+  // Si es Director o Maestro -> ÚNICAMENTE ve las instituciones a las que pertenece (user.institutions o /institutions del backend).
+  const authorizedInstitutions = React.useMemo(() => {
+    if (isSuperAdmin) {
+      return storedInstitutions;
+    }
+
+    if (user?.institutions && user.institutions.length > 0) {
+      return user.institutions.map((ui) => {
+        const full = storedInstitutions.find(
+          (s) => s.id === (ui.institutionId || ui.id) || s.sie === ui.sie
+        );
+        return (
+          full || {
+            id: ui.institutionId || ui.id || '',
+            sie: ui.sie,
+            nombre: ui.nombre,
+            departamento: (ui as any).departamento || '',
+            provincia: '',
+            municipio: '',
+            distrito: '',
+            tipo: 'FISCAL' as any,
+            nivel: 'INTEGRADO' as any,
+            activo: true,
+            totalMaestrosVinculados: 0,
+          }
+        );
+      });
+    }
+
+    const current = storedInstitutions.find(
+      (s) => s.id === currentInstitutionId || s.sie === resolveTenantKey(currentInstitutionId)
+    );
+    return current ? [current] : [];
+  }, [isSuperAdmin, user, storedInstitutions, currentInstitutionId]);
+
   // Resolver institución activa alineando UUID con código SIE
   const resolvedSie = resolveTenantKey(currentInstitutionId);
   const currentInstitution =
-    storedInstitutions.find((i) => i.id === currentInstitutionId || i.sie === resolvedSie) ||
-    storedInstitutions[0];
+    authorizedInstitutions.find((i) => i.id === currentInstitutionId || i.sie === resolvedSie) ||
+    authorizedInstitutions[0];
 
-  const activeInstitutionIdValue = currentInstitution?.id || currentInstitutionId || storedInstitutions[0]?.id;
+  const activeInstitutionIdValue = currentInstitution?.id || currentInstitutionId || authorizedInstitutions[0]?.id;
 
-  // Si currentInstitutionId era un ID obsoleto o inexistente, normalizarlo
+  // Si currentInstitutionId era un ID obsoleto o inexistente para este usuario, normalizarlo
   useEffect(() => {
-    if (currentInstitution && currentInstitutionId !== currentInstitution.id && !storedInstitutions.some((i) => i.id === currentInstitutionId)) {
+    if (currentInstitution && currentInstitutionId !== currentInstitution.id && !authorizedInstitutions.some((i) => i.id === currentInstitutionId)) {
       setCurrentInstitutionId(currentInstitution.id);
     }
-  }, [currentInstitution, currentInstitutionId, storedInstitutions, setCurrentInstitutionId]);
+  }, [currentInstitution, currentInstitutionId, authorizedInstitutions, setCurrentInstitutionId]);
 
   return (
     <div className="min-h-screen flex flex-col bg-slate-50">
@@ -158,8 +195,8 @@ export const Layout: React.FC = () => {
           </div>
 
           <div className="flex items-center space-x-4">
-            {/* Institution Switcher (Superadmin o usuarios vinculados a múltiples colegios) */}
-            {(isSuperAdmin || (user?.institutions && user.institutions.length > 0) || storedInstitutions.length > 0) && (
+            {/* Si es Superadmin o tiene múltiples colegios asignados, mostrar selector */}
+            {(isSuperAdmin || authorizedInstitutions.length > 1) ? (
               <div className="relative hidden md:block">
                 <div className="flex items-center space-x-2 bg-slate-100 hover:bg-slate-200 py-1.5 px-3 rounded-lg text-xs font-medium text-slate-700 transition">
                   <Building2 className="w-4 h-4 text-emerald-600" />
@@ -168,7 +205,7 @@ export const Layout: React.FC = () => {
                     onChange={(e) => setCurrentInstitutionId(e.target.value)}
                     className="bg-transparent border-none text-slate-800 text-xs font-bold focus:outline-none cursor-pointer max-w-[260px] truncate"
                   >
-                    {storedInstitutions.map((inst) => (
+                    {authorizedInstitutions.map((inst) => (
                       <option key={inst.id} value={inst.id}>
                         SIE: {inst.sie} - {inst.nombre}
                       </option>
@@ -177,7 +214,15 @@ export const Layout: React.FC = () => {
                   <ChevronDown className="w-3.5 h-3.5 text-slate-500 pointer-events-none" />
                 </div>
               </div>
-            )}
+            ) : currentInstitution ? (
+              /* Si tiene un único colegio (ej. director SaaS), mostrar badge institucional estático */
+              <div className="hidden md:flex items-center space-x-2 bg-emerald-50 border border-emerald-200 py-1.5 px-3 rounded-lg text-xs font-bold text-emerald-900">
+                <School className="w-4 h-4 text-emerald-600" />
+                <span className="max-w-[280px] truncate">
+                  SIE: {currentInstitution.sie} - {currentInstitution.nombre}
+                </span>
+              </div>
+            ) : null}
 
             {/* User profile badge with descriptive translated role */}
             <div className="flex items-center space-x-3 pl-3 border-l border-slate-200">

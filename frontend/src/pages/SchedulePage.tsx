@@ -1,5 +1,7 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
+import { Link } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
+import { getCoursesForInstitution, resolveTenantKey } from '../utils/multiTenantStore';
 import * as XLSX from 'xlsx';
 import {
   Clock,
@@ -17,6 +19,8 @@ import {
   Award,
   Sparkles,
   User,
+  School,
+  ArrowRight,
 } from 'lucide-react';
 
 interface SlotDetail {
@@ -257,31 +261,59 @@ const SCHEDULE_MAESTRO_PERSONAL: ScheduleSlot[] = [
   },
 ];
 
+const EMPTY_SCHEDULE: ScheduleSlot[] = [
+  { period: 1, timeRange: '08:00 - 08:45', days: {} },
+  { period: 2, timeRange: '08:45 - 09:30', days: {} },
+  { period: 3, timeRange: '09:30 - 10:15', days: {} },
+  { period: 0, timeRange: '10:15 - 10:45', isRecess: true, days: {} },
+  { period: 4, timeRange: '10:45 - 11:30', days: {} },
+  { period: 5, timeRange: '11:30 - 12:15', days: {} },
+  { period: 6, timeRange: '12:15 - 13:00', days: {} },
+];
+
 export const SchedulePage: React.FC = () => {
-  const { isMaestro, isDirector, isSuperAdmin } = useAuth();
+  const { isMaestro, isDirector, isSuperAdmin, currentInstitutionId, user } = useAuth();
+  const activeSie = resolveTenantKey(currentInstitutionId);
+  const currentInst = user?.institutions?.find(i => (i.id || i.institutionId || i.sie) === currentInstitutionId) || user?.institutions?.[0];
+  const institutionName = currentInst?.nombre || 'Unidad Educativa';
+
+  const rawCourses = getCoursesForInstitution(activeSie);
+  const cursosDisponibles = rawCourses.map((c) => ({
+    id: c.id,
+    nombre: `${c.cursoNombre} - Paralelo "${c.letra}"`,
+    turno: c.turno,
+    aula: `Aula ${c.grado}0${c.letra.charCodeAt(0) - 64}`,
+  }));
 
   // Vista: 'my_schedule' (Mi Horario Docente) vs 'course' (Horario por Curso y Paralelo)
   const [viewMode, setViewMode] = useState<'my_schedule' | 'course'>(
     isMaestro ? 'my_schedule' : 'course'
   );
-  const [selectedCursoId, setSelectedCursoId] = useState<string>('SEC_1A');
+  const [selectedCursoId, setSelectedCursoId] = useState<string>('');
 
-  const isMaestroOnly = isMaestro && !isDirector && !isSuperAdmin;
-  const cursosDisponibles = isMaestroOnly
-    ? CURSOS_SCHEDULE.filter((c) => ['SEC_1A', 'SEC_1B', 'SEC_2A'].includes(c.id))
-    : CURSOS_SCHEDULE;
+  useEffect(() => {
+    if (cursosDisponibles.length > 0) {
+      if (!selectedCursoId || !cursosDisponibles.some((c) => c.id === selectedCursoId)) {
+        setSelectedCursoId(cursosDisponibles[0].id);
+      }
+    } else {
+      setSelectedCursoId('');
+    }
+  }, [cursosDisponibles, selectedCursoId]);
 
   // Selección de horario según la vista y el curso seleccionado
   const activeSlots: ScheduleSlot[] =
-    viewMode === 'my_schedule'
-      ? SCHEDULE_MAESTRO_PERSONAL
-      : selectedCursoId === 'SEC_1B'
-      ? SCHEDULE_SEC_1B
-      : selectedCursoId === 'SEC_2A'
-      ? SCHEDULE_SEC_2A
-      : SCHEDULE_SEC_1A;
+    activeSie === '80730045'
+      ? viewMode === 'my_schedule'
+        ? SCHEDULE_MAESTRO_PERSONAL
+        : selectedCursoId === 'SEC_1B'
+        ? SCHEDULE_SEC_1B
+        : selectedCursoId === 'SEC_2A'
+        ? SCHEDULE_SEC_2A
+        : SCHEDULE_SEC_1A
+      : EMPTY_SCHEDULE;
 
-  const currentCurso = CURSOS_SCHEDULE.find((c) => c.id === selectedCursoId);
+  const currentCurso = cursosDisponibles.find((c) => c.id === selectedCursoId);
 
   // Exportar Horario a Excel
   const handleExportExcel = () => {
@@ -289,12 +321,12 @@ export const SchedulePage: React.FC = () => {
 
     const titulo =
       viewMode === 'my_schedule'
-        ? 'HORARIO DOCENTE SEMANAL - PROF. CARLOS MAMANI CONDORI'
-        : `HORARIO SEMANAL OFICIAL - ${currentCurso?.nombre.toUpperCase()}`;
+        ? `HORARIO DOCENTE SEMANAL - ${user?.persona?.nombres || 'PROFESOR'} ${user?.persona?.primerApellido || ''}`
+        : `HORARIO SEMANAL OFICIAL - ${(currentCurso?.nombre || selectedCursoId).toUpperCase()}`;
 
     const wsData: any[][] = [
       ['ESTADO PLURINACIONAL DE BOLIVIA - MINISTERIO DE EDUCACIÓN'],
-      ['UNIDAD EDUCATIVA FRANZ TAMAYO (SIE: 80730045)'],
+      [`${institutionName.toUpperCase()} (SIE: ${activeSie})`],
       [titulo],
       [''],
       ['Período / Hora', 'Lunes', 'Martes', 'Miércoles', 'Jueves', 'Viernes'],
@@ -326,8 +358,53 @@ export const SchedulePage: React.FC = () => {
     ];
 
     XLSX.utils.book_append_sheet(wb, ws, 'Horario');
-    XLSX.writeFile(wb, `Horario_${viewMode === 'my_schedule' ? 'Docente_Mamani' : selectedCursoId}_2026.xlsx`);
+    XLSX.writeFile(wb, `Horario_${viewMode === 'my_schedule' ? 'Docente' : selectedCursoId}_2026.xlsx`);
   };
+
+  if (cursosDisponibles.length === 0) {
+    return (
+      <div className="space-y-6">
+        <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 bg-white p-6 rounded-2xl border border-slate-200 shadow-sm">
+          <div className="flex items-center space-x-3">
+            <div className="p-3 bg-emerald-50 rounded-xl text-emerald-700">
+              <Clock className="w-7 h-7" />
+            </div>
+            <div>
+              <h1 className="text-xl font-bold text-slate-900 tracking-tight">
+                Gestión de Horarios Escolares y Distribución de Aulas
+              </h1>
+              <p className="text-xs text-slate-500">
+                {institutionName} • Gestión 2026
+              </p>
+            </div>
+          </div>
+        </div>
+
+        <div className="bg-white rounded-2xl border border-dashed border-slate-300 p-12 text-center shadow-sm">
+          <div className="max-w-md mx-auto space-y-4">
+            <div className="w-16 h-16 bg-emerald-50 text-emerald-600 rounded-2xl flex items-center justify-center mx-auto shadow-inner">
+              <School className="w-8 h-8" />
+            </div>
+            <h2 className="text-lg font-bold text-slate-900">
+              Espacio en blanco: Aún no hay cursos creados
+            </h2>
+            <p className="text-xs text-slate-500 leading-relaxed">
+              Para organizar los horarios semanales y asignación de aulas de <span className="font-semibold text-slate-700">{institutionName}</span>, primero debes registrar los cursos y paralelos.
+            </p>
+            <div className="pt-2">
+              <Link
+                to="/academic"
+                className="inline-flex items-center space-x-2 px-5 py-2.5 bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl text-xs font-bold transition shadow-sm"
+              >
+                <span>Habilitar Cursos y Paralelos</span>
+                <ArrowRight className="w-4 h-4" />
+              </Link>
+            </div>
+          </div>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="space-y-6">
@@ -345,8 +422,8 @@ export const SchedulePage: React.FC = () => {
             </h1>
             <p className="text-xs text-slate-500">
               {viewMode === 'my_schedule'
-                ? 'Prof. Carlos Mamani Condori • 16 Horas Pedagógicas Semanales Asignadas (Gestión 2026)'
-                : `${currentCurso?.nombre} • Unidad Educativa Franz Tamayo (SIE 80730045)`}
+                ? `${user?.persona?.nombres || 'Docente'} ${user?.persona?.primerApellido || ''} • Horas Pedagógicas Semanales Asignadas (${institutionName})`
+                : `${currentCurso?.nombre || 'Seleccione un curso'} • ${institutionName} (SIE ${activeSie})`}
             </p>
           </div>
         </div>

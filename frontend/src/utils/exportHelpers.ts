@@ -2,6 +2,48 @@ import * as XLSX from 'xlsx';
 import jsPDF from 'jspdf';
 import autoTable from 'jspdf-autotable';
 
+export function getActiveInstitutionInfo(): { nombre: string; sie: string; distrito: string; depto: string } {
+  try {
+    const rawUser = typeof window !== 'undefined' ? localStorage.getItem('user') : null;
+    const currentId = typeof window !== 'undefined' ? localStorage.getItem('currentInstitutionId') : null;
+    if (rawUser) {
+      const user = JSON.parse(rawUser);
+      if (user.institutions && user.institutions.length > 0) {
+        const found = user.institutions.find((i: any) => (i.id || i.institutionId || i.sie) === currentId) || user.institutions[0];
+        if (found) {
+          return {
+            nombre: found.nombre || 'Unidad Educativa',
+            sie: found.sie || '80730045',
+            distrito: found.distrito || 'La Paz 1',
+            depto: found.departamento || 'La Paz',
+          };
+        }
+      }
+    }
+    const rawInsts = typeof window !== 'undefined' ? localStorage.getItem('sigma_institutions') : null;
+    if (rawInsts) {
+      const insts = JSON.parse(rawInsts);
+      const found = insts.find((i: any) => (i.id || i.sie) === currentId) || insts[0];
+      if (found) {
+        return {
+          nombre: found.nombre || 'Unidad Educativa',
+          sie: found.sie || '80730045',
+          distrito: found.distrito || 'La Paz 1',
+          depto: found.departamento || 'La Paz',
+        };
+      }
+    }
+  } catch (e) {
+    // fallback
+  }
+  return {
+    nombre: 'Unidad Educativa Franz Tamayo',
+    sie: '80730045',
+    distrito: 'La Paz 1',
+    depto: 'La Paz',
+  };
+}
+
 export interface GradeExportRow {
   rude: string;
   estudiante: string;
@@ -51,6 +93,7 @@ export function exportGradesToExcel(
   trimestre: string,
   rows: GradeExportRow[]
 ) {
+  const instInfo = getActiveInstitutionInfo();
   const wb = XLSX.utils.book_new();
 
   const wsData: any[][] = [
@@ -58,7 +101,7 @@ export function exportGradesToExcel(
     ['SISTEMA INTEGRAL DE REGISTRO Y GESTIÓN DE MAESTROS (SIGMA - SEP)'],
     ['PLANILLA DE VALORACIÓN CUALICUANTITATIVA TRIMESTRAL'],
     [''],
-    ['Unidad Educativa:', 'Franz Tamayo (SIE: 80730045)', 'Gestión Escolar:', '2026'],
+    ['Unidad Educativa:', `${instInfo.nombre} (SIE: ${instInfo.sie})`, 'Gestión Escolar:', '2026'],
     ['Curso y Paralelo:', curso, 'Trimestre:', trimestre],
     ['Asignatura / Campo:', asignatura, 'Fecha de Emisión:', new Date().toLocaleDateString('es-BO')],
     [''],
@@ -136,6 +179,7 @@ export function exportGradesToPdf(
   trimestre: string,
   rows: GradeExportRow[]
 ) {
+  const instInfo = getActiveInstitutionInfo();
   const doc = new jsPDF({ orientation: 'landscape', unit: 'pt', format: 'letter' });
 
   // Tricolor Boliviano
@@ -159,7 +203,7 @@ export function exportGradesToPdf(
   doc.setFont('helvetica', 'bold');
   doc.setFontSize(9);
   doc.setTextColor(40, 45, 55);
-  doc.text(`Unidad Educativa: Franz Tamayo (SIE: 80730045)`, 40, 80);
+  doc.text(`Unidad Educativa: ${instInfo.nombre} (SIE: ${instInfo.sie})`, 40, 80);
   doc.text(`Curso y Paralelo: ${curso}`, 40, 95);
   doc.text(`Asignatura: ${asignatura}`, 380, 80);
   doc.text(`Trimestre: ${trimestre} | Gestión 2026`, 380, 95);
@@ -267,11 +311,12 @@ export function exportCourseRosterToExcel(
   curso: string,
   students: StudentExportRow[]
 ) {
+  const instInfo = getActiveInstitutionInfo();
   const wb = XLSX.utils.book_new();
 
   const wsData: any[][] = [
     ['ESTADO PLURINACIONAL DE BOLIVIA - MINISTERIO DE EDUCACIÓN'],
-    ['UNIDAD EDUCATIVA FRANZ TAMAYO (SIE: 80730045)'],
+    [`${instInfo.nombre.toUpperCase()} (SIE: ${instInfo.sie})`],
     ['NÓMINA OFICIAL DE ESTUDIANTES MATRICULADOS - GESTIÓN 2026'],
     [''],
     ['Curso y Paralelo:', curso, 'Fecha de Emisión:', new Date().toLocaleDateString('es-BO')],
@@ -316,6 +361,7 @@ export function exportCourseRosterToPdf(
   curso: string,
   students: StudentExportRow[]
 ) {
+  const instInfo = getActiveInstitutionInfo();
   const doc = new jsPDF({ orientation: 'portrait', unit: 'pt', format: 'letter' });
 
   // Tricolor
@@ -329,7 +375,7 @@ export function exportCourseRosterToPdf(
   doc.setFont('helvetica', 'bold');
   doc.setFontSize(12);
   doc.setTextColor(24, 30, 40);
-  doc.text('UNIDAD EDUCATIVA FRANZ TAMAYO (SIE: 80730045)', 40, 50);
+  doc.text(`${instInfo.nombre.toUpperCase()} (SIE: ${instInfo.sie})`, 40, 50);
 
   doc.setFontSize(9);
   doc.setFont('helvetica', 'normal');
@@ -398,11 +444,12 @@ export function exportCentralizerToExcel(
   trimestre: string,
   rows: CentralizerRow[]
 ) {
+  const instInfo = getActiveInstitutionInfo();
   const wb = XLSX.utils.book_new();
 
   const wsData: any[][] = [
     ['ESTADO PLURINACIONAL DE BOLIVIA - MINISTERIO DE EDUCACIÓN'],
-    ['UNIDAD EDUCATIVA FRANZ TAMAYO (SIE: 80730045)'],
+    [`${instInfo.nombre.toUpperCase()} (SIE: ${instInfo.sie})`],
     ['CENTRALIZADOR CONSOLIDADO DE CALIFICACIONES - GESTIÓN 2026'],
     [''],
     ['Curso y Paralelo:', curso, 'Trimestre:', trimestre],
@@ -485,6 +532,7 @@ export function exportBulletinPdf(
   materias: { nombre: string; ser: number; saber: number; hacer: number; decidir: number; auto: number; extras: number; total: number }[],
   valoracionCualitativa?: string
 ) {
+  const instInfo = getActiveInstitutionInfo();
   const doc = new jsPDF({ orientation: 'portrait', unit: 'pt', format: 'letter' });
 
   // Tricolor Boliviano
@@ -504,7 +552,7 @@ export function exportBulletinPdf(
   doc.setFont('helvetica', 'normal');
   doc.setTextColor(80, 90, 100);
   doc.text('SUBSISTEMA DE EDUCACIÓN REGULAR • VALORACIÓN CUALICUANTITATIVA POR DIMENSIONES (LEY 070)', 40, 64);
-  doc.text('UNIDAD EDUCATIVA FRANZ TAMAYO (SIE: 80730045) • DISTRITO LA PAZ 1 • GESTIÓN 2026', 40, 76);
+  doc.text(`${instInfo.nombre.toUpperCase()} (SIE: ${instInfo.sie}) • DISTRITO ${instInfo.distrito.toUpperCase()} • GESTIÓN 2026`, 40, 76);
 
   // Ficha del Estudiante
   doc.setFillColor(241, 245, 249);
@@ -631,6 +679,7 @@ export function exportSchoolReportCardPdf(
   promedioAnualGeneral: number,
   estadoPromocion: 'PROMOVIDO(A) AL SIGUIENTE AÑO DE ESCOLARIDAD' | 'RETENIDO(A) EN EL AÑO DE ESCOLARIDAD'
 ) {
+  const instInfo = getActiveInstitutionInfo();
   const doc = new jsPDF({ orientation: 'portrait', unit: 'pt', format: 'letter' });
 
   // Tricolor Boliviano Superior
@@ -669,9 +718,9 @@ export function exportSchoolReportCardPdf(
   doc.text(`CÓDIGO RUDE: ${rude}  |  C.I.: ${ci}`, 50, 112);
   doc.text(`AÑO DE ESCOLARIDAD: ${curso}`, 50, 126);
 
-  doc.text(`UNIDAD EDUCATIVA: FRANZ TAMAYO`, 310, 98);
-  doc.text(`CÓDIGO SIE: 80730045  |  DISTRITO: LA PAZ 1`, 310, 112);
-  doc.text(`DEPARTAMENTO: LA PAZ  |  GESTIÓN: 2026`, 310, 126);
+  doc.text(`UNIDAD EDUCATIVA: ${instInfo.nombre.toUpperCase()}`, 310, 98);
+  doc.text(`CÓDIGO SIE: ${instInfo.sie}  |  DISTRITO: ${instInfo.distrito.toUpperCase()}`, 310, 112);
+  doc.text(`DEPARTAMENTO: ${instInfo.depto.toUpperCase()}  |  GESTIÓN: 2026`, 310, 126);
 
   // Construcción de la tabla jerárquica con Campos de Saberes
   const tableBody: any[][] = [];
@@ -818,6 +867,7 @@ export function exportParentalCitationPdf(
   horaCita: string,
   maestroEmisor: string
 ) {
+  const instInfo = getActiveInstitutionInfo();
   const doc = new jsPDF({ orientation: 'portrait', unit: 'pt', format: 'letter' });
 
   // Tricolor
@@ -836,7 +886,7 @@ export function exportParentalCitationPdf(
   doc.setFontSize(9);
   doc.setFont('helvetica', 'normal');
   doc.setTextColor(80, 90, 100);
-  doc.text('UNIDAD EDUCATIVA FRANZ TAMAYO (SIE: 80730045) • SEGUIMIENTO Y KARDEX DISCIPLINARIO', 40, 70);
+  doc.text(`${instInfo.nombre.toUpperCase()} (SIE: ${instInfo.sie}) • SEGUIMIENTO Y KARDEX DISCIPLINARIO`, 40, 70);
 
   // Recuadro de Cita
   doc.setFillColor(254, 242, 242); // Alerta suave
@@ -857,7 +907,7 @@ export function exportParentalCitationPdf(
   doc.setFont('helvetica', 'normal');
   doc.setFontSize(9.5);
   doc.setTextColor(30, 41, 59);
-  const cuerpo = `Por intermedio de la presente, la Dirección y el plantel docente de la Unidad Educativa "Franz Tamayo" convocan a usted con carácter de URGENCIA Y OBLIGATORIO a presentarse en las instalaciones del establecimiento educativo para tratar asuntos concernientes al rendimiento académico y seguimiento disciplinario de su hijo(a).`;
+  const cuerpo = `Por intermedio de la presente, la Dirección y el plantel docente de la Unidad Educativa "${instInfo.nombre}" convocan a usted con carácter de URGENCIA Y OBLIGATORIO a presentarse en las instalaciones del establecimiento educativo para tratar asuntos concernientes al rendimiento académico y seguimiento disciplinario de su hijo(a).`;
   doc.text(doc.splitTextToSize(cuerpo, 520), 40, 175);
 
   // Fecha y hora convocada
@@ -894,7 +944,7 @@ export function exportParentalCitationPdf(
   doc.text('Docente / Tutor de Curso', 85, firmasY + 22);
 
   doc.line(240, firmasY, 370, firmasY);
-  doc.text('Dirección U.E. Franz Tamayo', 250, firmasY + 12);
+  doc.text(`Dirección ${instInfo.nombre}`, 250, firmasY + 12);
   doc.text('Sello Institucional', 275, firmasY + 22);
 
   doc.line(400, firmasY, 530, firmasY);
