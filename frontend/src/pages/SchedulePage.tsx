@@ -307,10 +307,10 @@ export const SchedulePage: React.FC = () => {
       ? viewMode === 'my_schedule'
         ? SCHEDULE_MAESTRO_PERSONAL
         : selectedCursoId === 'SEC_1B'
-        ? SCHEDULE_SEC_1B
-        : selectedCursoId === 'SEC_2A'
-        ? SCHEDULE_SEC_2A
-        : SCHEDULE_SEC_1A
+          ? SCHEDULE_SEC_1B
+          : selectedCursoId === 'SEC_2A'
+            ? SCHEDULE_SEC_2A
+            : SCHEDULE_SEC_1A
       : EMPTY_SCHEDULE;
 
   const currentCurso = cursosDisponibles.find((c) => c.id === selectedCursoId);
@@ -456,22 +456,20 @@ export const SchedulePage: React.FC = () => {
           <div className="flex space-x-1.5">
             <button
               onClick={() => setViewMode('my_schedule')}
-              className={`flex-1 py-2 px-2 text-xs font-bold rounded-xl transition cursor-pointer flex items-center justify-center space-x-1 ${
-                viewMode === 'my_schedule'
+              className={`flex-1 py-2 px-2 text-xs font-bold rounded-xl transition cursor-pointer flex items-center justify-center space-x-1 ${viewMode === 'my_schedule'
                   ? 'bg-emerald-600 text-white shadow-sm'
                   : 'bg-slate-100 text-slate-600 hover:bg-slate-200'
-              }`}
+                }`}
             >
               <User className="w-3.5 h-3.5" />
               <span>Mi Horario Docente</span>
             </button>
             <button
               onClick={() => setViewMode('course')}
-              className={`flex-1 py-2 px-2 text-xs font-bold rounded-xl transition cursor-pointer flex items-center justify-center space-x-1 ${
-                viewMode === 'course'
+              className={`flex-1 py-2 px-2 text-xs font-bold rounded-xl transition cursor-pointer flex items-center justify-center space-x-1 ${viewMode === 'course'
                   ? 'bg-emerald-600 text-white shadow-sm'
                   : 'bg-slate-100 text-slate-600 hover:bg-slate-200'
-              }`}
+                }`}
             >
               <Building2 className="w-3.5 h-3.5" />
               <span>Por Curso y Paralelo</span>
@@ -586,11 +584,10 @@ export const SchedulePage: React.FC = () => {
                       return (
                         <td key={day} className="py-2 px-2 border-r border-slate-200 align-top">
                           <div
-                            className={`p-2.5 rounded-xl border transition shadow-xs ${
-                              detail.isMine
+                            className={`p-2.5 rounded-xl border transition shadow-xs ${detail.isMine
                                 ? 'bg-emerald-50 border-emerald-400 text-emerald-950 ring-2 ring-emerald-500/20'
                                 : detail.color
-                            }`}
+                              }`}
                           >
                             <div className="flex items-start justify-between">
                               <span className="font-extrabold text-xs block leading-tight">
