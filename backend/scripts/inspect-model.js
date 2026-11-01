@@ -36,3 +36,4 @@ function inspectSheet(sheetName, maxRows = 25, maxCols = 15) {
     inspectSheet(s, 20, 12);
   }
 });
+

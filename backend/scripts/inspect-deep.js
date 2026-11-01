@@ -19,3 +19,4 @@ function inspectHeaders(sheetName) {
 }
 
 ['1D', 'CENTRALIZADOR_1', 'KARDEX', 'COTEJOS', 'HOR'].forEach(s => inspectHeaders(s));
+
