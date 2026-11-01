@@ -13,10 +13,13 @@ export interface User {
     segundoApellido?: string;
   };
   institutions?: Array<{
-    id: string;
+    id?: string;
+    institutionId?: string;
     sie: string;
     nombre: string;
-    rol: string;
+    rol?: string;
+    role?: string;
+    cargoOficial?: string;
   }>;
 }
 
@@ -70,9 +73,11 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     setUser(fullUser);
 
     if (institutions && institutions.length > 0) {
-      const defaultInst = institutions[0].id;
-      localStorage.setItem('currentInstitutionId', defaultInst);
-      setCurrentInstitutionId(defaultInst);
+      const defaultInst = institutions[0].institutionId || institutions[0].id;
+      if (defaultInst) {
+        localStorage.setItem('currentInstitutionId', defaultInst);
+        setCurrentInstitutionId(defaultInst);
+      }
     }
   };
 
@@ -118,3 +123,4 @@ export const useAuth = () => {
   }
   return context;
 };
+

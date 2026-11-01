@@ -34,10 +34,10 @@ export const LoginPage: React.FC = () => {
       setIdentifier('admin@minedu.gob.bo');
       setPassword('Bolivia2026!');
     } else if (userType === 'directora') {
-      setIdentifier('directora@franztamayo.edu.bo');
+      setIdentifier('elena.flores@minedu.gob.bo');
       setPassword('Bolivia2026!');
     } else if (userType === 'maestro') {
-      setIdentifier('carlos.rodriguez@minedu.gob.bo');
+      setIdentifier('carlos.mamani@minedu.gob.bo');
       setPassword('Bolivia2026!');
     }
   };
@@ -161,3 +161,4 @@ export const LoginPage: React.FC = () => {
     </div>
   );
 };
+

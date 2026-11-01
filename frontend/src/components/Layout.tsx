@@ -28,7 +28,9 @@ export const Layout: React.FC = () => {
     { label: 'Auditoría del Sistema', path: '/audit', icon: ShieldCheck },
   ];
 
-  const currentInstitution = user?.institutions?.find((i) => i.id === currentInstitutionId);
+  const currentInstitution = user?.institutions?.find(
+    (i) => (i.institutionId || i.id) === currentInstitutionId
+  );
 
   return (
     <div className="min-h-screen flex flex-col bg-slate-50">
@@ -67,11 +69,15 @@ export const Layout: React.FC = () => {
                     onChange={(e) => setCurrentInstitutionId(e.target.value)}
                     className="bg-transparent border-none text-slate-800 text-xs font-semibold focus:outline-none cursor-pointer"
                   >
-                    {user.institutions.map((inst) => (
-                      <option key={inst.id} value={inst.id}>
-                        SIE: {inst.sie} - {inst.nombre} ({inst.rol})
-                      </option>
-                    ))}
+                    {user.institutions.map((inst) => {
+                      const instId = inst.institutionId || inst.id;
+                      const instRol = inst.role || inst.rol;
+                      return (
+                        <option key={instId} value={instId}>
+                          SIE: {inst.sie} - {inst.nombre} ({instRol})
+                        </option>
+                      );
+                    })}
                   </select>
                   <ChevronDown className="w-3.5 h-3.5 text-slate-500 pointer-events-none" />
                 </div>
@@ -153,3 +159,4 @@ export const Layout: React.FC = () => {
     </div>
   );
 };
+
