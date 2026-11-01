@@ -293,3 +293,4 @@ export const GradesPage: React.FC = () => {
     </div>
   );
 };
+

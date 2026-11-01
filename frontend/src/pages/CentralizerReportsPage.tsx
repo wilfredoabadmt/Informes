@@ -181,3 +181,4 @@ export const CentralizerReportsPage: React.FC = () => {
     </div>
   );
 };
+
