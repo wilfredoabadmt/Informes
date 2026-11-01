@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useAuth } from '../context/AuthContext';
 import { formatNivelEducativo, formatCampoSaberes } from '../utils/formatters';
 import {
@@ -22,7 +22,20 @@ import {
   Search,
   School,
   FileCheck,
+  Building2,
 } from 'lucide-react';
+import {
+  getCoursesForInstitution,
+  saveCoursesForInstitution,
+  getTeachersForInstitution,
+  saveTeachersForInstitution,
+  getAssignmentsForInstitution,
+  saveAssignmentsForInstitution,
+  getStoredInstitutions,
+  type TenantParalelo,
+  type TenantTeacher,
+  type TenantAssignment,
+} from '../utils/multiTenantStore';
 
 interface ParaleloItem {
   id: string;
@@ -61,152 +74,30 @@ interface MateriaItem {
   esTroncal: boolean;
 }
 
-interface AsignacionItem {
-  id: string;
-  maestroNombre: string;
-  cursoParalelo: string;
-  materiaNombre: string;
-  horasSemanales: number;
-  esTutor: boolean;
-}
+type AsignacionItem = TenantAssignment;
 
 export const AcademicPage: React.FC = () => {
-  const { isMaestro, isDirector, isSuperAdmin } = useAuth();
+  const { isMaestro, isDirector, isSuperAdmin, currentInstitutionId, setCurrentInstitutionId } = useAuth();
+  const activeInstId = currentInstitutionId || 'inst-80730045';
+  const institutions = getStoredInstitutions();
+  const currentInst = institutions.find((i) => i.id === activeInstId) || institutions[0] || {
+    id: activeInstId,
+    sie: '80730045',
+    nombre: 'Unidad Educativa Franz Tamayo',
+    distrito: 'La Paz 1',
+    departamento: 'La Paz',
+    nivel: 'INTEGRADO'
+  };
+
   const [tab, setTab] = useState<'cursos' | 'docentes' | 'asignaciones' | 'materias'>('cursos');
   const [feedback, setFeedback] = useState<string | null>(null);
   const [searchDocente, setSearchDocente] = useState('');
 
-  // 1. Cursos y Paralelos State
-  const [paralelos, setParalelos] = useState<ParaleloItem[]>([
-    {
-      id: 'p-1',
-      cursoNombre: '1° de Secundaria Comunitaria Productiva',
-      nivel: 'SECUNDARIA',
-      grado: 1,
-      letra: 'A',
-      turno: 'Mañana',
-      cupo: 35,
-      inscritos: 32,
-    },
-    {
-      id: 'p-2',
-      cursoNombre: '1° de Secundaria Comunitaria Productiva',
-      nivel: 'SECUNDARIA',
-      grado: 1,
-      letra: 'B',
-      turno: 'Tarde',
-      cupo: 35,
-      inscritos: 28,
-    },
-    {
-      id: 'p-3',
-      cursoNombre: '2° de Secundaria Comunitaria Productiva',
-      nivel: 'SECUNDARIA',
-      grado: 2,
-      letra: 'A',
-      turno: 'Mañana',
-      cupo: 35,
-      inscritos: 30,
-    },
-    {
-      id: 'p-4',
-      cursoNombre: '3° de Secundaria Comunitaria Productiva',
-      nivel: 'SECUNDARIA',
-      grado: 3,
-      letra: 'A',
-      turno: 'Mañana',
-      cupo: 35,
-      inscritos: 26,
-    },
-    {
-      id: 'p-5',
-      cursoNombre: '1° de Primaria Comunitaria Vocacional',
-      nivel: 'PRIMARIA',
-      grado: 1,
-      letra: 'A',
-      turno: 'Mañana',
-      cupo: 30,
-      inscritos: 29,
-    },
-    {
-      id: 'p-6',
-      cursoNombre: '2° de Primaria Comunitaria Vocacional',
-      nivel: 'PRIMARIA',
-      grado: 2,
-      letra: 'A',
-      turno: 'Mañana',
-      cupo: 30,
-      inscritos: 27,
-    },
-  ]);
+  // 1. Cursos y Paralelos State (Multi-tenant scoped)
+  const [paralelos, setParalelos] = useState<ParaleloItem[]>(() => getCoursesForInstitution(activeInstId));
 
-  // 2. Plantel Docente (Profesores) State
-  const [docentes, setDocentes] = useState<TeacherItem[]>([
-    {
-      id: 't-1',
-      rda: '6849302',
-      ci: '6849302 LP',
-      nombres: 'Carlos',
-      primerApellido: 'Mamani',
-      segundoApellido: 'Choque',
-      tituloProfesional: 'Profesor Normalista de Secundaria',
-      especialidad: 'Comunicación y Lenguajes',
-      correo: 'carlos.mamani@minedu.gob.bo',
-      telefono: '71548923',
-      cargoOficial: 'Docente de Área y Tutor de Curso',
-      normalista: true,
-      estado: 'ACTIVO',
-      horasAsignadas: 16,
-    },
-    {
-      id: 't-2',
-      rda: '5748291',
-      ci: '5748291 LP',
-      nombres: 'Alberto',
-      primerApellido: 'Simón',
-      segundoApellido: 'Mercado',
-      tituloProfesional: 'Licenciado en Ciencias de la Educación',
-      especialidad: 'Matemática y Lógica',
-      correo: 'alberto.mercado@minedu.gob.bo',
-      telefono: '68923412',
-      cargoOficial: 'Docente de Matemática',
-      normalista: true,
-      estado: 'ACTIVO',
-      horasAsignadas: 20,
-    },
-    {
-      id: 't-3',
-      rda: '7214589',
-      ci: '7214589 LP',
-      nombres: 'Elena',
-      primerApellido: 'Flores',
-      segundoApellido: 'Mamani',
-      tituloProfesional: 'Licenciada en Gestión Educativa',
-      especialidad: 'Administración y Ciencias Sociales',
-      correo: 'elena.flores@minedu.gob.bo',
-      telefono: '73091823',
-      cargoOficial: 'Directora Institucional / Docente',
-      normalista: true,
-      estado: 'ACTIVO',
-      horasAsignadas: 8,
-    },
-    {
-      id: 't-4',
-      rda: '8192304',
-      ci: '8192304 LP',
-      nombres: 'Roberto',
-      primerApellido: 'Jaramillo',
-      segundoApellido: 'Quispe',
-      tituloProfesional: 'Profesor de Ciencias Naturales',
-      especialidad: 'Biología y Geografía',
-      correo: 'roberto.jaramillo@minedu.gob.bo',
-      telefono: '77291034',
-      cargoOficial: 'Docente de Biología',
-      normalista: true,
-      estado: 'ACTIVO',
-      horasAsignadas: 18,
-    },
-  ]);
+  // 2. Plantel Docente (Profesores) State (Multi-tenant scoped)
+  const [docentes, setDocentes] = useState<TeacherItem[]>(() => getTeachersForInstitution(activeInstId));
 
   // 3. Materias State
   const [materias, setMaterias] = useState<MateriaItem[]>([
@@ -252,41 +143,15 @@ export const AcademicPage: React.FC = () => {
     },
   ]);
 
-  // 4. Asignaciones Docentes State
-  const [asignaciones, setAsignaciones] = useState<AsignacionItem[]>([
-    {
-      id: 'as-1',
-      maestroNombre: 'Prof. Carlos Mamani Choque',
-      cursoParalelo: '1° de Secundaria - Paralelo A',
-      materiaNombre: 'Comunicación y Lenguajes',
-      horasSemanales: 6,
-      esTutor: true,
-    },
-    {
-      id: 'as-2',
-      maestroNombre: 'Prof. Carlos Mamani Choque',
-      cursoParalelo: '1° de Secundaria - Paralelo B',
-      materiaNombre: 'Comunicación y Lenguajes',
-      horasSemanales: 6,
-      esTutor: false,
-    },
-    {
-      id: 'as-3',
-      maestroNombre: 'Prof. Alberto Simón Mercado',
-      cursoParalelo: '2° de Secundaria - Paralelo A',
-      materiaNombre: 'Matemática y Lógica',
-      horasSemanales: 6,
-      esTutor: false,
-    },
-    {
-      id: 'as-4',
-      maestroNombre: 'Prof. Roberto Jaramillo Quispe',
-      cursoParalelo: '1° de Secundaria - Paralelo A',
-      materiaNombre: 'Ciencias Naturales: Biología - Geografía',
-      horasSemanales: 4,
-      esTutor: false,
-    },
-  ]);
+  // 4. Asignaciones Docentes State (Multi-tenant scoped)
+  const [asignaciones, setAsignaciones] = useState<AsignacionItem[]>(() => getAssignmentsForInstitution(activeInstId));
+
+  // Sync state reactively when the selected school changes
+  useEffect(() => {
+    setParalelos(getCoursesForInstitution(activeInstId));
+    setDocentes(getTeachersForInstitution(activeInstId));
+    setAsignaciones(getAssignmentsForInstitution(activeInstId));
+  }, [activeInstId]);
 
   // Modals state
   const [showCursoModal, setShowCursoModal] = useState(false);
@@ -369,7 +234,9 @@ export const AcademicPage: React.FC = () => {
       inscritos: 0,
     };
 
-    setParalelos([...paralelos, item]);
+    const updated = [...paralelos, item];
+    setParalelos(updated);
+    saveCoursesForInstitution(activeInstId, updated);
     setShowCursoModal(false);
     triggerFeedback(`¡Curso "${cursoNombre}" y Paralelo "${newCurso.letra}" habilitados exitosamente!`);
   };
@@ -382,13 +249,17 @@ export const AcademicPage: React.FC = () => {
       ...newParalelo,
       inscritos: 0,
     };
-    setParalelos([...paralelos, item]);
+    const updated = [...paralelos, item];
+    setParalelos(updated);
+    saveCoursesForInstitution(activeInstId, updated);
     setShowParaleloModal(false);
     triggerFeedback(`¡Paralelo "${newParalelo.letra}" añadido al curso exitosamente!`);
   };
 
   const handleDeleteParalelo = (id: string) => {
-    setParalelos(paralelos.filter((p) => p.id !== id));
+    const updated = paralelos.filter((p) => p.id !== id);
+    setParalelos(updated);
+    saveCoursesForInstitution(activeInstId, updated);
     triggerFeedback('Paralelo retirado de la gestión escolar.');
   };
 
@@ -400,7 +271,9 @@ export const AcademicPage: React.FC = () => {
       ...newTeacher,
       horasAsignadas: 0,
     };
-    setDocentes([item, ...docentes]);
+    const updated = [item, ...docentes];
+    setDocentes(updated);
+    saveTeachersForInstitution(activeInstId, updated);
     setShowTeacherModal(false);
     triggerFeedback(`¡Profesor(a) ${newTeacher.nombres} ${newTeacher.primerApellido} (RDA: ${newTeacher.rda}) vinculado al colegio con éxito!`);
     // Reset form
@@ -421,20 +294,22 @@ export const AcademicPage: React.FC = () => {
   };
 
   const handleDeleteTeacher = (id: string) => {
-    setDocentes(docentes.filter((d) => d.id !== id));
+    const updated = docentes.filter((d) => d.id !== id);
+    setDocentes(updated);
+    saveTeachersForInstitution(activeInstId, updated);
     triggerFeedback('Profesor desvinculado de la Unidad Educativa.');
   };
 
   const toggleTeacherStatus = (id: string) => {
-    setDocentes(
-      docentes.map((d) => {
-        if (d.id === id) {
-          const nextStatus = d.estado === 'ACTIVO' ? 'LICENCIA' : 'ACTIVO';
-          return { ...d, estado: nextStatus };
-        }
-        return d;
-      })
-    );
+    const updated = docentes.map((d) => {
+      if (d.id === id) {
+        const nextStatus: 'ACTIVO' | 'LICENCIA' = d.estado === 'ACTIVO' ? 'LICENCIA' : 'ACTIVO';
+        return { ...d, estado: nextStatus };
+      }
+      return d;
+    });
+    setDocentes(updated);
+    saveTeachersForInstitution(activeInstId, updated);
     triggerFeedback('Estado de vinculación docente modificado.');
   };
 
@@ -462,13 +337,17 @@ export const AcademicPage: React.FC = () => {
       id: `as-${Date.now()}`,
       ...newAsignacion,
     };
-    setAsignaciones([...asignaciones, item]);
+    const updated = [...asignaciones, item];
+    setAsignaciones(updated);
+    saveAssignmentsForInstitution(activeInstId, updated);
     setShowAsignacionModal(false);
     triggerFeedback('¡Carga horaria asignada al docente exitosamente!');
   };
 
   const handleDeleteAsignacion = (id: string) => {
-    setAsignaciones(asignaciones.filter((a) => a.id !== id));
+    const updated = asignaciones.filter((a) => a.id !== id);
+    setAsignaciones(updated);
+    saveAssignmentsForInstitution(activeInstId, updated);
     triggerFeedback('Asignación docente desvinculada.');
   };
 
@@ -483,6 +362,46 @@ export const AcademicPage: React.FC = () => {
 
   return (
     <div className="space-y-6">
+      {/* Active School Multi-Tenant Context Banner */}
+      <div className="bg-slate-900 text-white p-4 sm:p-5 rounded-2xl shadow-sm border border-slate-800 flex flex-col md:flex-row md:items-center justify-between gap-4">
+        <div className="flex items-center space-x-3.5">
+          <div className="p-3 bg-emerald-500/20 text-emerald-400 border border-emerald-500/30 rounded-xl">
+            <School className="w-6 h-6" />
+          </div>
+          <div>
+            <div className="flex items-center gap-2">
+              <span className="text-[10px] font-bold uppercase tracking-wider bg-emerald-500/30 text-emerald-300 px-2 py-0.5 rounded">
+                Unidad Educativa Activa
+              </span>
+              <span className="text-xs text-slate-400">SIE: {currentInst?.sie}</span>
+            </div>
+            <h2 className="text-base sm:text-lg font-bold text-white mt-0.5">
+              {currentInst?.nombre}
+            </h2>
+            <p className="text-xs text-slate-400">
+              {currentInst?.departamento} • {currentInst?.distrito} • {currentInst?.nivel}
+            </p>
+          </div>
+        </div>
+
+        {/* Quick School Selector */}
+        <div className="flex items-center gap-2 bg-slate-800/80 p-2 rounded-xl border border-slate-700">
+          <span className="text-xs font-semibold text-slate-300 whitespace-nowrap pl-2">
+            Gestionar Colegio:
+          </span>
+          <select
+            value={activeInstId}
+            onChange={(e) => setCurrentInstitutionId(e.target.value)}
+            className="bg-slate-900 border border-slate-700 text-emerald-400 text-xs font-bold rounded-lg px-3 py-1.5 focus:outline-none focus:ring-1 focus:ring-emerald-500 cursor-pointer max-w-[260px] truncate"
+          >
+            {institutions.map((i) => (
+              <option key={i.id} value={i.id}>
+                {i.nombre} (SIE: {i.sie})
+              </option>
+            ))}
+          </select>
+        </div>
+      </div>
       {/* Header */}
       <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 bg-white p-6 rounded-xl border border-slate-200 shadow-sm">
         <div className="flex items-center space-x-3">
@@ -646,41 +565,62 @@ export const AcademicPage: React.FC = () => {
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-slate-100">
-                  {paralelos.map((p) => (
-                    <tr key={p.id} className="hover:bg-slate-50 transition">
-                      <td className="py-3 px-4 font-semibold text-slate-900 flex items-center space-x-2">
-                        <School className="w-3.5 h-3.5 text-emerald-600" />
-                        <span>{p.cursoNombre}</span>
+                  {paralelos.length === 0 ? (
+                    <tr>
+                      <td colSpan={7} className="py-12 text-center text-slate-400">
+                        <div className="flex flex-col items-center justify-center space-y-2">
+                          <School className="w-10 h-10 text-slate-300" />
+                          <span className="font-semibold text-slate-700">Esta Unidad Educativa no tiene cursos ni paralelos registrados aún.</span>
+                          <p className="text-xs text-slate-400">Habilita los grados correspondientes para poder matricular alumnos y asignar profesores.</p>
+                          {!isMaestro && (
+                            <button
+                              onClick={() => setShowCursoModal(true)}
+                              className="mt-2 inline-flex items-center space-x-1 px-3 py-1.5 bg-emerald-600 hover:bg-emerald-700 text-white rounded-lg text-xs font-bold transition shadow-sm cursor-pointer"
+                            >
+                              <Plus className="w-3.5 h-3.5" />
+                              <span>Habilitar Primer Curso</span>
+                            </button>
+                          )}
+                        </div>
                       </td>
-                      <td className="py-3 px-3 text-center">
-                        <span className="px-2 py-0.5 rounded bg-slate-100 text-slate-700 font-bold text-[10px]">
-                          {formatNivelEducativo(p.nivel)}
-                        </span>
-                      </td>
-                      <td className="py-3 px-3 text-center font-bold text-emerald-700 text-sm">
-                        "{p.letra}"
-                      </td>
-                      <td className="py-3 px-3 text-center text-slate-600 font-medium">{p.turno}</td>
-                      <td className="py-3 px-3 text-center font-mono font-bold text-slate-700">
-                        {p.cupo}
-                      </td>
-                      <td className="py-3 px-3 text-center">
-                        <span className="font-bold text-emerald-800">{p.inscritos}</span>
-                        <span className="text-slate-400"> / {p.cupo}</span>
-                      </td>
-                      {!isMaestro && (
-                        <td className="py-3 px-3 text-center">
-                          <button
-                            onClick={() => handleDeleteParalelo(p.id)}
-                            className="p-1.5 text-slate-400 hover:text-rose-600 transition"
-                            title="Eliminar Paralelo"
-                          >
-                            <Trash2 className="w-3.5 h-3.5" />
-                          </button>
-                        </td>
-                      )}
                     </tr>
-                  ))}
+                  ) : (
+                    paralelos.map((p) => (
+                      <tr key={p.id} className="hover:bg-slate-50 transition">
+                        <td className="py-3 px-4 font-semibold text-slate-900 flex items-center space-x-2">
+                          <School className="w-3.5 h-3.5 text-emerald-600" />
+                          <span>{p.cursoNombre}</span>
+                        </td>
+                        <td className="py-3 px-3 text-center">
+                          <span className="px-2 py-0.5 rounded bg-slate-100 text-slate-700 font-bold text-[10px]">
+                            {formatNivelEducativo(p.nivel)}
+                          </span>
+                        </td>
+                        <td className="py-3 px-3 text-center font-bold text-emerald-700 text-sm">
+                          "{p.letra}"
+                        </td>
+                        <td className="py-3 px-3 text-center text-slate-600 font-medium">{p.turno}</td>
+                        <td className="py-3 px-3 text-center font-mono font-bold text-slate-700">
+                          {p.cupo}
+                        </td>
+                        <td className="py-3 px-3 text-center">
+                          <span className="font-bold text-emerald-800">{p.inscritos}</span>
+                          <span className="text-slate-400"> / {p.cupo}</span>
+                        </td>
+                        {!isMaestro && (
+                          <td className="py-3 px-3 text-center">
+                            <button
+                              onClick={() => handleDeleteParalelo(p.id)}
+                              className="p-1.5 text-slate-400 hover:text-rose-600 transition"
+                              title="Eliminar Paralelo"
+                            >
+                              <Trash2 className="w-3.5 h-3.5" />
+                            </button>
+                          </td>
+                        )}
+                      </tr>
+                    ))
+                  )}
                 </tbody>
               </table>
             </div>
@@ -736,71 +676,92 @@ export const AcademicPage: React.FC = () => {
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-slate-100">
-                  {filteredDocentes.map((d, idx) => (
-                    <tr key={d.id} className="hover:bg-slate-50 transition">
-                      <td className="py-3 px-3 text-slate-400 font-mono">{idx + 1}</td>
-                      <td className="py-3 px-3 font-mono font-bold text-emerald-800">
-                        {d.rda}
-                      </td>
-                      <td className="py-3 px-4">
-                        <div className="font-bold text-slate-900 uppercase">
-                          {d.primerApellido} {d.segundoApellido} {d.nombres}
-                        </div>
-                        <div className="text-[11px] text-slate-500">{d.cargoOficial}</div>
-                      </td>
-                      <td className="py-3 px-3 font-mono text-slate-600">{d.ci}</td>
-                      <td className="py-3 px-4">
-                        <div className="font-semibold text-slate-800">{d.especialidad}</div>
-                        <div className="text-[11px] text-slate-500">{d.tituloProfesional}</div>
-                      </td>
-                      <td className="py-3 px-4">
-                        <div className="flex items-center space-x-1 text-slate-600 text-[11px]">
-                          <Mail className="w-3 h-3 text-slate-400" />
-                          <span>{d.correo}</span>
-                        </div>
-                        {d.telefono && (
-                          <div className="flex items-center space-x-1 text-emerald-700 text-[11px] mt-0.5">
-                            <Phone className="w-3 h-3" />
-                            <span>{d.telefono}</span>
-                          </div>
-                        )}
-                      </td>
-                      <td className="py-3 px-3 text-center font-mono font-bold text-slate-800">
-                        {d.horasAsignadas > 0 ? `${d.horasAsignadas} hrs/sem` : 'Sin carga'}
-                      </td>
-                      <td className="py-3 px-3 text-center">
-                        <span
-                          className={`px-2.5 py-1 rounded-full text-[10px] font-bold ${
-                            d.estado === 'ACTIVO'
-                              ? 'bg-emerald-100 text-emerald-800'
-                              : 'bg-amber-100 text-amber-800'
-                          }`}
-                        >
-                          {d.estado}
-                        </span>
-                      </td>
-                      {!isMaestro && (
-                        <td className="py-3 px-3 text-center">
-                          <div className="flex items-center justify-center space-x-1">
+                  {filteredDocentes.length === 0 ? (
+                    <tr>
+                      <td colSpan={9} className="py-12 text-center text-slate-400">
+                        <div className="flex flex-col items-center justify-center space-y-2">
+                          <UserPlus className="w-10 h-10 text-slate-300" />
+                          <span className="font-semibold text-slate-700">No hay profesores vinculados a esta Unidad Educativa.</span>
+                          <p className="text-xs text-slate-400">Adiciona docentes registrando su número de RDA y especialidad académica.</p>
+                          {!isMaestro && (
                             <button
-                              onClick={() => toggleTeacherStatus(d.id)}
-                              className="p-1.5 text-slate-400 hover:text-amber-600 transition"
-                              title="Cambiar Estado (Licencia / Activo)"
+                              onClick={() => setShowTeacherModal(true)}
+                              className="mt-2 inline-flex items-center space-x-1 px-3 py-1.5 bg-emerald-600 hover:bg-emerald-700 text-white rounded-lg text-xs font-bold transition shadow-sm cursor-pointer"
                             >
-                              <UserCheck className="w-3.5 h-3.5" />
+                              <UserPlus className="w-3.5 h-3.5" />
+                              <span>Vincular Primer Profesor</span>
                             </button>
-                            <button
-                              onClick={() => handleDeleteTeacher(d.id)}
-                              className="p-1.5 text-slate-400 hover:text-rose-600 transition"
-                              title="Desvincular Profesor"
-                            >
-                              <Trash2 className="w-3.5 h-3.5" />
-                            </button>
-                          </div>
-                        </td>
-                      )}
+                          )}
+                        </div>
+                      </td>
                     </tr>
-                  ))}
+                  ) : (
+                    filteredDocentes.map((d, idx) => (
+                      <tr key={d.id} className="hover:bg-slate-50 transition">
+                        <td className="py-3 px-3 text-slate-400 font-mono">{idx + 1}</td>
+                        <td className="py-3 px-3 font-mono font-bold text-emerald-800">
+                          {d.rda}
+                        </td>
+                        <td className="py-3 px-4">
+                          <div className="font-bold text-slate-900 uppercase">
+                            {d.primerApellido} {d.segundoApellido} {d.nombres}
+                          </div>
+                          <div className="text-[11px] text-slate-500">{d.cargoOficial}</div>
+                        </td>
+                        <td className="py-3 px-3 font-mono text-slate-600">{d.ci}</td>
+                        <td className="py-3 px-4">
+                          <div className="font-semibold text-slate-800">{d.especialidad}</div>
+                          <div className="text-[11px] text-slate-500">{d.tituloProfesional}</div>
+                        </td>
+                        <td className="py-3 px-4">
+                          <div className="flex items-center space-x-1 text-slate-600 text-[11px]">
+                            <Mail className="w-3 h-3 text-slate-400" />
+                            <span>{d.correo}</span>
+                          </div>
+                          {d.telefono && (
+                            <div className="flex items-center space-x-1 text-emerald-700 text-[11px] mt-0.5">
+                              <Phone className="w-3 h-3" />
+                              <span>{d.telefono}</span>
+                            </div>
+                          )}
+                        </td>
+                        <td className="py-3 px-3 text-center font-mono font-bold text-slate-800">
+                          {d.horasAsignadas > 0 ? `${d.horasAsignadas} hrs/sem` : 'Sin carga'}
+                        </td>
+                        <td className="py-3 px-3 text-center">
+                          <span
+                            className={`px-2.5 py-1 rounded-full text-[10px] font-bold ${
+                              d.estado === 'ACTIVO'
+                                ? 'bg-emerald-100 text-emerald-800'
+                                : 'bg-amber-100 text-amber-800'
+                            }`}
+                          >
+                            {d.estado}
+                          </span>
+                        </td>
+                        {!isMaestro && (
+                          <td className="py-3 px-3 text-center">
+                            <div className="flex items-center justify-center space-x-1">
+                              <button
+                                onClick={() => toggleTeacherStatus(d.id)}
+                                className="p-1.5 text-slate-400 hover:text-amber-600 transition"
+                                title="Cambiar Estado (Licencia / Activo)"
+                              >
+                                <UserCheck className="w-3.5 h-3.5" />
+                              </button>
+                              <button
+                                onClick={() => handleDeleteTeacher(d.id)}
+                                className="p-1.5 text-slate-400 hover:text-rose-600 transition"
+                                title="Desvincular Profesor"
+                              >
+                                <Trash2 className="w-3.5 h-3.5" />
+                              </button>
+                            </div>
+                          </td>
+                        )}
+                      </tr>
+                    ))
+                  )}
                 </tbody>
               </table>
             </div>
@@ -840,36 +801,57 @@ export const AcademicPage: React.FC = () => {
                 </tr>
               </thead>
               <tbody className="divide-y divide-slate-100">
-                {asignaciones.map((as) => (
-                  <tr key={as.id} className="hover:bg-slate-50 transition">
-                    <td className="py-3 px-4 font-semibold text-slate-900">{as.maestroNombre}</td>
-                    <td className="py-3 px-4 text-slate-700 font-medium">{as.cursoParalelo}</td>
-                    <td className="py-3 px-4 text-emerald-800 font-bold">{as.materiaNombre}</td>
-                    <td className="py-3 px-3 text-center font-mono font-bold text-slate-800">
-                      {as.horasSemanales} hrs/sem
+                {asignaciones.length === 0 ? (
+                  <tr>
+                    <td colSpan={6} className="py-12 text-center text-slate-400">
+                      <div className="flex flex-col items-center justify-center space-y-2">
+                        <Clock className="w-10 h-10 text-slate-300" />
+                        <span className="font-semibold text-slate-700">No hay asignaciones de carga horaria registradas en este colegio.</span>
+                        <p className="text-xs text-slate-400">Asigna a los profesores vinculados sus materias y cursos correspondientes.</p>
+                        {!isMaestro && docentes.length > 0 && paralelos.length > 0 && (
+                          <button
+                            onClick={() => setShowAsignacionModal(true)}
+                            className="mt-2 inline-flex items-center space-x-1 px-3 py-1.5 bg-emerald-600 hover:bg-emerald-700 text-white rounded-lg text-xs font-bold transition shadow-sm cursor-pointer"
+                          >
+                            <Plus className="w-3.5 h-3.5" />
+                            <span>Asignar Primera Carga Horaria</span>
+                          </button>
+                        )}
+                      </div>
                     </td>
-                    <td className="py-3 px-3 text-center">
-                      {as.esTutor ? (
-                        <span className="px-2 py-0.5 rounded-full bg-amber-100 text-amber-800 font-bold text-[10px]">
-                          Tutor de Curso
-                        </span>
-                      ) : (
-                        <span className="text-slate-400 text-[10px]">Docente</span>
-                      )}
-                    </td>
-                    {!isMaestro && (
-                      <td className="py-3 px-3 text-center">
-                        <button
-                          onClick={() => handleDeleteAsignacion(as.id)}
-                          className="p-1.5 text-slate-400 hover:text-rose-600 transition"
-                          title="Desvincular Asignación"
-                        >
-                          <Trash2 className="w-3.5 h-3.5" />
-                        </button>
-                      </td>
-                    )}
                   </tr>
-                ))}
+                ) : (
+                  asignaciones.map((as) => (
+                    <tr key={as.id} className="hover:bg-slate-50 transition">
+                      <td className="py-3 px-4 font-semibold text-slate-900">{as.maestroNombre}</td>
+                      <td className="py-3 px-4 text-slate-700 font-medium">{as.cursoParalelo}</td>
+                      <td className="py-3 px-4 text-emerald-800 font-bold">{as.materiaNombre}</td>
+                      <td className="py-3 px-3 text-center font-mono font-bold text-slate-800">
+                        {as.horasSemanales} hrs/sem
+                      </td>
+                      <td className="py-3 px-3 text-center">
+                        {as.esTutor ? (
+                          <span className="px-2 py-0.5 rounded-full bg-amber-100 text-amber-800 font-bold text-[10px]">
+                            Tutor de Curso
+                          </span>
+                        ) : (
+                          <span className="text-slate-400 text-[10px]">Docente</span>
+                        )}
+                      </td>
+                      {!isMaestro && (
+                        <td className="py-3 px-3 text-center">
+                          <button
+                            onClick={() => handleDeleteAsignacion(as.id)}
+                            className="p-1.5 text-slate-400 hover:text-rose-600 transition"
+                            title="Desvincular Asignación"
+                          >
+                            <Trash2 className="w-3.5 h-3.5" />
+                          </button>
+                        </td>
+                      )}
+                    </tr>
+                  ))
+                )}
               </tbody>
             </table>
           </div>

@@ -2,6 +2,7 @@ import React from 'react';
 import { Outlet, Link, useLocation } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import { formatRol } from '../utils/formatters';
+import { getStoredInstitutions } from '../utils/multiTenantStore';
 import {
   LayoutDashboard,
   Building2,
@@ -75,9 +76,13 @@ export const Layout: React.FC = () => {
     ];
   }
 
-  const currentInstitution = user?.institutions?.find(
-    (i) => (i.institutionId || i.id) === currentInstitutionId
-  );
+  const storedInstitutions = getStoredInstitutions();
+  const currentInstitution =
+    user?.institutions?.find((i) => (i.institutionId || i.id) === currentInstitutionId) ||
+    storedInstitutions.find((i) => i.id === currentInstitutionId) ||
+    storedInstitutions[0];
+
+  const activeInstitutionIdValue = currentInstitutionId || storedInstitutions[0]?.id || 'inst-80730045';
 
   return (
     <div className="min-h-screen flex flex-col bg-slate-50">
@@ -107,32 +112,20 @@ export const Layout: React.FC = () => {
 
           <div className="flex items-center space-x-4">
             {/* Institution Switcher (Superadmin o usuarios vinculados a múltiples colegios) */}
-            {(isSuperAdmin || (user?.institutions && user.institutions.length > 0)) && (
+            {(isSuperAdmin || (user?.institutions && user.institutions.length > 0) || storedInstitutions.length > 0) && (
               <div className="relative hidden md:block">
                 <div className="flex items-center space-x-2 bg-slate-100 hover:bg-slate-200 py-1.5 px-3 rounded-lg text-xs font-medium text-slate-700 transition">
                   <Building2 className="w-4 h-4 text-emerald-600" />
                   <select
-                    value={currentInstitutionId || 'inst-80730045'}
+                    value={activeInstitutionIdValue}
                     onChange={(e) => setCurrentInstitutionId(e.target.value)}
-                    className="bg-transparent border-none text-slate-800 text-xs font-bold focus:outline-none cursor-pointer"
+                    className="bg-transparent border-none text-slate-800 text-xs font-bold focus:outline-none cursor-pointer max-w-[260px] truncate"
                   >
-                    {isSuperAdmin && (!user?.institutions || user.institutions.length === 0) ? (
-                      <>
-                        <option value="inst-80730045">SIE: 80730045 - U.E. Franz Tamayo (Colegio Activo)</option>
-                        <option value="inst-80730046">SIE: 80730046 - U.E. Mariscal Sucre</option>
-                        <option value="inst-80730047">SIE: 80730047 - U.E. Emborozú</option>
-                      </>
-                    ) : (
-                      user?.institutions?.map((inst) => {
-                        const instId = inst.institutionId || inst.id;
-                        const instRol = formatRol(inst.role || inst.rol);
-                        return (
-                          <option key={instId} value={instId}>
-                            SIE: {inst.sie} - {inst.nombre} ({instRol})
-                          </option>
-                        );
-                      })
-                    )}
+                    {storedInstitutions.map((inst) => (
+                      <option key={inst.id} value={inst.id}>
+                        SIE: {inst.sie} - {inst.nombre}
+                      </option>
+                    ))}
                   </select>
                   <ChevronDown className="w-3.5 h-3.5 text-slate-500 pointer-events-none" />
                 </div>
@@ -199,7 +192,7 @@ export const Layout: React.FC = () => {
                 <div className="font-bold text-slate-800 truncate">{currentInstitution.nombre}</div>
                 <div className="text-slate-500 mt-0.5">Código SIE: {currentInstitution.sie}</div>
                 <div className="text-emerald-700 font-semibold mt-1">
-                  Rol: {formatRol(currentInstitution.role || currentInstitution.rol)}
+                  Rol: {formatRol((currentInstitution as any).role || (currentInstitution as any).rol || effectiveRole)}
                 </div>
               </div>
             )}

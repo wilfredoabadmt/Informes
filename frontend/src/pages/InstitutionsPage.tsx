@@ -19,6 +19,15 @@ import {
 } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 import { formatTipoInstitucion, formatNivelEducativo } from '../utils/formatters';
+import {
+  getStoredInstitutions,
+  addStoredInstitution,
+  saveStoredInstitutions,
+  getCoursesForInstitution,
+  getTeachersForInstitution,
+  getStudentsForInstitution,
+  type TenantInstitution,
+} from '../utils/multiTenantStore';
 
 interface Institution {
   id: string;
@@ -65,41 +74,13 @@ export const InstitutionsPage: React.FC = () => {
     setLoading(true);
     try {
       const res = await apiClient.get('/institutions');
-      setInstitutions(res.data.data || []);
+      if (res.data?.data && res.data.data.length > 0) {
+        setInstitutions(res.data.data);
+      } else {
+        setInstitutions(getStoredInstitutions());
+      }
     } catch (e) {
-      // Fallback demo institutions if network unavailable
-      setInstitutions([
-        {
-          id: 'inst-1',
-          sie: '80730045',
-          nombre: 'Unidad Educativa Emborozú',
-          departamento: 'Tarija',
-          provincia: 'Arce',
-          municipio: 'Padcaya',
-          distrito: 'Padcaya',
-          direccion: 'Comunidad Emborozú s/n',
-          telefono: '46643210',
-          tipo: 'FISCAL',
-          nivel: 'SECUNDARIA',
-          activo: true,
-          totalMaestrosVinculados: 16,
-        },
-        {
-          id: 'inst-2',
-          sie: '40730128',
-          nombre: 'Colegio Nacional Franz Tamayo',
-          departamento: 'La Paz',
-          provincia: 'Murillo',
-          municipio: 'La Paz',
-          distrito: 'La Paz 2',
-          direccion: 'Av. Illimani Nº 1240',
-          telefono: '22458900',
-          tipo: 'FISCAL',
-          nivel: 'INTEGRADO',
-          activo: true,
-          totalMaestrosVinculados: 42,
-        },
-      ]);
+      setInstitutions(getStoredInstitutions());
     } finally {
       setLoading(false);
     }
@@ -153,32 +134,48 @@ export const InstitutionsPage: React.FC = () => {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     try {
+      const generatedId = `inst-${formData.sie}`;
       if (modalMode === 'create') {
-        const res = await apiClient.post('/institutions', formData);
-        triggerFeedback('¡Unidad Educativa registrada exitosamente!');
+        try {
+          await apiClient.post('/institutions', formData);
+        } catch (apiErr) {
+          console.warn('API sync warning:', apiErr);
+        }
+        const newInst: TenantInstitution = {
+          id: generatedId,
+          sie: formData.sie,
+          nombre: formData.nombre,
+          departamento: formData.departamento,
+          provincia: formData.provincia,
+          municipio: formData.municipio,
+          distrito: formData.distrito,
+          direccion: formData.direccion,
+          telefono: formData.telefono,
+          tipo: formData.tipo,
+          nivel: formData.nivel,
+          activo: true,
+          totalMaestrosVinculados: 0,
+        };
+        addStoredInstitution(newInst);
+        triggerFeedback('¡Unidad Educativa registrada exitosamente en el sistema!');
         fetchInstitutions();
       } else if (modalMode === 'edit' && selectedInstId) {
-        setInstitutions(
-          institutions.map((i) =>
-            i.id === selectedInstId
-              ? {
-                  ...i,
-                  nombre: formData.nombre,
-                  departamento: formData.departamento,
-                  distrito: formData.distrito,
-                  direccion: formData.direccion,
-                  telefono: formData.telefono,
-                  tipo: formData.tipo,
-                  nivel: formData.nivel,
-                }
-              : i
-          )
+        try {
+          await apiClient.patch(`/institutions/${selectedInstId}`, formData);
+        } catch (apiErr) {
+          console.warn('API sync warning:', apiErr);
+        }
+        const stored = getStoredInstitutions();
+        const updated = stored.map((i) =>
+          i.id === selectedInstId ? { ...i, ...formData } : i
         );
+        saveStoredInstitutions(updated);
+        setInstitutions(updated);
         triggerFeedback('¡Datos de la Unidad Educativa actualizados correctamente!');
       }
       setShowModal(false);
     } catch (err: any) {
-      triggerFeedback(err.response?.data?.message || 'Error al guardar la Unidad Educativa');
+      triggerFeedback(err.response?.data?.message || err.message || 'Error al guardar la Unidad Educativa');
     }
   };
 
@@ -190,9 +187,10 @@ export const InstitutionsPage: React.FC = () => {
     } catch (e) {
       // optimistic update
     }
-    setInstitutions(
-      institutions.map((i) => (i.id === inst.id ? { ...i, activo: !i.activo } : i))
-    );
+    const stored = getStoredInstitutions();
+    const updated = stored.map((i) => (i.id === inst.id ? { ...i, activo: !i.activo } : i));
+    saveStoredInstitutions(updated);
+    setInstitutions(updated);
     triggerFeedback(
       `Colegio ${inst.activo ? 'suspendido' : 'activado'} en el sistema nacional.`
     );
@@ -333,7 +331,9 @@ export const InstitutionsPage: React.FC = () => {
                 </div>
                 <div className="flex items-center space-x-1.5 col-span-2 pt-1 text-slate-700 font-medium">
                   <Users className="w-3.5 h-3.5 text-emerald-600" />
-                  <span>{inst.totalMaestrosVinculados} docentes con vinculación activa</span>
+                  <span>
+                    {getTeachersForInstitution(inst.id).length} docentes vinculados • {getCoursesForInstitution(inst.id).length} cursos • {getStudentsForInstitution(inst.id).length} estudiantes
+                  </span>
                 </div>
               </div>
 
