@@ -1,8 +1,14 @@
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import { Outlet, Link, useLocation } from 'react-router-dom';
+import { apiClient } from '../api/client';
 import { useAuth } from '../context/AuthContext';
 import { formatRol } from '../utils/formatters';
-import { getStoredInstitutions } from '../utils/multiTenantStore';
+import {
+  getStoredInstitutions,
+  syncApiInstitutions,
+  resolveTenantKey,
+  type TenantInstitution,
+} from '../utils/multiTenantStore';
 import {
   LayoutDashboard,
   Building2,
@@ -31,6 +37,37 @@ export const Layout: React.FC = () => {
     isMaestro,
   } = useAuth();
   const location = useLocation();
+
+  const [storedInstitutions, setStoredInstitutions] = useState<TenantInstitution[]>(() =>
+    getStoredInstitutions()
+  );
+
+  useEffect(() => {
+    // 1. Escuchar actualizaciones locales de instituciones
+    const handleUpdate = (e: any) => {
+      if (e.detail && Array.isArray(e.detail)) {
+        setStoredInstitutions(e.detail);
+      }
+    };
+    window.addEventListener('sigma_institutions_updated', handleUpdate);
+
+    // 2. Sincronizar padrón oficial de colegios desde la Base de Datos PostgreSQL
+    apiClient
+      .get('/institutions')
+      .then((res) => {
+        if (res.data?.data && Array.isArray(res.data.data) && res.data.data.length > 0) {
+          const synced = syncApiInstitutions(res.data.data);
+          setStoredInstitutions(synced);
+        }
+      })
+      .catch((err) => {
+        console.warn('Layout: usando padrón en caché local', err);
+      });
+
+    return () => {
+      window.removeEventListener('sigma_institutions_updated', handleUpdate);
+    };
+  }, []);
 
   // Define role-specific navigation menus
   let navItems: Array<{ label: string; path: string; icon: any }> = [];
@@ -76,13 +113,20 @@ export const Layout: React.FC = () => {
     ];
   }
 
-  const storedInstitutions = getStoredInstitutions();
+  // Resolver institución activa alineando UUID con código SIE
+  const resolvedSie = resolveTenantKey(currentInstitutionId);
   const currentInstitution =
-    user?.institutions?.find((i) => (i.institutionId || i.id) === currentInstitutionId) ||
-    storedInstitutions.find((i) => i.id === currentInstitutionId) ||
+    storedInstitutions.find((i) => i.id === currentInstitutionId || i.sie === resolvedSie) ||
     storedInstitutions[0];
 
-  const activeInstitutionIdValue = currentInstitutionId || storedInstitutions[0]?.id || 'inst-80730045';
+  const activeInstitutionIdValue = currentInstitution?.id || currentInstitutionId || storedInstitutions[0]?.id;
+
+  // Si currentInstitutionId era un ID obsoleto o inexistente, normalizarlo
+  useEffect(() => {
+    if (currentInstitution && currentInstitutionId !== currentInstitution.id && !storedInstitutions.some((i) => i.id === currentInstitutionId)) {
+      setCurrentInstitutionId(currentInstitution.id);
+    }
+  }, [currentInstitution, currentInstitutionId, storedInstitutions, setCurrentInstitutionId]);
 
   return (
     <div className="min-h-screen flex flex-col bg-slate-50">

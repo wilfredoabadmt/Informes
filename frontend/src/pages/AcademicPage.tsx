@@ -32,9 +32,11 @@ import {
   getAssignmentsForInstitution,
   saveAssignmentsForInstitution,
   getStoredInstitutions,
+  resolveTenantKey,
   type TenantParalelo,
   type TenantTeacher,
   type TenantAssignment,
+  type TenantInstitution,
 } from '../utils/multiTenantStore';
 
 interface ParaleloItem {
@@ -78,26 +80,31 @@ type AsignacionItem = TenantAssignment;
 
 export const AcademicPage: React.FC = () => {
   const { isMaestro, isDirector, isSuperAdmin, currentInstitutionId, setCurrentInstitutionId } = useAuth();
-  const activeInstId = currentInstitutionId || 'inst-80730045';
-  const institutions = getStoredInstitutions();
-  const currentInst = institutions.find((i) => i.id === activeInstId) || institutions[0] || {
-    id: activeInstId,
-    sie: '80730045',
-    nombre: 'Unidad Educativa Franz Tamayo',
-    distrito: 'La Paz 1',
-    departamento: 'La Paz',
-    nivel: 'INTEGRADO'
-  };
+  const [institutions, setInstitutions] = useState<TenantInstitution[]>(() => getStoredInstitutions());
+
+  useEffect(() => {
+    const handleUpdate = (e: any) => {
+      if (e.detail && Array.isArray(e.detail)) setInstitutions(e.detail);
+    };
+    window.addEventListener('sigma_institutions_updated', handleUpdate);
+    return () => window.removeEventListener('sigma_institutions_updated', handleUpdate);
+  }, []);
+
+  const resolvedSie = resolveTenantKey(currentInstitutionId);
+  const currentInst =
+    institutions.find((i) => i.id === currentInstitutionId || i.sie === resolvedSie) ||
+    institutions[0];
+  const activeSie = currentInst?.sie || '80730045';
 
   const [tab, setTab] = useState<'cursos' | 'docentes' | 'asignaciones' | 'materias'>('cursos');
   const [feedback, setFeedback] = useState<string | null>(null);
   const [searchDocente, setSearchDocente] = useState('');
 
   // 1. Cursos y Paralelos State (Multi-tenant scoped)
-  const [paralelos, setParalelos] = useState<ParaleloItem[]>(() => getCoursesForInstitution(activeInstId));
+  const [paralelos, setParalelos] = useState<ParaleloItem[]>(() => getCoursesForInstitution(activeSie));
 
   // 2. Plantel Docente (Profesores) State (Multi-tenant scoped)
-  const [docentes, setDocentes] = useState<TeacherItem[]>(() => getTeachersForInstitution(activeInstId));
+  const [docentes, setDocentes] = useState<TeacherItem[]>(() => getTeachersForInstitution(activeSie));
 
   // 3. Materias State
   const [materias, setMaterias] = useState<MateriaItem[]>([
@@ -144,14 +151,14 @@ export const AcademicPage: React.FC = () => {
   ]);
 
   // 4. Asignaciones Docentes State (Multi-tenant scoped)
-  const [asignaciones, setAsignaciones] = useState<AsignacionItem[]>(() => getAssignmentsForInstitution(activeInstId));
+  const [asignaciones, setAsignaciones] = useState<AsignacionItem[]>(() => getAssignmentsForInstitution(activeSie));
 
   // Sync state reactively when the selected school changes
   useEffect(() => {
-    setParalelos(getCoursesForInstitution(activeInstId));
-    setDocentes(getTeachersForInstitution(activeInstId));
-    setAsignaciones(getAssignmentsForInstitution(activeInstId));
-  }, [activeInstId]);
+    setParalelos(getCoursesForInstitution(activeSie));
+    setDocentes(getTeachersForInstitution(activeSie));
+    setAsignaciones(getAssignmentsForInstitution(activeSie));
+  }, [activeSie]);
 
   // Modals state
   const [showCursoModal, setShowCursoModal] = useState(false);
@@ -236,7 +243,7 @@ export const AcademicPage: React.FC = () => {
 
     const updated = [...paralelos, item];
     setParalelos(updated);
-    saveCoursesForInstitution(activeInstId, updated);
+    saveCoursesForInstitution(activeSie, updated);
     setShowCursoModal(false);
     triggerFeedback(`¡Curso "${cursoNombre}" y Paralelo "${newCurso.letra}" habilitados exitosamente!`);
   };
@@ -251,7 +258,7 @@ export const AcademicPage: React.FC = () => {
     };
     const updated = [...paralelos, item];
     setParalelos(updated);
-    saveCoursesForInstitution(activeInstId, updated);
+    saveCoursesForInstitution(activeSie, updated);
     setShowParaleloModal(false);
     triggerFeedback(`¡Paralelo "${newParalelo.letra}" añadido al curso exitosamente!`);
   };
@@ -259,7 +266,7 @@ export const AcademicPage: React.FC = () => {
   const handleDeleteParalelo = (id: string) => {
     const updated = paralelos.filter((p) => p.id !== id);
     setParalelos(updated);
-    saveCoursesForInstitution(activeInstId, updated);
+    saveCoursesForInstitution(activeSie, updated);
     triggerFeedback('Paralelo retirado de la gestión escolar.');
   };
 
@@ -273,7 +280,7 @@ export const AcademicPage: React.FC = () => {
     };
     const updated = [item, ...docentes];
     setDocentes(updated);
-    saveTeachersForInstitution(activeInstId, updated);
+    saveTeachersForInstitution(activeSie, updated);
     setShowTeacherModal(false);
     triggerFeedback(`¡Profesor(a) ${newTeacher.nombres} ${newTeacher.primerApellido} (RDA: ${newTeacher.rda}) vinculado al colegio con éxito!`);
     // Reset form
@@ -296,7 +303,7 @@ export const AcademicPage: React.FC = () => {
   const handleDeleteTeacher = (id: string) => {
     const updated = docentes.filter((d) => d.id !== id);
     setDocentes(updated);
-    saveTeachersForInstitution(activeInstId, updated);
+    saveTeachersForInstitution(activeSie, updated);
     triggerFeedback('Profesor desvinculado de la Unidad Educativa.');
   };
 
@@ -309,7 +316,7 @@ export const AcademicPage: React.FC = () => {
       return d;
     });
     setDocentes(updated);
-    saveTeachersForInstitution(activeInstId, updated);
+    saveTeachersForInstitution(activeSie, updated);
     triggerFeedback('Estado de vinculación docente modificado.');
   };
 
@@ -339,7 +346,7 @@ export const AcademicPage: React.FC = () => {
     };
     const updated = [...asignaciones, item];
     setAsignaciones(updated);
-    saveAssignmentsForInstitution(activeInstId, updated);
+    saveAssignmentsForInstitution(activeSie, updated);
     setShowAsignacionModal(false);
     triggerFeedback('¡Carga horaria asignada al docente exitosamente!');
   };
@@ -347,7 +354,7 @@ export const AcademicPage: React.FC = () => {
   const handleDeleteAsignacion = (id: string) => {
     const updated = asignaciones.filter((a) => a.id !== id);
     setAsignaciones(updated);
-    saveAssignmentsForInstitution(activeInstId, updated);
+    saveAssignmentsForInstitution(activeSie, updated);
     triggerFeedback('Asignación docente desvinculada.');
   };
 
@@ -390,7 +397,7 @@ export const AcademicPage: React.FC = () => {
             Gestionar Colegio:
           </span>
           <select
-            value={activeInstId}
+            value={currentInst?.id || currentInstitutionId || institutions[0]?.id}
             onChange={(e) => setCurrentInstitutionId(e.target.value)}
             className="bg-slate-900 border border-slate-700 text-emerald-400 text-xs font-bold rounded-lg px-3 py-1.5 focus:outline-none focus:ring-1 focus:ring-emerald-500 cursor-pointer max-w-[260px] truncate"
           >

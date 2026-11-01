@@ -27,8 +27,10 @@ import {
   saveStudentsForInstitution,
   getCoursesForInstitution,
   getStoredInstitutions,
+  resolveTenantKey,
   type TenantStudent,
   type TenantParalelo,
+  type TenantInstitution,
 } from '../utils/multiTenantStore';
 
 interface StudentItem {
@@ -49,30 +51,36 @@ interface StudentItem {
 
 export const StudentsPage: React.FC = () => {
   const { isMaestro, isDirector, isSuperAdmin, currentInstitutionId, setCurrentInstitutionId } = useAuth();
-  const activeInstId = currentInstitutionId || 'inst-80730045';
-  const institutions = getStoredInstitutions();
-  const currentInst = institutions.find((i) => i.id === activeInstId) || institutions[0] || {
-    id: activeInstId,
-    sie: '80730045',
-    nombre: 'Unidad Educativa Franz Tamayo',
-    distrito: 'La Paz 1',
-    departamento: 'La Paz',
-  };
+  const [institutions, setInstitutions] = useState<TenantInstitution[]>(() => getStoredInstitutions());
+
+  useEffect(() => {
+    const handleUpdate = (e: any) => {
+      if (e.detail && Array.isArray(e.detail)) setInstitutions(e.detail);
+    };
+    window.addEventListener('sigma_institutions_updated', handleUpdate);
+    return () => window.removeEventListener('sigma_institutions_updated', handleUpdate);
+  }, []);
+
+  const resolvedSie = resolveTenantKey(currentInstitutionId);
+  const currentInst =
+    institutions.find((i) => i.id === currentInstitutionId || i.sie === resolvedSie) ||
+    institutions[0];
+  const activeSie = currentInst?.sie || '80730045';
 
   const [searchTerm, setSearchTerm] = useState('');
   const [filterCurso, setFilterCurso] = useState('ALL');
   const [filterEstado, setFilterEstado] = useState('ALL');
 
   // Multi-tenant scoped state
-  const [students, setStudents] = useState<StudentItem[]>(() => getStudentsForInstitution(activeInstId));
-  const [availableCourses, setAvailableCourses] = useState<TenantParalelo[]>(() => getCoursesForInstitution(activeInstId));
+  const [students, setStudents] = useState<StudentItem[]>(() => getStudentsForInstitution(activeSie));
+  const [availableCourses, setAvailableCourses] = useState<TenantParalelo[]>(() => getCoursesForInstitution(activeSie));
 
   // Sync state whenever selected institution changes
   useEffect(() => {
-    setStudents(getStudentsForInstitution(activeInstId));
-    setAvailableCourses(getCoursesForInstitution(activeInstId));
+    setStudents(getStudentsForInstitution(activeSie));
+    setAvailableCourses(getCoursesForInstitution(activeSie));
     setFilterCurso('ALL');
-  }, [activeInstId]);
+  }, [activeSie]);
 
   // Modals state
   const [showModal, setShowModal] = useState(false);
@@ -150,12 +158,12 @@ export const StudentsPage: React.FC = () => {
       };
       const updated = [newStudent, ...students];
       setStudents(updated);
-      saveStudentsForInstitution(activeInstId, updated);
+      saveStudentsForInstitution(activeSie, updated);
       setFeedbackMessage('¡Estudiante inscrito y matriculado exitosamente con código RUDE oficial!');
     } else if (modalMode === 'edit' && selectedStudent) {
       const updated = students.map((s) => (s.id === selectedStudent.id ? { ...formData, id: s.id } : s));
       setStudents(updated);
-      saveStudentsForInstitution(activeInstId, updated);
+      saveStudentsForInstitution(activeSie, updated);
       setFeedbackMessage('¡Ficha del estudiante actualizada correctamente!');
     }
     setShowModal(false);
@@ -165,7 +173,7 @@ export const StudentsPage: React.FC = () => {
   const handleDelete = (id: string) => {
     const updated = students.filter((s) => s.id !== id);
     setStudents(updated);
-    saveStudentsForInstitution(activeInstId, updated);
+    saveStudentsForInstitution(activeSie, updated);
     setShowDeleteConfirm(null);
     setFeedbackMessage('Estudiante retirado de la nómina escolar.');
     setTimeout(() => setFeedbackMessage(null), 3000);
@@ -247,7 +255,7 @@ export const StudentsPage: React.FC = () => {
             Matrícula en:
           </span>
           <select
-            value={activeInstId}
+            value={currentInst?.id || currentInstitutionId || institutions[0]?.id}
             onChange={(e) => setCurrentInstitutionId(e.target.value)}
             className="bg-slate-900 border border-slate-700 text-blue-400 text-xs font-bold rounded-lg px-3 py-1.5 focus:outline-none focus:ring-1 focus:ring-blue-500 cursor-pointer max-w-[260px] truncate"
           >

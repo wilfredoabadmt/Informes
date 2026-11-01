@@ -23,6 +23,7 @@ import {
   getStoredInstitutions,
   addStoredInstitution,
   saveStoredInstitutions,
+  syncApiInstitutions,
   getCoursesForInstitution,
   getTeachersForInstitution,
   getStudentsForInstitution,
@@ -74,8 +75,9 @@ export const InstitutionsPage: React.FC = () => {
     setLoading(true);
     try {
       const res = await apiClient.get('/institutions');
-      if (res.data?.data && res.data.data.length > 0) {
-        setInstitutions(res.data.data);
+      if (res.data?.data && Array.isArray(res.data.data) && res.data.data.length > 0) {
+        const synced = syncApiInstitutions(res.data.data);
+        setInstitutions(synced);
       } else {
         setInstitutions(getStoredInstitutions());
       }
@@ -87,7 +89,17 @@ export const InstitutionsPage: React.FC = () => {
   };
 
   useEffect(() => {
+    const handleUpdate = (e: any) => {
+      if (e.detail && Array.isArray(e.detail)) {
+        setInstitutions(e.detail);
+      }
+    };
+    window.addEventListener('sigma_institutions_updated', handleUpdate);
     fetchInstitutions();
+
+    return () => {
+      window.removeEventListener('sigma_institutions_updated', handleUpdate);
+    };
   }, []);
 
   const triggerFeedback = (msg: string) => {
@@ -332,7 +344,7 @@ export const InstitutionsPage: React.FC = () => {
                 <div className="flex items-center space-x-1.5 col-span-2 pt-1 text-slate-700 font-medium">
                   <Users className="w-3.5 h-3.5 text-emerald-600" />
                   <span>
-                    {getTeachersForInstitution(inst.id).length} docentes vinculados • {getCoursesForInstitution(inst.id).length} cursos • {getStudentsForInstitution(inst.id).length} estudiantes
+                    {getTeachersForInstitution(inst.sie || inst.id).length} docentes vinculados • {getCoursesForInstitution(inst.sie || inst.id).length} cursos • {getStudentsForInstitution(inst.sie || inst.id).length} estudiantes
                   </span>
                 </div>
               </div>
