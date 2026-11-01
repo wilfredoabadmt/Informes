@@ -186,7 +186,7 @@ export const AcademicPage: React.FC = () => {
   // 4. Asignaciones Docentes State (Multi-tenant scoped)
   const [asignaciones, setAsignaciones] = useState<AsignacionItem[]>(() => getAssignmentsForInstitution(activeSie));
 
-  const [searchParams, setSearchParams] = useSearchParams();
+  const [searchParams] = useSearchParams();
 
   // Sync state reactively when the selected school changes
   useEffect(() => {
@@ -195,8 +195,10 @@ export const AcademicPage: React.FC = () => {
     setAsignaciones(getAssignmentsForInstitution(activeSie));
   }, [activeSie]);
 
-  // Modals state
-  const [showCursoModal, setShowCursoModal] = useState(false);
+  // Modals state - auto-abrir si se pasó ?create=curso o ?open=curso en la URL
+  const [showCursoModal, setShowCursoModal] = useState(() => {
+    return searchParams.get('create') === 'curso' || searchParams.get('open') === 'curso';
+  });
   const [newCurso, setNewCurso] = useState({
     nivel: 'SECUNDARIA',
     grado: 4,
@@ -214,14 +216,6 @@ export const AcademicPage: React.FC = () => {
     turno: 'Mañana',
     cupo: 35,
   });
-
-  // Si se ingresó con parámetro para abrir modal de curso
-  useEffect(() => {
-    if (searchParams.get('create') === 'curso' || searchParams.get('open') === 'curso') {
-      setShowCursoModal(true);
-      setSearchParams({}, { replace: true });
-    }
-  }, [searchParams, setSearchParams]);
 
   const [showTeacherModal, setShowTeacherModal] = useState(false);
   const [newTeacher, setNewTeacher] = useState({
@@ -401,13 +395,14 @@ export const AcademicPage: React.FC = () => {
     triggerFeedback('Asignación docente desvinculada.');
   };
 
+  const searchLower = (searchDocente || '').trim().toLowerCase();
   const filteredDocentes = docentes.filter(
     (d) =>
-      d.rda.includes(searchDocente) ||
-      d.ci.toLowerCase().includes(searchDocente.toLowerCase()) ||
-      d.primerApellido.toLowerCase().includes(searchDocente.toLowerCase()) ||
-      d.nombres.toLowerCase().includes(searchDocente.toLowerCase()) ||
-      d.especialidad.toLowerCase().includes(searchDocente.toLowerCase())
+      String(d.rda || '').toLowerCase().includes(searchLower) ||
+      String(d.ci || '').toLowerCase().includes(searchLower) ||
+      String(d.primerApellido || '').toLowerCase().includes(searchLower) ||
+      String(d.nombres || '').toLowerCase().includes(searchLower) ||
+      String(d.especialidad || '').toLowerCase().includes(searchLower)
   );
 
   return (

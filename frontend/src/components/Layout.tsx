@@ -3,6 +3,7 @@ import { Outlet, Link, useLocation } from 'react-router-dom';
 import { apiClient } from '../api/client';
 import { useAuth } from '../context/AuthContext';
 import { formatRol } from '../utils/formatters';
+import { ErrorBoundary } from './ErrorBoundary';
 import {
   getStoredInstitutions,
   syncApiInstitutions,
@@ -293,7 +294,9 @@ export const Layout: React.FC = () => {
 
         {/* Content Outlet */}
         <main className="flex-1 min-w-0">
-          <Outlet />
+          <ErrorBoundary>
+            <Outlet />
+          </ErrorBoundary>
         </main>
       </div>
 

@@ -4,7 +4,10 @@ import { useAuth } from '../context/AuthContext';
 import {
   getCoursesForInstitution,
   getStudentsForInstitution,
+  saveCoursesForInstitution,
   resolveTenantKey,
+  type TenantParalelo,
+  type TenantStudent,
 } from '../utils/multiTenantStore';
 import * as XLSX from 'xlsx';
 import {
@@ -18,6 +21,7 @@ import {
   Award,
   ArrowRight,
   School,
+  Sparkles,
 } from 'lucide-react';
 
 type AttendanceStatus = 'PRESENTE' | 'FALTA' | 'ATRASO' | 'LICENCIA';
@@ -127,10 +131,40 @@ export const AttendancePage: React.FC = () => {
   const institutionName = currentInst?.nombre || 'Unidad Educativa';
 
   // Cursos y estudiantes reales de la institución activa
-  const rawCourses = getCoursesForInstitution(activeSie);
-  const rawStudents = getStudentsForInstitution(activeSie);
+  const [coursesList, setCoursesList] = useState<TenantParalelo[]>(() => getCoursesForInstitution(activeSie));
+  const [studentsList, setStudentsList] = useState<TenantStudent[]>(() => getStudentsForInstitution(activeSie));
 
-  const cursosDisponibles = rawCourses.map((c) => ({
+  useEffect(() => {
+    setCoursesList(getCoursesForInstitution(activeSie));
+    setStudentsList(getStudentsForInstitution(activeSie));
+  }, [activeSie]);
+
+  useEffect(() => {
+    const handleCourses = () => setCoursesList(getCoursesForInstitution(activeSie));
+    const handleStudents = () => setStudentsList(getStudentsForInstitution(activeSie));
+    window.addEventListener('sigma_courses_updated', handleCourses);
+    window.addEventListener('sigma_students_updated', handleStudents);
+    return () => {
+      window.removeEventListener('sigma_courses_updated', handleCourses);
+      window.removeEventListener('sigma_students_updated', handleStudents);
+    };
+  }, [activeSie]);
+
+  const handleQuickInitStandardCourses = () => {
+    const defaultCourses: TenantParalelo[] = [
+      { id: `c-${Date.now()}-1`, cursoNombre: '1° de Secundaria Comunitaria Productiva', nivel: 'SECUNDARIA', grado: 1, letra: 'A', turno: 'Mañana', cupo: 35, inscritos: 0 },
+      { id: `c-${Date.now()}-2`, cursoNombre: '2° de Secundaria Comunitaria Productiva', nivel: 'SECUNDARIA', grado: 2, letra: 'A', turno: 'Mañana', cupo: 35, inscritos: 0 },
+      { id: `c-${Date.now()}-3`, cursoNombre: '3° de Secundaria Comunitaria Productiva', nivel: 'SECUNDARIA', grado: 3, letra: 'A', turno: 'Mañana', cupo: 35, inscritos: 0 },
+      { id: `c-${Date.now()}-4`, cursoNombre: '4° de Secundaria Comunitaria Productiva', nivel: 'SECUNDARIA', grado: 4, letra: 'A', turno: 'Mañana', cupo: 35, inscritos: 0 },
+      { id: `c-${Date.now()}-5`, cursoNombre: '5° de Secundaria Comunitaria Productiva', nivel: 'SECUNDARIA', grado: 5, letra: 'A', turno: 'Mañana', cupo: 35, inscritos: 0 },
+      { id: `c-${Date.now()}-6`, cursoNombre: '6° de Secundaria Comunitaria Productiva', nivel: 'SECUNDARIA', grado: 6, letra: 'A', turno: 'Mañana', cupo: 35, inscritos: 0 },
+    ];
+    saveCoursesForInstitution(activeSie, defaultCourses);
+    setCoursesList(defaultCourses);
+    setSelectedCourse(defaultCourses[0].id);
+  };
+
+  const cursosDisponibles = coursesList.map((c) => ({
     id: c.id,
     nombre: `${c.cursoNombre} - Paralelo "${c.letra}" (${c.turno})`,
     nivel: c.nivel,
@@ -168,8 +202,8 @@ export const AttendancePage: React.FC = () => {
     if (attendanceStore[currentKey]) {
       setStudents(attendanceStore[currentKey]);
     } else {
-      const currentC = rawCourses.find((c) => c.id === selectedCourse);
-      const matchingStudents = rawStudents.filter((s) => {
+      const currentC = coursesList.find((c) => c.id === selectedCourse);
+      const matchingStudents = studentsList.filter((s) => {
         if (!currentC) return false;
         const matchGrado = s.curso.includes(`${currentC.grado}°`);
         const matchLetra =
@@ -179,7 +213,7 @@ export const AttendancePage: React.FC = () => {
         return matchGrado && matchLetra;
       });
 
-      const pool = matchingStudents.length > 0 ? matchingStudents : rawStudents.slice(0, 8);
+      const pool = matchingStudents.length > 0 ? matchingStudents : studentsList.slice(0, 8);
       const daysInMonth = new Date(2026, selectedMonth, 0).getDate();
       const generated: StudentAttendance[] = pool.map((st, idx) => {
         const days: Record<number, AttendanceStatus> = {};
@@ -204,7 +238,7 @@ export const AttendancePage: React.FC = () => {
       setStudents(generated);
       setAttendanceStore((prev) => ({ ...prev, [currentKey]: generated }));
     }
-  }, [selectedCourse, selectedMonth, activeSie, currentKey, rawCourses, rawStudents]);
+  }, [selectedCourse, selectedMonth, activeSie, currentKey, coursesList, studentsList]);
 
   // Días laborables del mes (Lunes a Viernes)
   const workingDays = useMemo(() => {
@@ -376,12 +410,21 @@ export const AttendancePage: React.FC = () => {
             <p className="text-xs text-slate-500 leading-relaxed">
               Para comenzar a controlar la asistencia mensual y generar los registros pedagógicos, primero debes registrar los cursos y paralelos de <span className="font-semibold text-slate-700">{institutionName}</span>.
             </p>
-            <div className="pt-2">
+            <div className="pt-2 flex flex-col sm:flex-row items-center justify-center gap-3">
+              <button
+                type="button"
+                onClick={handleQuickInitStandardCourses}
+                className="w-full sm:w-auto inline-flex items-center justify-center space-x-2 px-5 py-2.5 bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl text-xs font-bold transition shadow-sm cursor-pointer"
+              >
+                <Sparkles className="w-4 h-4 text-emerald-200" />
+                <span>⚡ Habilitar 1° a 6° Secundaria Ahora</span>
+              </button>
+
               <Link
                 to="/academic?create=curso"
-                className="inline-flex items-center space-x-2 px-5 py-2.5 bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl text-xs font-bold transition shadow-sm"
+                className="w-full sm:w-auto inline-flex items-center justify-center space-x-2 px-4 py-2.5 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-xl text-xs font-semibold transition"
               >
-                <span>Habilitar Cursos y Paralelos</span>
+                <span>Gestión de Cursos & Docentes</span>
                 <ArrowRight className="w-4 h-4" />
               </Link>
             </div>

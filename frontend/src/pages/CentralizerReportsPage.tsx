@@ -4,7 +4,10 @@ import { useAuth } from '../context/AuthContext';
 import {
   getCoursesForInstitution,
   getStudentsForInstitution,
+  saveCoursesForInstitution,
   resolveTenantKey,
+  type TenantParalelo,
+  type TenantStudent,
 } from '../utils/multiTenantStore';
 import {
   FileSpreadsheet,
@@ -135,10 +138,40 @@ export const CentralizerReportsPage: React.FC = () => {
   const currentInst = user?.institutions?.find(i => (i.id || i.institutionId || i.sie) === currentInstitutionId) || user?.institutions?.[0];
   const institutionName = currentInst?.nombre || 'Unidad Educativa';
 
-  const rawCourses = getCoursesForInstitution(activeSie);
-  const rawStudents = getStudentsForInstitution(activeSie);
+  const [coursesList, setCoursesList] = useState<TenantParalelo[]>(() => getCoursesForInstitution(activeSie));
+  const [studentsListRaw, setStudentsListRaw] = useState<TenantStudent[]>(() => getStudentsForInstitution(activeSie));
 
-  const cursosDisponibles = rawCourses.map((c) => ({
+  useEffect(() => {
+    setCoursesList(getCoursesForInstitution(activeSie));
+    setStudentsListRaw(getStudentsForInstitution(activeSie));
+  }, [activeSie]);
+
+  useEffect(() => {
+    const handleCourses = () => setCoursesList(getCoursesForInstitution(activeSie));
+    const handleStudents = () => setStudentsListRaw(getStudentsForInstitution(activeSie));
+    window.addEventListener('sigma_courses_updated', handleCourses);
+    window.addEventListener('sigma_students_updated', handleStudents);
+    return () => {
+      window.removeEventListener('sigma_courses_updated', handleCourses);
+      window.removeEventListener('sigma_students_updated', handleStudents);
+    };
+  }, [activeSie]);
+
+  const handleQuickInitStandardCourses = () => {
+    const defaultCourses: TenantParalelo[] = [
+      { id: `c-${Date.now()}-1`, cursoNombre: '1° de Secundaria Comunitaria Productiva', nivel: 'SECUNDARIA', grado: 1, letra: 'A', turno: 'Mañana', cupo: 35, inscritos: 0 },
+      { id: `c-${Date.now()}-2`, cursoNombre: '2° de Secundaria Comunitaria Productiva', nivel: 'SECUNDARIA', grado: 2, letra: 'A', turno: 'Mañana', cupo: 35, inscritos: 0 },
+      { id: `c-${Date.now()}-3`, cursoNombre: '3° de Secundaria Comunitaria Productiva', nivel: 'SECUNDARIA', grado: 3, letra: 'A', turno: 'Mañana', cupo: 35, inscritos: 0 },
+      { id: `c-${Date.now()}-4`, cursoNombre: '4° de Secundaria Comunitaria Productiva', nivel: 'SECUNDARIA', grado: 4, letra: 'A', turno: 'Mañana', cupo: 35, inscritos: 0 },
+      { id: `c-${Date.now()}-5`, cursoNombre: '5° de Secundaria Comunitaria Productiva', nivel: 'SECUNDARIA', grado: 5, letra: 'A', turno: 'Mañana', cupo: 35, inscritos: 0 },
+      { id: `c-${Date.now()}-6`, cursoNombre: '6° de Secundaria Comunitaria Productiva', nivel: 'SECUNDARIA', grado: 6, letra: 'A', turno: 'Mañana', cupo: 35, inscritos: 0 },
+    ];
+    saveCoursesForInstitution(activeSie, defaultCourses);
+    setCoursesList(defaultCourses);
+    setSelectedCurso(defaultCourses[0].id);
+  };
+
+  const cursosDisponibles = coursesList.map((c) => ({
     id: c.id,
     nombre: `${c.cursoNombre} - Paralelo "${c.letra}" (${c.turno})`,
     nivel: c.nivel,
@@ -163,7 +196,7 @@ export const CentralizerReportsPage: React.FC = () => {
 
   const cursoInfo = cursosDisponibles.find((c) => c.id === selectedCurso);
 
-  const matchingStudents = rawStudents.filter((s) => {
+  const matchingStudents = studentsListRaw.filter((s) => {
     if (!cursoInfo) return false;
     const matchGrado = s.curso.includes(`${cursoInfo.grado}°`);
     const matchLetra =
@@ -511,12 +544,21 @@ export const CentralizerReportsPage: React.FC = () => {
             <p className="text-xs text-slate-500 leading-relaxed">
               Para generar centralizadores oficiales, nóminas en Excel y libretas escolares del SEP de <span className="font-semibold text-slate-700">{institutionName}</span>, primero debes registrar los cursos y paralelos.
             </p>
-            <div className="pt-2">
+            <div className="pt-2 flex flex-col sm:flex-row items-center justify-center gap-3">
+              <button
+                type="button"
+                onClick={handleQuickInitStandardCourses}
+                className="w-full sm:w-auto inline-flex items-center justify-center space-x-2 px-5 py-2.5 bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl text-xs font-bold transition shadow-sm cursor-pointer"
+              >
+                <Sparkles className="w-4 h-4 text-emerald-200" />
+                <span>⚡ Habilitar 1° a 6° Secundaria Ahora</span>
+              </button>
+
               <Link
                 to="/academic?create=curso"
-                className="inline-flex items-center space-x-2 px-5 py-2.5 bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl text-xs font-bold transition shadow-sm"
+                className="w-full sm:w-auto inline-flex items-center justify-center space-x-2 px-4 py-2.5 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-xl text-xs font-semibold transition"
               >
-                <span>Habilitar Cursos y Paralelos</span>
+                <span>Gestión de Cursos & Docentes</span>
                 <ArrowRight className="w-4 h-4" />
               </Link>
             </div>
