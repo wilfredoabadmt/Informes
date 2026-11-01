@@ -58,6 +58,33 @@ export interface TenantAssignment {
   materiaCodigo?: string;
 }
 
+export interface TenantMateria {
+  id: string;
+  codigo: string;
+  nombre: string;
+  campo: string;
+  nivel: 'PRIMARIA' | 'SECUNDARIA' | 'AMBOS';
+  gradosValidos?: number[];
+  horasSemanales: number;
+  color?: string;
+  esOficial?: boolean;
+  activo: boolean;
+}
+
+export interface TenantScheduleSlot {
+  id: string;
+  cursoId: string;
+  dia: 'lunes' | 'martes' | 'miercoles' | 'jueves' | 'viernes';
+  periodo: number; // 1 a 6
+  materiaId: string;
+  materiaNombre: string;
+  materiaCodigo?: string;
+  docenteId: string;
+  docenteNombre: string;
+  aula: string;
+  color?: string;
+}
+
 export interface TenantStudent {
   id: string;
   rude: string;
@@ -559,5 +586,85 @@ export function saveStudentsForInstitution(idOrSie: string, students: TenantStud
   localStorage.setItem(`sigma_students_${sie}`, JSON.stringify(students));
   if (typeof window !== 'undefined') {
     window.dispatchEvent(new CustomEvent('sigma_students_updated', { detail: { sie, students } }));
+  }
+}
+
+// =========================================================================
+// MATERIAS / MALLA CURRICULAR POR NIVEL (PRIMARIA & SECUNDARIA SEP)
+// =========================================================================
+
+export const DEFAULT_MATERIAS_PRIMARIA: TenantMateria[] = [
+  { id: 'mat-pri-1', codigo: 'LEN', nombre: 'Comunicación y Lenguajes (Castellana, Originaria y Extranjera)', campo: 'Comunidad y Sociedad', nivel: 'PRIMARIA', horasSemanales: 6, color: 'bg-emerald-50 border-emerald-300 text-emerald-900', esOficial: true, activo: true },
+  { id: 'mat-pri-2', codigo: 'SOC', nombre: 'Ciencias Sociales', campo: 'Comunidad y Sociedad', nivel: 'PRIMARIA', horasSemanales: 4, color: 'bg-amber-50 border-amber-300 text-amber-900', esOficial: true, activo: true },
+  { id: 'mat-pri-3', codigo: 'EFD', nombre: 'Educación Física y Deportes', campo: 'Comunidad y Sociedad', nivel: 'PRIMARIA', horasSemanales: 2, color: 'bg-teal-50 border-teal-300 text-teal-900', esOficial: true, activo: true },
+  { id: 'mat-pri-4', codigo: 'EMU', nombre: 'Educación Musical', campo: 'Comunidad y Sociedad', nivel: 'PRIMARIA', horasSemanales: 2, color: 'bg-indigo-50 border-indigo-300 text-indigo-900', esOficial: true, activo: true },
+  { id: 'mat-pri-5', codigo: 'APV', nombre: 'Artes Plásticas y Visuales', campo: 'Comunidad y Sociedad', nivel: 'PRIMARIA', horasSemanales: 2, color: 'bg-rose-50 border-rose-300 text-rose-900', esOficial: true, activo: true },
+  { id: 'mat-pri-6', codigo: 'MAT', nombre: 'Matemática', campo: 'Ciencia, Tecnología y Producción', nivel: 'PRIMARIA', horasSemanales: 6, color: 'bg-blue-50 border-blue-300 text-blue-900', esOficial: true, activo: true },
+  { id: 'mat-pri-7', codigo: 'TEC', nombre: 'Técnica Tecnológica', campo: 'Ciencia, Tecnología y Producción', nivel: 'PRIMARIA', horasSemanales: 2, color: 'bg-violet-50 border-violet-300 text-violet-900', esOficial: true, activo: true },
+  { id: 'mat-pri-8', codigo: 'NAT', nombre: 'Ciencias Naturales', campo: 'Vida, Tierra y Territorio', nivel: 'PRIMARIA', horasSemanales: 4, color: 'bg-green-50 border-green-300 text-green-900', esOficial: true, activo: true },
+  { id: 'mat-pri-9', codigo: 'VER', nombre: 'Valores, Espiritualidad y Religiones', campo: 'Cosmos y Pensamiento', nivel: 'PRIMARIA', horasSemanales: 2, color: 'bg-purple-50 border-purple-300 text-purple-900', esOficial: true, activo: true },
+];
+
+export const DEFAULT_MATERIAS_SECUNDARIA: TenantMateria[] = [
+  { id: 'mat-sec-1', codigo: 'LEN-SEC', nombre: 'Lengua Castellana y Originaria', campo: 'Comunidad y Sociedad', nivel: 'SECUNDARIA', horasSemanales: 5, color: 'bg-emerald-50 border-emerald-300 text-emerald-900', esOficial: true, activo: true },
+  { id: 'mat-sec-2', codigo: 'ING-SEC', nombre: 'Lengua Extranjera (Inglés)', campo: 'Comunidad y Sociedad', nivel: 'SECUNDARIA', horasSemanales: 3, color: 'bg-sky-50 border-sky-300 text-sky-900', esOficial: true, activo: true },
+  { id: 'mat-sec-3', codigo: 'SOC-SEC', nombre: 'Ciencias Sociales (Historia, Cívica)', campo: 'Comunidad y Sociedad', nivel: 'SECUNDARIA', horasSemanales: 4, color: 'bg-amber-50 border-amber-300 text-amber-900', esOficial: true, activo: true },
+  { id: 'mat-sec-4', codigo: 'EFD-SEC', nombre: 'Educación Física y Deportes', campo: 'Comunidad y Sociedad', nivel: 'SECUNDARIA', horasSemanales: 2, color: 'bg-teal-50 border-teal-300 text-teal-900', esOficial: true, activo: true },
+  { id: 'mat-sec-5', codigo: 'EMU-SEC', nombre: 'Educación Musical', campo: 'Comunidad y Sociedad', nivel: 'SECUNDARIA', horasSemanales: 2, color: 'bg-indigo-50 border-indigo-300 text-indigo-900', esOficial: true, activo: true },
+  { id: 'mat-sec-6', codigo: 'APV-SEC', nombre: 'Artes Plásticas y Visuales', campo: 'Comunidad y Sociedad', nivel: 'SECUNDARIA', horasSemanales: 2, color: 'bg-rose-50 border-rose-300 text-rose-900', esOficial: true, activo: true },
+  { id: 'mat-sec-7', codigo: 'MAT-SEC', nombre: 'Matemática (Álgebra, Geometría)', campo: 'Ciencia, Tecnología y Producción', nivel: 'SECUNDARIA', horasSemanales: 5, color: 'bg-blue-50 border-blue-300 text-blue-900', esOficial: true, activo: true },
+  { id: 'mat-sec-8', codigo: 'TEC-SEC', nombre: 'Técnica Tecnológica Productiva', campo: 'Ciencia, Tecnología y Producción', nivel: 'SECUNDARIA', horasSemanales: 4, color: 'bg-violet-50 border-violet-300 text-violet-900', esOficial: true, activo: true },
+  { id: 'mat-sec-9', codigo: 'FIS-SEC', nombre: 'Física', campo: 'Vida, Tierra y Territorio', nivel: 'SECUNDARIA', horasSemanales: 4, color: 'bg-cyan-50 border-cyan-300 text-cyan-900', esOficial: true, activo: true },
+  { id: 'mat-sec-10', codigo: 'QUI-SEC', nombre: 'Química', campo: 'Vida, Tierra y Territorio', nivel: 'SECUNDARIA', horasSemanales: 4, color: 'bg-blue-50 border-blue-300 text-blue-900', esOficial: true, activo: true },
+  { id: 'mat-sec-11', codigo: 'BIO-SEC', nombre: 'Biología - Geografía', campo: 'Vida, Tierra y Territorio', nivel: 'SECUNDARIA', horasSemanales: 4, color: 'bg-green-50 border-green-300 text-green-900', esOficial: true, activo: true },
+  { id: 'mat-sec-12', codigo: 'FIL-SEC', nombre: 'Cosmovisiones, Filosofía y Psicología', campo: 'Cosmos y Pensamiento', nivel: 'SECUNDARIA', horasSemanales: 2, color: 'bg-orange-50 border-orange-300 text-orange-900', esOficial: true, activo: true },
+  { id: 'mat-sec-13', codigo: 'VER-SEC', nombre: 'Valores, Espiritualidad y Religiones', campo: 'Cosmos y Pensamiento', nivel: 'SECUNDARIA', horasSemanales: 2, color: 'bg-purple-50 border-purple-300 text-purple-900', esOficial: true, activo: true },
+];
+
+export const DEFAULT_MATERIAS: TenantMateria[] = [
+  ...DEFAULT_MATERIAS_PRIMARIA,
+  ...DEFAULT_MATERIAS_SECUNDARIA,
+];
+
+export function getMateriasForInstitution(idOrSie: string): TenantMateria[] {
+  const sie = resolveTenantKey(idOrSie);
+  try {
+    const raw = localStorage.getItem(`sigma_materias_${sie}`);
+    if (raw) return JSON.parse(raw);
+  } catch (e) {
+    console.error('Error loading materias for institution', e);
+  }
+  localStorage.setItem(`sigma_materias_${sie}`, JSON.stringify(DEFAULT_MATERIAS));
+  return DEFAULT_MATERIAS;
+}
+
+export function saveMateriasForInstitution(idOrSie: string, materias: TenantMateria[]): void {
+  const sie = resolveTenantKey(idOrSie);
+  localStorage.setItem(`sigma_materias_${sie}`, JSON.stringify(materias));
+  if (typeof window !== 'undefined') {
+    window.dispatchEvent(new CustomEvent('sigma_materias_updated', { detail: { sie, materias } }));
+  }
+}
+
+// =========================================================================
+// GESTIÓN DE HORARIOS ESCOLARES (SCHEDULE STORE POR CURSO Y DOCENTE)
+// =========================================================================
+
+export function getSchedulesForInstitution(idOrSie: string): TenantScheduleSlot[] {
+  const sie = resolveTenantKey(idOrSie);
+  try {
+    const raw = localStorage.getItem(`sigma_schedules_${sie}`);
+    if (raw) return JSON.parse(raw);
+  } catch (e) {
+    console.error('Error loading schedules for institution', e);
+  }
+  return [];
+}
+
+export function saveSchedulesForInstitution(idOrSie: string, slots: TenantScheduleSlot[]): void {
+  const sie = resolveTenantKey(idOrSie);
+  localStorage.setItem(`sigma_schedules_${sie}`, JSON.stringify(slots));
+  if (typeof window !== 'undefined') {
+    window.dispatchEvent(new CustomEvent('sigma_schedules_updated', { detail: { sie, slots } }));
   }
 }

@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import * as XLSX from 'xlsx';
 import { useSearchParams } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import { formatNivelEducativo, formatCampoSaberes } from '../utils/formatters';
@@ -24,6 +25,8 @@ import {
   School,
   FileCheck,
   Building2,
+  FileSpreadsheet,
+  Filter,
 } from 'lucide-react';
 import {
   getCoursesForInstitution,
@@ -32,12 +35,17 @@ import {
   saveTeachersForInstitution,
   getAssignmentsForInstitution,
   saveAssignmentsForInstitution,
+  getMateriasForInstitution,
+  saveMateriasForInstitution,
+  DEFAULT_MATERIAS_PRIMARIA,
+  DEFAULT_MATERIAS_SECUNDARIA,
   getStoredInstitutions,
   resolveTenantKey,
   type TenantParalelo,
   type TenantTeacher,
   type TenantAssignment,
   type TenantInstitution,
+  type TenantMateria,
 } from '../utils/multiTenantStore';
 
 interface ParaleloItem {
@@ -68,14 +76,7 @@ interface TeacherItem {
   horasAsignadas: number;
 }
 
-interface MateriaItem {
-  id: string;
-  codigo: string;
-  nombre: string;
-  campo: string;
-  nivel: string;
-  esTroncal: boolean;
-}
+type MateriaItem = TenantMateria;
 
 type AsignacionItem = TenantAssignment;
 
@@ -139,122 +140,15 @@ export const AcademicPage: React.FC = () => {
   // 2. Plantel Docente (Profesores) State (Multi-tenant scoped)
   const [docentes, setDocentes] = useState<TeacherItem[]>(() => getTeachersForInstitution(activeSie));
 
-  // 3. Materias State
-  const [materias, setMaterias] = useState<MateriaItem[]>([
-    {
-      id: 'm-1',
-      codigo: 'LEN-SEC-1',
-      nombre: 'Comunicación y Lenguajes',
-      campo: 'COMUNIDAD_Y_SOCIEDAD',
-      nivel: 'SECUNDARIA',
-      esTroncal: true,
-    },
-    {
-      id: 'm-2',
-      codigo: 'MAT-SEC-1',
-      nombre: 'Matemática y Lógica',
-      campo: 'CIENCIA_TECNOLOGIA_PRODUCCION',
-      nivel: 'SECUNDARIA',
-      esTroncal: true,
-    },
-    {
-      id: 'm-3',
-      codigo: 'BIO-SEC-1',
-      nombre: 'Ciencias Naturales: Biología - Geografía',
-      campo: 'VIDA_TIERRA_TERRITORIO',
-      nivel: 'SECUNDARIA',
-      esTroncal: true,
-    },
-    {
-      id: 'm-4',
-      codigo: 'SOC-SEC-1',
-      nombre: 'Ciencias Sociales e Historia',
-      campo: 'COMUNIDAD_Y_SOCIEDAD',
-      nivel: 'SECUNDARIA',
-      esTroncal: true,
-    },
-    {
-      id: 'm-5',
-      codigo: 'VAL-SEC-1',
-      nombre: 'Valores, Espiritualidades y Religiones',
-      campo: 'COSMOS_Y_PENSAMIENTO',
-      nivel: 'SECUNDARIA',
-      esTroncal: true,
-    },
-    // 9 Áreas Oficiales de Primaria Comunitaria Vocacional (Modelo Primaria.xlsm SEP)
-    {
-      id: 'm-pri-1',
-      codigo: 'LEN-PRI',
-      nombre: 'Comunicación y Lenguajes (Lengua Castellana, Originaria y Extranjera)',
-      campo: 'COMUNIDAD_Y_SOCIEDAD',
-      nivel: 'PRIMARIA',
-      esTroncal: true,
-    },
-    {
-      id: 'm-pri-2',
-      codigo: 'SOC-PRI',
-      nombre: 'Ciencias Sociales',
-      campo: 'COMUNIDAD_Y_SOCIEDAD',
-      nivel: 'PRIMARIA',
-      esTroncal: true,
-    },
-    {
-      id: 'm-pri-3',
-      codigo: 'EFD-PRI',
-      nombre: 'Educación Física y Deportes',
-      campo: 'COMUNIDAD_Y_SOCIEDAD',
-      nivel: 'PRIMARIA',
-      esTroncal: true,
-    },
-    {
-      id: 'm-pri-4',
-      codigo: 'EMU-PRI',
-      nombre: 'Educación Musical',
-      campo: 'COMUNIDAD_Y_SOCIEDAD',
-      nivel: 'PRIMARIA',
-      esTroncal: true,
-    },
-    {
-      id: 'm-pri-5',
-      codigo: 'APV-PRI',
-      nombre: 'Artes Plásticas y Visuales',
-      campo: 'COMUNIDAD_Y_SOCIEDAD',
-      nivel: 'PRIMARIA',
-      esTroncal: true,
-    },
-    {
-      id: 'm-pri-6',
-      codigo: 'MAT-PRI',
-      nombre: 'Matemática',
-      campo: 'CIENCIA_TECNOLOGIA_PRODUCCION',
-      nivel: 'PRIMARIA',
-      esTroncal: true,
-    },
-    {
-      id: 'm-pri-7',
-      codigo: 'TEC-PRI',
-      nombre: 'Técnica Tecnológica',
-      campo: 'CIENCIA_TECNOLOGIA_PRODUCCION',
-      nivel: 'PRIMARIA',
-      esTroncal: true,
-    },
-    {
-      id: 'm-pri-8',
-      codigo: 'NAT-PRI',
-      nombre: 'Ciencias Naturales',
-      campo: 'VIDA_TIERRA_TERRITORIO',
-      nivel: 'PRIMARIA',
-      esTroncal: true,
-    },
-    {
-      id: 'm-pri-9',
-      codigo: 'VER-PRI',
-      nombre: 'Valores, Espiritualidad y Religiones',
-      campo: 'COSMOS_Y_PENSAMIENTO',
-      nivel: 'PRIMARIA',
-      esTroncal: true,
-    },
-  ]);
+  // 3. Materias State (Multi-tenant scoped con currículo oficial)
+  const [materias, setMaterias] = useState<TenantMateria[]>(() => getMateriasForInstitution(activeSie));
+
+  // Filtros de Materias
+  const [materiaFilterNivel, setMateriaFilterNivel] = useState<'ALL' | 'PRIMARIA' | 'SECUNDARIA'>('ALL');
+  const [materiaFilterCampo, setMateriaFilterCampo] = useState<string>('ALL');
+  const [searchMateria, setSearchMateria] = useState('');
+  const [editingMateriaId, setEditingMateriaId] = useState<string | null>(null);
+  const [materiaModalMode, setMateriaModalMode] = useState<'create' | 'edit'>('create');
 
   // 4. Asignaciones Docentes State (Multi-tenant scoped)
   const [asignaciones, setAsignaciones] = useState<AsignacionItem[]>(() => getAssignmentsForInstitution(activeSie));
@@ -266,6 +160,7 @@ export const AcademicPage: React.FC = () => {
     setParalelos(getCoursesForInstitution(activeSie));
     setDocentes(getTeachersForInstitution(activeSie));
     setAsignaciones(getAssignmentsForInstitution(activeSie));
+    setMaterias(getMateriasForInstitution(activeSie));
   }, [activeSie]);
 
   // Modals state - auto-abrir si se pasó ?create=curso o ?open=curso en la URL
@@ -307,11 +202,19 @@ export const AcademicPage: React.FC = () => {
   });
 
   const [showMateriaModal, setShowMateriaModal] = useState(false);
-  const [newMateria, setNewMateria] = useState({
+  const [newMateria, setNewMateria] = useState<{
+    codigo: string;
+    nombre: string;
+    campo: string;
+    nivel: 'PRIMARIA' | 'SECUNDARIA' | 'AMBOS';
+    horasSemanales: number;
+    esTroncal: boolean;
+  }>({
     codigo: '',
     nombre: '',
-    campo: 'COMUNIDAD_Y_SOCIEDAD',
+    campo: 'Comunidad y Sociedad',
     nivel: 'SECUNDARIA',
+    horasSemanales: 4,
     esTroncal: true,
   });
 
@@ -459,20 +362,133 @@ export const AcademicPage: React.FC = () => {
   };
 
   // Handlers for Materias CRUD
-  const handleAddMateria = (e: React.FormEvent) => {
+  const handleOpenCreateMateria = () => {
+    setMateriaModalMode('create');
+    setEditingMateriaId(null);
+    setNewMateria({
+      codigo: '',
+      nombre: '',
+      campo: 'Comunidad y Sociedad',
+      nivel: materiaFilterNivel === 'ALL' ? 'SECUNDARIA' : materiaFilterNivel,
+      horasSemanales: 4,
+      esTroncal: true,
+    });
+    setShowMateriaModal(true);
+  };
+
+  const handleOpenEditMateria = (m: TenantMateria) => {
+    setMateriaModalMode('edit');
+    setEditingMateriaId(m.id);
+    setNewMateria({
+      codigo: m.codigo,
+      nombre: m.nombre,
+      campo: m.campo,
+      nivel: m.nivel,
+      horasSemanales: m.horasSemanales || 4,
+      esTroncal: m.esOficial ?? true,
+    });
+    setShowMateriaModal(true);
+  };
+
+  const handleSaveMateria = (e: React.FormEvent) => {
     e.preventDefault();
-    const item: MateriaItem = {
-      id: `m-${Date.now()}`,
-      ...newMateria,
-    };
-    setMaterias([...materias, item]);
+    if (materiaModalMode === 'edit' && editingMateriaId) {
+      const updated = materias.map((m) =>
+        m.id === editingMateriaId
+          ? {
+              ...m,
+              codigo: newMateria.codigo.trim().toUpperCase(),
+              nombre: newMateria.nombre.trim(),
+              campo: newMateria.campo,
+              nivel: newMateria.nivel,
+              horasSemanales: Number(newMateria.horasSemanales) || 4,
+              esOficial: newMateria.esTroncal,
+            }
+          : m
+      );
+      setMaterias(updated);
+      saveMateriasForInstitution(activeSie, updated);
+      triggerFeedback('✅ Asignatura curricular actualizada exitosamente.');
+    } else {
+      const item: TenantMateria = {
+        id: `m-${Date.now()}`,
+        codigo: newMateria.codigo.trim().toUpperCase(),
+        nombre: newMateria.nombre.trim(),
+        campo: newMateria.campo,
+        nivel: newMateria.nivel,
+        horasSemanales: Number(newMateria.horasSemanales) || 4,
+        esOficial: newMateria.esTroncal,
+        activo: true,
+      };
+      const updated = [...materias, item];
+      setMaterias(updated);
+      saveMateriasForInstitution(activeSie, updated);
+      triggerFeedback('✅ Nueva materia curricular registrada en el plan de estudios.');
+    }
     setShowMateriaModal(false);
-    triggerFeedback('¡Materia curricular registrada en el plan de estudios!');
   };
 
   const handleDeleteMateria = (id: string) => {
-    setMaterias(materias.filter((m) => m.id !== id));
+    const updated = materias.filter((m) => m.id !== id);
+    setMaterias(updated);
+    saveMateriasForInstitution(activeSie, updated);
     triggerFeedback('Materia dada de baja de la malla curricular.');
+  };
+
+  const handleRestoreMallaPrimaria = () => {
+    // Incorpora las 9 materias oficiales de primaria evitando duplicar códigos
+    const existingCodes = new Set(materias.map((m) => m.codigo));
+    const toAdd = DEFAULT_MATERIAS_PRIMARIA.filter((p) => !existingCodes.has(p.codigo));
+    const updated = [...materias, ...toAdd];
+    setMaterias(updated);
+    saveMateriasForInstitution(activeSie, updated);
+    setMateriaFilterNivel('PRIMARIA');
+    triggerFeedback(`✅ Malla curricular de Primaria Comunitaria Vocacional incorporada (${toAdd.length} áreas agregadas).`);
+  };
+
+  const handleRestoreMallaSecundaria = () => {
+    // Incorpora las 13 materias oficiales de secundaria evitando duplicar códigos
+    const existingCodes = new Set(materias.map((m) => m.codigo));
+    const toAdd = DEFAULT_MATERIAS_SECUNDARIA.filter((s) => !existingCodes.has(s.codigo));
+    const updated = [...materias, ...toAdd];
+    setMaterias(updated);
+    saveMateriasForInstitution(activeSie, updated);
+    setMateriaFilterNivel('SECUNDARIA');
+    triggerFeedback(`✅ Malla curricular de Secundaria Comunitaria Productiva incorporada (${toAdd.length} áreas agregadas).`);
+  };
+
+  const filteredMaterias: TenantMateria[] = materias.filter((m) => {
+    const matchesNivel =
+      materiaFilterNivel === 'ALL' ||
+      m.nivel === materiaFilterNivel ||
+      m.nivel === 'AMBOS';
+
+    const matchesCampo =
+      materiaFilterCampo === 'ALL' || m.campo.toLowerCase().includes(materiaFilterCampo.toLowerCase());
+
+    const matchesSearch =
+      m.nombre.toLowerCase().includes(searchMateria.toLowerCase()) ||
+      m.codigo.toLowerCase().includes(searchMateria.toLowerCase());
+
+    return matchesNivel && matchesCampo && matchesSearch;
+  });
+
+  const handleExportMallaExcel = () => {
+    const wb = XLSX.utils.book_new();
+    const rows = filteredMaterias.map((m, idx) => ({
+      NRO: idx + 1,
+      CODIGO: m.codigo,
+      ASIGNATURA: m.nombre,
+      NIVEL: m.nivel,
+      CAMPO_DE_SABERES: m.campo,
+      CARGA_HORARIA_SEMANAL: `${m.horasSemanales} hrs`,
+      TIPO: m.esOficial ? 'Troncal Ministerial' : 'Complementaria',
+      ESTADO: m.activo ? 'ACTIVO' : 'INACTIVO',
+    }));
+    const ws = XLSX.utils.json_to_sheet(rows);
+    XLSX.utils.book_append_sheet(wb, ws, 'MALLA_CURRICULAR');
+    XLSX.writeFile(wb, `Malla_Curricular_${activeSie || 'SEP'}_2026.xlsx`);
+    triggerFeedback('✅ Malla curricular exportada a Excel.');
   };
 
   // Handlers for Asignaciones CRUD
@@ -609,13 +625,42 @@ export const AcademicPage: React.FC = () => {
             )}
 
             {tab === 'materias' && (
-              <button
-                onClick={() => setShowMateriaModal(true)}
-                className="inline-flex items-center space-x-1.5 px-4 py-2 bg-emerald-600 hover:bg-emerald-700 text-white rounded-lg text-xs font-bold transition shadow-sm"
-              >
-                <Plus className="w-4 h-4" />
-                <span>+ Nueva Materia</span>
-              </button>
+              <div className="flex flex-wrap items-center gap-2">
+                <button
+                  type="button"
+                  onClick={handleRestoreMallaPrimaria}
+                  className="inline-flex items-center space-x-1.5 px-3 py-2 bg-blue-50 hover:bg-blue-100 text-blue-700 rounded-lg text-xs font-semibold transition cursor-pointer border border-blue-200"
+                  title="Cargar 9 áreas oficiales de Primaria Comunitaria Vocacional (Ley 070)"
+                >
+                  <Sparkles className="w-3.5 h-3.5 text-blue-600" />
+                  <span>🎒 9 Áreas Primaria</span>
+                </button>
+                <button
+                  type="button"
+                  onClick={handleRestoreMallaSecundaria}
+                  className="inline-flex items-center space-x-1.5 px-3 py-2 bg-purple-50 hover:bg-purple-100 text-purple-700 rounded-lg text-xs font-semibold transition cursor-pointer border border-purple-200"
+                  title="Cargar 13 áreas oficiales de Secundaria Comunitaria Productiva (Ley 070)"
+                >
+                  <Sparkles className="w-3.5 h-3.5 text-purple-600" />
+                  <span>🎓 13 Áreas Secundaria</span>
+                </button>
+                <button
+                  type="button"
+                  onClick={handleExportMallaExcel}
+                  className="inline-flex items-center space-x-1.5 px-3 py-2 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-lg text-xs font-semibold transition cursor-pointer"
+                >
+                  <FileSpreadsheet className="w-3.5 h-3.5 text-emerald-600" />
+                  <span>Exportar (.xlsx)</span>
+                </button>
+                <button
+                  type="button"
+                  onClick={handleOpenCreateMateria}
+                  className="inline-flex items-center space-x-1.5 px-4 py-2 bg-emerald-600 hover:bg-emerald-700 text-white rounded-lg text-xs font-bold transition shadow-sm cursor-pointer"
+                >
+                  <Plus className="w-4 h-4" />
+                  <span>+ Nueva Materia</span>
+                </button>
+              </div>
             )}
           </div>
         )}
@@ -1028,56 +1073,193 @@ export const AcademicPage: React.FC = () => {
       {/* TAB 4: MALLA CURRICULAR                                                   */}
       {/* ========================================================================= */}
       {tab === 'materias' && (
-        <div className="bg-white rounded-xl border border-slate-200 shadow-sm overflow-hidden">
-          <div className="px-6 py-4 border-b border-slate-200 bg-slate-50 flex items-center justify-between">
-            <h2 className="text-sm font-bold text-slate-800 uppercase tracking-wide">
-              Malla Curricular por Campos de Saberes
-            </h2>
-            <span className="text-xs text-slate-500">Currículo Base del SEP</span>
+        <div className="space-y-4">
+          {/* Barra de Filtros y Búsqueda de Materias */}
+          <div className="bg-white p-4 rounded-xl border border-slate-200 shadow-sm flex flex-col md:flex-row items-center justify-between gap-3">
+            {/* Pills de Nivel Educativo */}
+            <div className="flex items-center space-x-1.5 bg-slate-100 p-1 rounded-xl w-full md:w-auto">
+              <button
+                type="button"
+                onClick={() => setMateriaFilterNivel('ALL')}
+                className={`px-3 py-1.5 rounded-lg text-xs font-bold transition cursor-pointer ${
+                  materiaFilterNivel === 'ALL'
+                    ? 'bg-white text-slate-900 shadow-xs'
+                    : 'text-slate-600 hover:text-slate-900'
+                }`}
+              >
+                Todas ({materias.length})
+              </button>
+              <button
+                type="button"
+                onClick={() => setMateriaFilterNivel('PRIMARIA')}
+                className={`px-3 py-1.5 rounded-lg text-xs font-bold transition cursor-pointer flex items-center space-x-1 ${
+                  materiaFilterNivel === 'PRIMARIA'
+                    ? 'bg-blue-600 text-white shadow-xs'
+                    : 'text-slate-600 hover:text-blue-700'
+                }`}
+              >
+                <span>🎒 Primaria</span>
+                <span className="text-[10px] opacity-90">
+                  ({materias.filter((m) => m.nivel === 'PRIMARIA' || m.nivel === 'AMBOS').length})
+                </span>
+              </button>
+              <button
+                type="button"
+                onClick={() => setMateriaFilterNivel('SECUNDARIA')}
+                className={`px-3 py-1.5 rounded-lg text-xs font-bold transition cursor-pointer flex items-center space-x-1 ${
+                  materiaFilterNivel === 'SECUNDARIA'
+                    ? 'bg-purple-600 text-white shadow-xs'
+                    : 'text-slate-600 hover:text-purple-700'
+                }`}
+              >
+                <span>🎓 Secundaria</span>
+                <span className="text-[10px] opacity-90">
+                  ({materias.filter((m) => m.nivel === 'SECUNDARIA' || m.nivel === 'AMBOS').length})
+                </span>
+              </button>
+            </div>
+
+            <div className="flex items-center space-x-2 w-full md:w-auto">
+              {/* Filtro por Campo de Saberes */}
+              <select
+                value={materiaFilterCampo}
+                onChange={(e) => setMateriaFilterCampo(e.target.value)}
+                className="text-xs bg-slate-50 border border-slate-200 rounded-lg px-2.5 py-1.5 text-slate-700 font-semibold focus:outline-none focus:ring-2 focus:ring-emerald-500"
+              >
+                <option value="ALL">🌐 Todos los Campos</option>
+                <option value="Comunidad y Sociedad">Comunidad y Sociedad</option>
+                <option value="Ciencia, Tecnología y Producción">Ciencia, Tecnología y Producción</option>
+                <option value="Vida, Tierra y Territorio">Vida, Tierra y Territorio</option>
+                <option value="Cosmos y Pensamiento">Cosmos y Pensamiento</option>
+              </select>
+
+              {/* Búsqueda rápida */}
+              <div className="relative flex-1 md:w-48">
+                <Search className="w-3.5 h-3.5 text-slate-400 absolute left-2.5 top-2.5" />
+                <input
+                  type="text"
+                  placeholder="Buscar materia..."
+                  value={searchMateria}
+                  onChange={(e) => setSearchMateria(e.target.value)}
+                  className="w-full text-xs pl-8 pr-3 py-1.5 bg-slate-50 border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-emerald-500"
+                />
+              </div>
+            </div>
           </div>
-          <div className="overflow-x-auto">
-            <table className="w-full text-left border-collapse text-xs">
-              <thead>
-                <tr className="bg-slate-100 border-b border-slate-200 text-slate-700 font-bold">
-                  <th className="py-3 px-3 w-28">Código</th>
-                  <th className="py-3 px-4 min-w-[200px]">Asignatura / Área</th>
-                  <th className="py-3 px-4 min-w-[220px]">Campo de Saberes y Conocimientos</th>
-                  <th className="py-3 px-3 text-center">Nivel</th>
-                  <th className="py-3 px-3 text-center">Tipo</th>
-                  {!isMaestro && <th className="py-3 px-3 text-center w-24">Acciones</th>}
-                </tr>
-              </thead>
-              <tbody className="divide-y divide-slate-100">
-                {materias.map((m) => (
-                  <tr key={m.id} className="hover:bg-slate-50 transition">
-                    <td className="py-3 px-3 font-mono font-bold text-slate-600">{m.codigo}</td>
-                    <td className="py-3 px-4 font-semibold text-slate-900">{m.nombre}</td>
-                    <td className="py-3 px-4 text-slate-700">{formatCampoSaberes(m.campo)}</td>
-                    <td className="py-3 px-3 text-center">
-                      <span className="px-2 py-0.5 rounded bg-slate-100 text-slate-700 text-[10px] font-bold">
-                        {formatNivelEducativo(m.nivel)}
-                      </span>
-                    </td>
-                    <td className="py-3 px-3 text-center">
-                      <span className="px-2 py-0.5 rounded-full bg-emerald-50 text-emerald-800 font-semibold text-[10px]">
-                        {m.esTroncal ? 'Área Troncal' : 'Complementaria'}
-                      </span>
-                    </td>
-                    {!isMaestro && (
-                      <td className="py-3 px-3 text-center">
-                        <button
-                          onClick={() => handleDeleteMateria(m.id)}
-                          className="p-1.5 text-slate-400 hover:text-rose-600 transition"
-                          title="Eliminar Materia"
-                        >
-                          <Trash2 className="w-3.5 h-3.5" />
-                        </button>
-                      </td>
-                    )}
+
+          {/* Tabla de Materias */}
+          <div className="bg-white rounded-xl border border-slate-200 shadow-sm overflow-hidden">
+            <div className="px-6 py-4 border-b border-slate-200 bg-slate-50 flex items-center justify-between">
+              <h2 className="text-sm font-bold text-slate-800 uppercase tracking-wide flex items-center space-x-2">
+                <BookOpen className="w-4 h-4 text-emerald-600" />
+                <span>
+                  Malla Curricular ({filteredMaterias.length} de {materias.length} Asignaturas)
+                </span>
+              </h2>
+              <span className="text-xs text-slate-500">Currículo Base Oficial del SEP (Ley 070)</span>
+            </div>
+            <div className="overflow-x-auto">
+              <table className="w-full text-left border-collapse text-xs">
+                <thead>
+                  <tr className="bg-slate-100 border-b border-slate-200 text-slate-700 font-bold">
+                    <th className="py-3 px-3 w-24">Código</th>
+                    <th className="py-3 px-4 min-w-[220px]">Asignatura / Área</th>
+                    <th className="py-3 px-4 min-w-[240px]">Campo de Saberes y Conocimientos</th>
+                    <th className="py-3 px-3 text-center">Nivel</th>
+                    <th className="py-3 px-3 text-center">Carga Horaria</th>
+                    <th className="py-3 px-3 text-center">Tipo</th>
+                    {!isMaestro && <th className="py-3 px-3 text-center w-28">Acciones</th>}
                   </tr>
-                ))}
-              </tbody>
-            </table>
+                </thead>
+                <tbody className="divide-y divide-slate-100">
+                  {filteredMaterias.length === 0 ? (
+                    <tr>
+                      <td colSpan={7} className="py-8 text-center text-slate-400 text-xs">
+                        <p>No se encontraron asignaturas con los filtros seleccionados.</p>
+                        <div className="mt-2 space-x-2">
+                          <button
+                            type="button"
+                            onClick={handleRestoreMallaPrimaria}
+                            className="text-blue-600 hover:underline font-bold"
+                          >
+                            + Cargar Malla Primaria (9 Áreas)
+                          </button>
+                          <span>•</span>
+                          <button
+                            type="button"
+                            onClick={handleRestoreMallaSecundaria}
+                            className="text-purple-600 hover:underline font-bold"
+                          >
+                            + Cargar Malla Secundaria (13 Áreas)
+                          </button>
+                        </div>
+                      </td>
+                    </tr>
+                  ) : (
+                    filteredMaterias.map((m) => (
+                      <tr key={m.id} className="hover:bg-slate-50 transition">
+                        <td className="py-3 px-3 font-mono font-bold text-slate-700">
+                          <span className="bg-slate-100 text-slate-800 px-2 py-0.5 rounded border border-slate-200">
+                            {m.codigo}
+                          </span>
+                        </td>
+                        <td className="py-3 px-4 font-bold text-slate-900">{m.nombre}</td>
+                        <td className="py-3 px-4 text-slate-700">
+                          <span className="text-xs font-medium text-slate-700">
+                            {formatCampoSaberes(m.campo)}
+                          </span>
+                        </td>
+                        <td className="py-3 px-3 text-center">
+                          <span
+                            className={`px-2 py-0.5 rounded text-[10px] font-bold ${
+                              m.nivel === 'PRIMARIA'
+                                ? 'bg-blue-100 text-blue-800 border border-blue-200'
+                                : m.nivel === 'SECUNDARIA'
+                                ? 'bg-purple-100 text-purple-800 border border-purple-200'
+                                : 'bg-emerald-100 text-emerald-800 border border-emerald-200'
+                            }`}
+                          >
+                            {m.nivel === 'AMBOS' ? 'PRIMARIA & SECUNDARIA' : m.nivel}
+                          </span>
+                        </td>
+                        <td className="py-3 px-3 text-center">
+                          <span className="font-semibold text-slate-700 bg-slate-100 px-2 py-0.5 rounded text-[11px]">
+                            {m.horasSemanales || 4} hrs/sem
+                          </span>
+                        </td>
+                        <td className="py-3 px-3 text-center">
+                          <span className="px-2 py-0.5 rounded-full bg-emerald-50 text-emerald-800 font-semibold text-[10px]">
+                            {m.esOficial ?? true ? 'Troncal Ministerial' : 'Complementaria'}
+                          </span>
+                        </td>
+                        {!isMaestro && (
+                          <td className="py-3 px-3 text-center">
+                            <div className="flex items-center justify-center space-x-1">
+                              <button
+                                type="button"
+                                onClick={() => handleOpenEditMateria(m)}
+                                className="p-1.5 text-slate-500 hover:text-emerald-700 hover:bg-emerald-50 rounded transition cursor-pointer"
+                                title="Editar Asignatura"
+                              >
+                                <Edit2 className="w-3.5 h-3.5" />
+                              </button>
+                              <button
+                                type="button"
+                                onClick={() => handleDeleteMateria(m.id)}
+                                className="p-1.5 text-slate-400 hover:text-rose-600 hover:bg-rose-50 rounded transition cursor-pointer"
+                                title="Eliminar Materia"
+                              >
+                                <Trash2 className="w-3.5 h-3.5" />
+                              </button>
+                            </div>
+                          </td>
+                        )}
+                      </tr>
+                    ))
+                  )}
+                </tbody>
+              </table>
+            </div>
           </div>
         </div>
       )}
@@ -1540,18 +1722,24 @@ export const AcademicPage: React.FC = () => {
       )}
 
       {/* ========================================================================= */}
-      {/* MODAL: NUEVA MATERIA                                                      */}
+      {/* MODAL: CREAR / EDITAR MATERIA                                             */}
       {/* ========================================================================= */}
       {showMateriaModal && (
         <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-50 flex items-center justify-center p-4">
           <div className="bg-white rounded-2xl max-w-md w-full p-6 shadow-2xl border border-slate-200 space-y-4 animate-scaleUp">
             <div className="flex justify-between items-center border-b border-slate-200 pb-3">
-              <h2 className="text-sm font-bold text-slate-900 uppercase">Añadir Asignatura a la Malla</h2>
-              <button onClick={() => setShowMateriaModal(false)} className="text-slate-400 hover:text-slate-600">
+              <h2 className="text-sm font-bold text-slate-900 uppercase">
+                {materiaModalMode === 'edit' ? 'Editar Asignatura Curricular' : 'Añadir Asignatura a la Malla'}
+              </h2>
+              <button
+                type="button"
+                onClick={() => setShowMateriaModal(false)}
+                className="text-slate-400 hover:text-slate-600 cursor-pointer"
+              >
                 <X className="w-5 h-5" />
               </button>
             </div>
-            <form onSubmit={handleAddMateria} className="space-y-3 text-xs">
+            <form onSubmit={handleSaveMateria} className="space-y-3 text-xs">
               <div className="grid grid-cols-2 gap-3">
                 <div>
                   <label className="font-bold text-slate-700 block mb-1">Código de Materia:</label>
@@ -1560,60 +1748,89 @@ export const AcademicPage: React.FC = () => {
                     required
                     value={newMateria.codigo}
                     onChange={(e) => setNewMateria({ ...newMateria, codigo: e.target.value.toUpperCase() })}
-                    className="w-full bg-slate-50 border border-slate-200 rounded-lg p-2 font-mono uppercase"
-                    placeholder="ej. FIS-SEC-1"
+                    className="w-full bg-slate-50 border border-slate-200 rounded-lg p-2 font-mono uppercase font-bold"
+                    placeholder="ej. FIS-SEC"
                   />
                 </div>
                 <div>
                   <label className="font-bold text-slate-700 block mb-1">Nivel Educativo:</label>
                   <select
                     value={newMateria.nivel}
-                    onChange={(e) => setNewMateria({ ...newMateria, nivel: e.target.value })}
-                    className="w-full bg-slate-50 border border-slate-200 rounded-lg p-2"
+                    onChange={(e) => setNewMateria({ ...newMateria, nivel: e.target.value as any })}
+                    className="w-full bg-slate-50 border border-slate-200 rounded-lg p-2 font-semibold"
                   >
-                    <option value="SECUNDARIA">Secundaria</option>
-                    <option value="PRIMARIA">Primaria</option>
-                    <option value="INICIAL">Inicial</option>
+                    <option value="PRIMARIA">🎒 Primaria (1° a 6°)</option>
+                    <option value="SECUNDARIA">🎓 Secundaria (1° a 6°)</option>
+                    <option value="AMBOS">🌐 Ambos Niveles</option>
                   </select>
                 </div>
               </div>
+
               <div>
-                <label className="font-bold text-slate-700 block mb-1">Nombre Oficial:</label>
+                <label className="font-bold text-slate-700 block mb-1">Nombre Oficial de la Asignatura:</label>
                 <input
                   type="text"
                   required
                   value={newMateria.nombre}
                   onChange={(e) => setNewMateria({ ...newMateria, nombre: e.target.value })}
-                  className="w-full bg-slate-50 border border-slate-200 rounded-lg p-2"
+                  className="w-full bg-slate-50 border border-slate-200 rounded-lg p-2 font-medium"
                   placeholder="ej. Física y Química"
                 />
               </div>
-              <div>
-                <label className="font-bold text-slate-700 block mb-1">Campo de Saberes:</label>
-                <select
-                  value={newMateria.campo}
-                  onChange={(e) => setNewMateria({ ...newMateria, campo: e.target.value })}
-                  className="w-full bg-slate-50 border border-slate-200 rounded-lg p-2"
-                >
-                  <option value="CIENCIA_TECNOLOGIA_PRODUCCION">Ciencia, Tecnología y Producción</option>
-                  <option value="COMUNIDAD_Y_SOCIEDAD">Comunidad y Sociedad</option>
-                  <option value="VIDA_TIERRA_TERRITORIO">Vida, Tierra y Territorio</option>
-                  <option value="COSMOS_Y_PENSAMIENTO">Cosmos y Pensamiento</option>
-                </select>
+
+              <div className="grid grid-cols-2 gap-3">
+                <div>
+                  <label className="font-bold text-slate-700 block mb-1">Campo de Saberes:</label>
+                  <select
+                    value={newMateria.campo}
+                    onChange={(e) => setNewMateria({ ...newMateria, campo: e.target.value })}
+                    className="w-full bg-slate-50 border border-slate-200 rounded-lg p-2 text-xs"
+                  >
+                    <option value="Comunidad y Sociedad">Comunidad y Sociedad</option>
+                    <option value="Ciencia, Tecnología y Producción">Ciencia, Tecnología y Producción</option>
+                    <option value="Vida, Tierra y Territorio">Vida, Tierra y Territorio</option>
+                    <option value="Cosmos y Pensamiento">Cosmos y Pensamiento</option>
+                  </select>
+                </div>
+                <div>
+                  <label className="font-bold text-slate-700 block mb-1">Carga Horaria Semanal:</label>
+                  <input
+                    type="number"
+                    min="1"
+                    max="16"
+                    required
+                    value={newMateria.horasSemanales}
+                    onChange={(e) => setNewMateria({ ...newMateria, horasSemanales: Number(e.target.value) })}
+                    className="w-full bg-slate-50 border border-slate-200 rounded-lg p-2 font-bold"
+                  />
+                </div>
               </div>
+
+              <div className="pt-2">
+                <label className="flex items-center space-x-2 text-xs font-semibold text-slate-800 cursor-pointer">
+                  <input
+                    type="checkbox"
+                    checked={newMateria.esTroncal}
+                    onChange={(e) => setNewMateria({ ...newMateria, esTroncal: e.target.checked })}
+                    className="rounded text-emerald-600 focus:ring-emerald-500"
+                  />
+                  <span>Área Troncal Ministerial (Obligatoria SEP)</span>
+                </label>
+              </div>
+
               <div className="flex justify-end space-x-2 pt-3 border-t border-slate-100">
                 <button
                   type="button"
                   onClick={() => setShowMateriaModal(false)}
-                  className="px-4 py-2 text-slate-600 hover:bg-slate-100 rounded-lg"
+                  className="px-4 py-2 text-slate-600 hover:bg-slate-100 rounded-lg cursor-pointer"
                 >
                   Cancelar
                 </button>
                 <button
                   type="submit"
-                  className="px-4 py-2 bg-emerald-600 hover:bg-emerald-700 text-white font-bold rounded-lg shadow-sm"
+                  className="px-4 py-2 bg-emerald-600 hover:bg-emerald-700 text-white font-bold rounded-lg shadow-sm cursor-pointer"
                 >
-                  Registrar Asignatura
+                  {materiaModalMode === 'edit' ? 'Guardar Cambios' : 'Registrar Asignatura'}
                 </button>
               </div>
             </form>
