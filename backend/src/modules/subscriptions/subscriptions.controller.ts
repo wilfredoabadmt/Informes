@@ -76,3 +76,4 @@ export class SubscriptionsController {
     return this.subscriptionsService.getAdminOverview();
   }
 }
+

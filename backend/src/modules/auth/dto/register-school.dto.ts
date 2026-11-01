@@ -87,3 +87,4 @@ export class RegisterSchoolDto {
   @IsString()
   planCodigo?: string;
 }
+

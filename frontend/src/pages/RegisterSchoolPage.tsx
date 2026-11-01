@@ -563,3 +563,4 @@ export const RegisterSchoolPage: React.FC = () => {
     </div>
   );
 };
+

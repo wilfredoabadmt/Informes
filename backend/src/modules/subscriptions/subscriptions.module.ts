@@ -11,3 +11,4 @@ import { AuditModule } from '../audit/audit.module';
   exports: [SubscriptionsService],
 })
 export class SubscriptionsModule {}
+
