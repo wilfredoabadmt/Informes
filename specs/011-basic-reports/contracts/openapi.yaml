@@ -1,0 +1,194 @@
+openapi: 3.0.3
+info:
+  title: API de Reportes Básicos — Sistema Integral de Registro y Gestión de Maestros
+  description: Endpoints para emisión y descarga en PDF de Listas de Curso, Boletines Trimestrales y Libretas Escolares.
+  version: 1.0.0
+servers:
+  - url: /api/v1
+paths:
+  /reports/course-roster:
+    get:
+      summary: Obtiene la lista oficial de estudiantes de un curso y paralelo en formato JSON
+      parameters:
+        - in: query
+          name: paraleloId
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '200':
+          description: Datos estructurados de la nómina oficial del paralelo
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CourseRosterResponse'
+        '404':
+          description: Paralelo no encontrado
+
+  /reports/course-roster/pdf:
+    get:
+      summary: Descarga la lista oficial de estudiantes de un curso y paralelo en formato PDF imprimible
+      parameters:
+        - in: query
+          name: paraleloId
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '200':
+          description: Archivo PDF con la lista oficial
+          content:
+            application/pdf:
+              schema:
+                type: string
+                format: binary
+
+  /reports/trimester-bulletin:
+    get:
+      summary: Obtiene el boletín trimestral de calificaciones y asistencia de un estudiante en formato JSON
+      parameters:
+        - in: query
+          name: inscripcionId
+          required: true
+          schema:
+            type: string
+            format: uuid
+        - in: query
+          name: periodoId
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '200':
+          description: Datos del boletín trimestral del estudiante
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/TrimesterBulletinResponse'
+        '404':
+          description: Inscripción o Periodo no encontrado
+
+  /reports/trimester-bulletin/pdf:
+    get:
+      summary: Descarga el boletín trimestral de calificaciones en formato PDF
+      parameters:
+        - in: query
+          name: inscripcionId
+          required: true
+          schema:
+            type: string
+            format: uuid
+        - in: query
+          name: periodoId
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '200':
+          description: Archivo PDF del boletín trimestral
+          content:
+            application/pdf:
+              schema:
+                type: string
+                format: binary
+
+  /reports/school-report-card:
+    get:
+      summary: Obtiene la libreta escolar anual consolidada en formato JSON
+      parameters:
+        - in: query
+          name: inscripcionId
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '200':
+          description: Datos de la libreta anual del estudiante
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SchoolReportCardResponse'
+        '404':
+          description: Inscripción no encontrada
+
+  /reports/school-report-card/pdf:
+    get:
+      summary: Descarga la libreta escolar anual en formato PDF
+      parameters:
+        - in: query
+          name: inscripcionId
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '200':
+          description: Archivo PDF de la libreta escolar
+          content:
+            application/pdf:
+              schema:
+                type: string
+                format: binary
+
+components:
+  schemas:
+    CourseRosterResponse:
+      type: object
+      properties:
+        institucion:
+          type: object
+        academico:
+          type: object
+        totalEstudiantes:
+          type: integer
+        generadoEn:
+          type: string
+        estudiantes:
+          type: array
+          items:
+            type: object
+
+    TrimesterBulletinResponse:
+      type: object
+      properties:
+        institucion:
+          type: object
+        estudiante:
+          type: object
+        periodo:
+          type: object
+        materias:
+          type: array
+          items:
+            type: object
+        resumenAsistencia:
+          type: object
+        promedioTrimestral:
+          type: number
+        materiasAprobadas:
+          type: integer
+        materiasReprobadas:
+          type: integer
+
+    SchoolReportCardResponse:
+      type: object
+      properties:
+        institucion:
+          type: object
+        estudiante:
+          type: object
+        materias:
+          type: array
+          items:
+            type: object
+        promedioGeneralAnual:
+          type: number
+        situacionFinal:
+          type: string
+        resumenAsistenciaAnual:
+          type: object

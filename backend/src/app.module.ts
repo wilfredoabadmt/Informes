@@ -11,12 +11,13 @@ import { AttendanceModule } from './modules/attendance/attendance.module';
 import { EvaluationsModule } from './modules/evaluations/evaluations.module';
 import { GradesModule } from './modules/grades/grades.module';
 import { CentralizersModule } from './modules/centralizers/centralizers.module';
+import { ReportsModule } from './modules/reports/reports.module';
 
 @Module({
   imports: [
     ConfigModule.forRoot({
-      isGlobal: true,
       envFilePath: ['.env', '../.env'],
+      isGlobal: true,
     }),
     DatabaseModule,
     AuditModule,
@@ -29,6 +30,7 @@ import { CentralizersModule } from './modules/centralizers/centralizers.module';
     EvaluationsModule,
     GradesModule,
     CentralizersModule,
+    ReportsModule,
   ],
 })
 export class AppModule {}
