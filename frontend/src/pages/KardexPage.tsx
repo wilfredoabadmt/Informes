@@ -564,7 +564,7 @@ export const KardexPage: React.FC = () => {
             </p>
             <div className="pt-2">
               <Link
-                to="/academic"
+                to="/academic?create=curso"
                 className="inline-flex items-center space-x-2 px-5 py-2.5 bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl text-xs font-bold transition shadow-sm"
               >
                 <span>Habilitar Cursos y Paralelos</span>

@@ -470,6 +470,9 @@ export function getCoursesForInstitution(idOrSie: string): TenantParalelo[] {
 export function saveCoursesForInstitution(idOrSie: string, courses: TenantParalelo[]): void {
   const sie = resolveTenantKey(idOrSie);
   localStorage.setItem(`sigma_courses_${sie}`, JSON.stringify(courses));
+  if (typeof window !== 'undefined') {
+    window.dispatchEvent(new CustomEvent('sigma_courses_updated', { detail: { sie, courses } }));
+  }
 }
 
 export function getTeachersForInstitution(idOrSie: string): TenantTeacher[] {

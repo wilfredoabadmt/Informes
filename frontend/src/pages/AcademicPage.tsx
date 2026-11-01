@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { useSearchParams } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import { formatNivelEducativo, formatCampoSaberes } from '../utils/formatters';
 import {
@@ -185,6 +186,8 @@ export const AcademicPage: React.FC = () => {
   // 4. Asignaciones Docentes State (Multi-tenant scoped)
   const [asignaciones, setAsignaciones] = useState<AsignacionItem[]>(() => getAssignmentsForInstitution(activeSie));
 
+  const [searchParams, setSearchParams] = useSearchParams();
+
   // Sync state reactively when the selected school changes
   useEffect(() => {
     setParalelos(getCoursesForInstitution(activeSie));
@@ -211,6 +214,14 @@ export const AcademicPage: React.FC = () => {
     turno: 'Mañana',
     cupo: 35,
   });
+
+  // Si se ingresó con parámetro para abrir modal de curso
+  useEffect(() => {
+    if (searchParams.get('create') === 'curso' || searchParams.get('open') === 'curso') {
+      setShowCursoModal(true);
+      setSearchParams({}, { replace: true });
+    }
+  }, [searchParams, setSearchParams]);
 
   const [showTeacherModal, setShowTeacherModal] = useState(false);
   const [newTeacher, setNewTeacher] = useState({

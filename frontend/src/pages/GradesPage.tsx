@@ -1,10 +1,13 @@
 import React, { useState, useEffect } from 'react';
-import { Link } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import {
   getCoursesForInstitution,
   getStudentsForInstitution,
+  saveCoursesForInstitution,
   resolveTenantKey,
+  type TenantParalelo,
+  type TenantStudent,
 } from '../utils/multiTenantStore';
 import {
   BookOpenCheck,
@@ -18,6 +21,9 @@ import {
   Filter,
   ArrowRight,
   School,
+  Plus,
+  Sparkles,
+  X,
 } from 'lucide-react';
 import { exportGradesToExcel, exportGradesToPdf } from '../utils/exportHelpers';
 import type { GradeExportRow } from '../utils/exportHelpers';
@@ -139,15 +145,44 @@ function generateRowsForStudents(
 
 export const GradesPage: React.FC = () => {
   const { isMaestro, isDirector, isSuperAdmin, currentInstitutionId, user } = useAuth();
+  const navigate = useNavigate();
   const activeSie = resolveTenantKey(currentInstitutionId);
   const currentInst = user?.institutions?.find(i => (i.id || i.institutionId || i.sie) === currentInstitutionId) || user?.institutions?.[0];
   const institutionName = currentInst?.nombre || 'Unidad Educativa';
 
-  // Cursos y estudiantes reales habilitados para esta institución activa
-  const rawCourses = getCoursesForInstitution(activeSie);
-  const rawStudents = getStudentsForInstitution(activeSie);
+  // Cursos y estudiantes reales reactivos habilitados para esta institución activa
+  const [coursesList, setCoursesList] = useState<TenantParalelo[]>(() => getCoursesForInstitution(activeSie));
+  const [studentsList, setStudentsList] = useState<TenantStudent[]>(() => getStudentsForInstitution(activeSie));
 
-  const cursosVisibles = rawCourses.map((c) => ({
+  useEffect(() => {
+    setCoursesList(getCoursesForInstitution(activeSie));
+    setStudentsList(getStudentsForInstitution(activeSie));
+  }, [activeSie]);
+
+  useEffect(() => {
+    const handleCoursesUpdated = () => {
+      setCoursesList(getCoursesForInstitution(activeSie));
+    };
+    const handleStudentsUpdated = () => {
+      setStudentsList(getStudentsForInstitution(activeSie));
+    };
+    window.addEventListener('sigma_courses_updated', handleCoursesUpdated);
+    window.addEventListener('sigma_students_updated', handleStudentsUpdated);
+    return () => {
+      window.removeEventListener('sigma_courses_updated', handleCoursesUpdated);
+      window.removeEventListener('sigma_students_updated', handleStudentsUpdated);
+    };
+  }, [activeSie]);
+
+  // Modal rápido de habilitación de curso en sitio
+  const [showQuickModal, setShowQuickModal] = useState(false);
+  const [quickNivel, setQuickNivel] = useState('SECUNDARIA');
+  const [quickGrado, setQuickGrado] = useState(1);
+  const [quickLetra, setQuickLetra] = useState('A');
+  const [quickTurno, setQuickTurno] = useState('Mañana');
+  const [quickCupo, setQuickCupo] = useState(35);
+
+  const cursosVisibles = coursesList.map((c) => ({
     id: c.id,
     nombre: `${c.cursoNombre} - Paralelo "${c.letra}" (${c.turno})`,
     nivel: c.nivel,
@@ -196,8 +231,8 @@ export const GradesPage: React.FC = () => {
       setRows(gradesStore[currentKey]);
     } else {
       // Buscar estudiantes del curso actual en la institución activa
-      const currentC = rawCourses.find((c) => c.id === selectedCurso);
-      const matchingStudents = rawStudents.filter((s) => {
+      const currentC = coursesList.find((c) => c.id === selectedCurso);
+      const matchingStudents = studentsList.filter((s) => {
         if (!currentC) return false;
         const matchGrado = s.curso.includes(`${currentC.grado}°`);
         const matchLetra =
@@ -214,8 +249,8 @@ export const GradesPage: React.FC = () => {
           estudiante: `${s.primerApellido} ${s.segundoApellido || ''} ${s.nombres}`.trim(),
         }));
         generated = generateRowsForStudents(studentList, selectedCurso, selectedAsignatura, selectedTrimestre);
-      } else if (rawStudents.length > 0) {
-        const studentList = rawStudents.slice(0, 8).map((s) => ({
+      } else if (studentsList.length > 0) {
+        const studentList = studentsList.slice(0, 8).map((s) => ({
           rude: s.rude,
           estudiante: `${s.primerApellido} ${s.segundoApellido || ''} ${s.nombres}`.trim(),
         }));
@@ -226,7 +261,7 @@ export const GradesPage: React.FC = () => {
       setGradesStore((prev) => ({ ...prev, [currentKey]: generated }));
     }
     setMessage(null);
-  }, [selectedCurso, selectedAsignatura, selectedTrimestre, activeSie, currentKey, rawCourses, rawStudents]);
+  }, [selectedCurso, selectedAsignatura, selectedTrimestre, activeSie, currentKey, coursesList, studentsList]);
 
   const updateField = (
     index: number,
@@ -344,23 +379,230 @@ export const GradesPage: React.FC = () => {
     );
   };
 
+  // Handlers para creación rápida en GradesPage
+  const handleCreateQuickCourse = (e: React.FormEvent) => {
+    e.preventDefault();
+    const nivelNombre = quickNivel === 'SECUNDARIA'
+      ? 'Secundaria Comunitaria Productiva'
+      : quickNivel === 'PRIMARIA'
+      ? 'Primaria Comunitaria Vocacional'
+      : 'Educación Inicial en Familia Comunitaria';
+    const cursoNombre = `${quickGrado}° de ${nivelNombre}`;
+    const newCourseItem: TenantParalelo = {
+      id: `c-${Date.now()}`,
+      cursoNombre,
+      nivel: quickNivel,
+      grado: Number(quickGrado),
+      letra: (quickLetra.trim() || 'A').toUpperCase(),
+      turno: quickTurno,
+      cupo: Number(quickCupo) || 35,
+      inscritos: 0,
+    };
+    const updated = [...coursesList, newCourseItem];
+    saveCoursesForInstitution(activeSie, updated);
+    setCoursesList(updated);
+    setSelectedCurso(newCourseItem.id);
+    setShowQuickModal(false);
+  };
+
+  const handleQuickInitStandardCourses = () => {
+    const defaultCourses: TenantParalelo[] = [
+      { id: `c-${Date.now()}-1`, cursoNombre: '1° de Secundaria Comunitaria Productiva', nivel: 'SECUNDARIA', grado: 1, letra: 'A', turno: 'Mañana', cupo: 35, inscritos: 0 },
+      { id: `c-${Date.now()}-2`, cursoNombre: '2° de Secundaria Comunitaria Productiva', nivel: 'SECUNDARIA', grado: 2, letra: 'A', turno: 'Mañana', cupo: 35, inscritos: 0 },
+      { id: `c-${Date.now()}-3`, cursoNombre: '3° de Secundaria Comunitaria Productiva', nivel: 'SECUNDARIA', grado: 3, letra: 'A', turno: 'Mañana', cupo: 35, inscritos: 0 },
+      { id: `c-${Date.now()}-4`, cursoNombre: '4° de Secundaria Comunitaria Productiva', nivel: 'SECUNDARIA', grado: 4, letra: 'A', turno: 'Mañana', cupo: 35, inscritos: 0 },
+      { id: `c-${Date.now()}-5`, cursoNombre: '5° de Secundaria Comunitaria Productiva', nivel: 'SECUNDARIA', grado: 5, letra: 'A', turno: 'Mañana', cupo: 35, inscritos: 0 },
+      { id: `c-${Date.now()}-6`, cursoNombre: '6° de Secundaria Comunitaria Productiva', nivel: 'SECUNDARIA', grado: 6, letra: 'A', turno: 'Mañana', cupo: 35, inscritos: 0 },
+    ];
+    saveCoursesForInstitution(activeSie, defaultCourses);
+    setCoursesList(defaultCourses);
+    setSelectedCurso(defaultCourses[0].id);
+  };
+
   if (cursosVisibles.length === 0) {
     return (
-      <div className="bg-white rounded-2xl border border-slate-200 p-12 text-center shadow-sm max-w-2xl mx-auto my-8">
-        <div className="w-16 h-16 bg-emerald-50 text-emerald-600 rounded-2xl flex items-center justify-center mx-auto mb-4">
-          <BookOpenCheck className="w-8 h-8" />
+      <div className="relative">
+        <div className="bg-white rounded-2xl border border-slate-200 p-8 sm:p-12 text-center shadow-sm max-w-2xl mx-auto my-8">
+          <div className="w-16 h-16 bg-emerald-50 text-emerald-600 rounded-2xl flex items-center justify-center mx-auto mb-4 shadow-sm">
+            <BookOpenCheck className="w-8 h-8" />
+          </div>
+          <h2 className="text-xl font-bold text-slate-900">Espacio de Calificaciones en Blanco</h2>
+          <p className="text-xs text-slate-500 max-w-md mx-auto mt-2 leading-relaxed">
+            Esta Unidad Educativa aún no tiene cursos ni paralelos habilitados. Para comenzar a calificar en las 4 dimensiones de la Ley 070 (SER, SABER, HACER, DECIDIR), primero debes crear tus cursos y vincular a tus docentes.
+          </p>
+
+          {/* Action buttons */}
+          <div className="mt-6 flex flex-col sm:flex-row items-center justify-center gap-3">
+            <button
+              type="button"
+              onClick={() => setShowQuickModal(true)}
+              className="w-full sm:w-auto inline-flex items-center justify-center space-x-2 px-5 py-2.5 bg-emerald-600 hover:bg-emerald-700 text-white font-bold rounded-xl text-xs shadow-md shadow-emerald-200 transition cursor-pointer"
+            >
+              <Plus className="w-4 h-4" />
+              <span>Habilitar Cursos & Docentes</span>
+              <ArrowRight className="w-4 h-4" />
+            </button>
+
+            <button
+              type="button"
+              onClick={handleQuickInitStandardCourses}
+              className="w-full sm:w-auto inline-flex items-center justify-center space-x-2 px-4 py-2.5 bg-blue-50 hover:bg-blue-100 text-blue-700 font-bold rounded-xl text-xs border border-blue-200 transition cursor-pointer"
+            >
+              <Sparkles className="w-4 h-4 text-blue-600" />
+              <span>⚡ Cargar 1° a 6° Secundaria</span>
+            </button>
+          </div>
+
+          <div className="mt-5 pt-4 border-t border-slate-100">
+            <button
+              type="button"
+              onClick={() => navigate('/academic?create=curso')}
+              className="text-xs text-slate-500 hover:text-emerald-700 font-semibold inline-flex items-center space-x-1.5 transition cursor-pointer"
+            >
+              <span>O abrir panel avanzado de Cursos, Paralelos y Asignaciones</span>
+              <ArrowRight className="w-3.5 h-3.5" />
+            </button>
+          </div>
         </div>
-        <h2 className="text-xl font-bold text-slate-900">Espacio de Calificaciones en Blanco</h2>
-        <p className="text-xs text-slate-500 max-w-md mx-auto mt-2 leading-relaxed">
-          Esta Unidad Educativa aún no tiene cursos ni paralelos habilitados. Para comenzar a calificar en las 4 dimensiones de la Ley 070 (SER, SABER, HACER, DECIDIR), primero debes crear tus cursos y vincular a tus docentes.
-        </p>
-        <Link
-          to="/academic"
-          className="mt-6 inline-flex items-center space-x-2 px-5 py-2.5 bg-emerald-600 hover:bg-emerald-700 text-white font-bold rounded-xl text-xs shadow-md shadow-emerald-200 transition"
-        >
-          <span>Habilitar Cursos & Docentes</span>
-          <ArrowRight className="w-4 h-4" />
-        </Link>
+
+        {/* Modal de Habilitación Rápida de Curso */}
+        {showQuickModal && (
+          <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/50 backdrop-blur-sm p-4">
+            <div className="bg-white rounded-2xl max-w-md w-full p-6 shadow-2xl border border-slate-100 animate-in fade-in zoom-in-95 duration-150">
+              <div className="flex justify-between items-center pb-4 border-b border-slate-100">
+                <div className="flex items-center space-x-2">
+                  <div className="p-2 bg-emerald-50 text-emerald-600 rounded-lg">
+                    <Plus className="w-5 h-5" />
+                  </div>
+                  <div>
+                    <h3 className="text-base font-bold text-slate-800">Habilitar Nuevo Curso & Paralelo</h3>
+                    <p className="text-[11px] text-slate-400">Crea el curso para comenzar a registrar notas de inmediato</p>
+                  </div>
+                </div>
+                <button
+                  type="button"
+                  onClick={() => setShowQuickModal(false)}
+                  className="text-slate-400 hover:text-slate-600 p-1.5 rounded-lg hover:bg-slate-100 transition cursor-pointer"
+                >
+                  <X className="w-5 h-5" />
+                </button>
+              </div>
+
+              <form onSubmit={handleCreateQuickCourse} className="mt-4 space-y-4">
+                <div>
+                  <label className="block text-xs font-semibold text-slate-700 mb-1">
+                    Nivel del Subsistema Regular
+                  </label>
+                  <select
+                    value={quickNivel}
+                    onChange={(e) => {
+                      setQuickNivel(e.target.value);
+                      if (e.target.value === 'INICIAL' && quickGrado > 2) setQuickGrado(1);
+                    }}
+                    className="w-full px-3 py-2 border border-slate-300 rounded-lg text-xs font-semibold text-slate-800 focus:outline-none focus:ring-2 focus:ring-emerald-500"
+                  >
+                    <option value="SECUNDARIA">Secundaria Comunitaria Productiva</option>
+                    <option value="PRIMARIA">Primaria Comunitaria Vocacional</option>
+                    <option value="INICIAL">Educación Inicial en Familia Comunitaria</option>
+                  </select>
+                </div>
+
+                <div className="grid grid-cols-2 gap-3">
+                  <div>
+                    <label className="block text-xs font-semibold text-slate-700 mb-1">
+                      Año de Escolaridad (Grado)
+                    </label>
+                    <select
+                      value={quickGrado}
+                      onChange={(e) => setQuickGrado(Number(e.target.value))}
+                      className="w-full px-3 py-2 border border-slate-300 rounded-lg text-xs font-semibold text-slate-800 focus:outline-none focus:ring-2 focus:ring-emerald-500"
+                    >
+                      {quickNivel === 'INICIAL' ? (
+                        <>
+                          <option value={1}>1° Año</option>
+                          <option value={2}>2° Año</option>
+                        </>
+                      ) : (
+                        <>
+                          <option value={1}>1° Año</option>
+                          <option value={2}>2° Año</option>
+                          <option value={3}>3° Año</option>
+                          <option value={4}>4° Año</option>
+                          <option value={5}>5° Año</option>
+                          <option value={6}>6° Año</option>
+                        </>
+                      )}
+                    </select>
+                  </div>
+
+                  <div>
+                    <label className="block text-xs font-semibold text-slate-700 mb-1">
+                      Paralelo (Letra)
+                    </label>
+                    <select
+                      value={quickLetra}
+                      onChange={(e) => setQuickLetra(e.target.value)}
+                      className="w-full px-3 py-2 border border-slate-300 rounded-lg text-xs font-semibold text-slate-800 focus:outline-none focus:ring-2 focus:ring-emerald-500"
+                    >
+                      <option value="A">Paralelo "A"</option>
+                      <option value="B">Paralelo "B"</option>
+                      <option value="C">Paralelo "C"</option>
+                      <option value="D">Paralelo "D"</option>
+                      <option value="E">Paralelo "E"</option>
+                    </select>
+                  </div>
+                </div>
+
+                <div className="grid grid-cols-2 gap-3">
+                  <div>
+                    <label className="block text-xs font-semibold text-slate-700 mb-1">
+                      Turno Oficial
+                    </label>
+                    <select
+                      value={quickTurno}
+                      onChange={(e) => setQuickTurno(e.target.value)}
+                      className="w-full px-3 py-2 border border-slate-300 rounded-lg text-xs font-semibold text-slate-800 focus:outline-none focus:ring-2 focus:ring-emerald-500"
+                    >
+                      <option value="Mañana">Mañana</option>
+                      <option value="Tarde">Tarde</option>
+                      <option value="Noche">Noche</option>
+                    </select>
+                  </div>
+
+                  <div>
+                    <label className="block text-xs font-semibold text-slate-700 mb-1">
+                      Cupo Máximo
+                    </label>
+                    <input
+                      type="number"
+                      min={5}
+                      max={60}
+                      value={quickCupo}
+                      onChange={(e) => setQuickCupo(Number(e.target.value))}
+                      className="w-full px-3 py-2 border border-slate-300 rounded-lg text-xs font-semibold text-slate-800 focus:outline-none focus:ring-2 focus:ring-emerald-500"
+                    />
+                  </div>
+                </div>
+
+                <div className="pt-2 flex justify-end space-x-2">
+                  <button
+                    type="button"
+                    onClick={() => setShowQuickModal(false)}
+                    className="px-4 py-2 border border-slate-300 text-slate-600 text-xs font-semibold rounded-lg hover:bg-slate-50 transition cursor-pointer"
+                  >
+                    Cancelar
+                  </button>
+                  <button
+                    type="submit"
+                    className="px-5 py-2 bg-emerald-600 text-white text-xs font-bold rounded-lg hover:bg-emerald-700 transition shadow-sm cursor-pointer"
+                  >
+                    Habilitar Curso y Comenzar
+                  </button>
+                </div>
+              </form>
+            </div>
+          </div>
+        )}
       </div>
     );
   }
