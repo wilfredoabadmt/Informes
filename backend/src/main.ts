@@ -2,6 +2,9 @@ import { NestFactory } from '@nestjs/core';
 import { ValidationPipe, Logger } from '@nestjs/common';
 import { SwaggerModule, DocumentBuilder } from '@nestjs/swagger';
 import { AppModule } from './app.module';
+import * as express from 'express';
+import * as path from 'path';
+import * as fs from 'fs';
 
 async function bootstrap() {
   const logger = new Logger('Bootstrap');
@@ -21,7 +24,7 @@ async function bootstrap() {
 
   // CORS habilitado para frontend
   app.enableCors({
-    origin: process.env.CORS_ORIGIN?.split(',') || ['http://localhost:3000', 'http://localhost:3001'],
+    origin: true,
     credentials: true,
   });
 
@@ -36,9 +39,9 @@ async function bootstrap() {
   const document = SwaggerModule.createDocument(app, swaggerConfig);
   SwaggerModule.setup('docs', app, document);
 
-  // Endpoint raíz de salud para balanceadores y Coolify (retorna 200 OK)
+  // Endpoint explícito de salud en /api/v1/health
   const httpAdapter = app.getHttpAdapter();
-  httpAdapter.get('/', (_req: any, res: any) => {
+  httpAdapter.get('/api/v1/health', (_req: any, res: any) => {
     res.status(200).json({
       status: 'ok',
       service: 'Sistema Integral de Registro y Gestión de Maestros - Bolivia',
@@ -46,6 +49,36 @@ async function bootstrap() {
       timestamp: new Date().toISOString(),
     });
   });
+
+  // Servir SPA Frontend si existe en frontend/dist
+  const possiblePaths = [
+    path.join(process.cwd(), 'frontend', 'dist'),
+    path.join(process.cwd(), '..', 'frontend', 'dist'),
+    path.join(__dirname, '..', '..', 'frontend', 'dist'),
+  ];
+  const frontendDist = possiblePaths.find((p) => fs.existsSync(p));
+
+  if (frontendDist) {
+    logger.log(`🎨 Servidor SPA montado desde: ${frontendDist}`);
+    app.use(express.static(frontendDist));
+    httpAdapter.get('*', (req: any, res: any, next: any) => {
+      const p = req.path || req.url;
+      if (p.startsWith('/api') || p.startsWith('/docs')) {
+        return next();
+      }
+      res.sendFile(path.join(frontendDist, 'index.html'));
+    });
+  } else {
+    // Endpoint raíz de salud por defecto si no hay frontend compilado
+    httpAdapter.get('/', (_req: any, res: any) => {
+      res.status(200).json({
+        status: 'ok',
+        service: 'Sistema Integral de Registro y Gestión de Maestros - Bolivia',
+        version: '1.0.0',
+        timestamp: new Date().toISOString(),
+      });
+    });
+  }
 
   const port = process.env.PORT || 3000;
   await app.listen(port, '0.0.0.0');

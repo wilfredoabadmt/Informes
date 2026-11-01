@@ -1,5 +1,5 @@
 # -------------------------------------------------------------
-# Root Dockerfile for Coolify builds
+# Root Dockerfile for Coolify builds (Backend + Frontend SPA)
 # -------------------------------------------------------------
 FROM node:20-alpine AS builder
 
@@ -7,16 +7,21 @@ WORKDIR /app
 
 RUN apk add --no-cache python3 make g++ openssl
 
-COPY backend/package*.json ./
-COPY backend/prisma ./prisma/
+# 1. Install and build Backend
+COPY backend/package*.json ./backend/
+COPY backend/prisma ./backend/prisma/
+RUN cd backend && npm ci
 
-RUN npm ci
+COPY backend/ ./backend/
+RUN cd backend && npx prisma generate && npm run build
+RUN cd backend && npx tsc prisma/seed.ts --outDir dist/prisma --skipLibCheck --target es2021 --module commonjs --moduleResolution node
 
-COPY backend/ ./
+# 2. Install and build Frontend SPA
+COPY frontend/package*.json ./frontend/
+RUN cd frontend && npm ci
 
-RUN npx prisma generate
-RUN npm run build
-RUN npx tsc prisma/seed.ts --outDir dist/prisma --skipLibCheck --target es2021 --module commonjs --moduleResolution node
+COPY frontend/ ./frontend/
+RUN cd frontend && npm run build
 
 # -------------------------------------------------------------
 # Production Runner
@@ -30,10 +35,11 @@ ENV PORT=3000
 
 RUN apk add --no-cache openssl curl
 
-COPY --from=builder /app/package*.json ./
-COPY --from=builder /app/node_modules ./node_modules
-COPY --from=builder /app/prisma ./prisma
-COPY --from=builder /app/dist ./dist
+COPY --from=builder /app/backend/package*.json ./
+COPY --from=builder /app/backend/node_modules ./node_modules
+COPY --from=builder /app/backend/prisma ./prisma
+COPY --from=builder /app/backend/dist ./dist
+COPY --from=builder /app/frontend/dist ./frontend/dist
 
 EXPOSE 3000
 
