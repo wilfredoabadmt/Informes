@@ -14,16 +14,42 @@ import {
   X,
   Layers,
   Sparkles,
+  UserCheck,
+  UserPlus,
+  Phone,
+  Mail,
+  Award,
+  Search,
+  School,
+  FileCheck,
 } from 'lucide-react';
 
 interface ParaleloItem {
   id: string;
   cursoNombre: string;
   nivel: string;
+  grado: number;
   letra: string;
   turno: string;
   cupo: number;
   inscritos: number;
+}
+
+interface TeacherItem {
+  id: string;
+  rda: string;
+  ci: string;
+  nombres: string;
+  primerApellido: string;
+  segundoApellido: string;
+  tituloProfesional: string;
+  especialidad: string;
+  correo: string;
+  telefono: string;
+  cargoOficial: string;
+  normalista: boolean;
+  estado: 'ACTIVO' | 'LICENCIA' | 'TRASLADADO';
+  horasAsignadas: number;
 }
 
 interface MateriaItem {
@@ -46,8 +72,9 @@ interface AsignacionItem {
 
 export const AcademicPage: React.FC = () => {
   const { isMaestro, isDirector, isSuperAdmin } = useAuth();
-  const [tab, setTab] = useState<'cursos' | 'materias' | 'asignaciones'>('cursos');
+  const [tab, setTab] = useState<'cursos' | 'docentes' | 'asignaciones' | 'materias'>('cursos');
   const [feedback, setFeedback] = useState<string | null>(null);
+  const [searchDocente, setSearchDocente] = useState('');
 
   // 1. Cursos y Paralelos State
   const [paralelos, setParalelos] = useState<ParaleloItem[]>([
@@ -55,6 +82,7 @@ export const AcademicPage: React.FC = () => {
       id: 'p-1',
       cursoNombre: '1° de Secundaria Comunitaria Productiva',
       nivel: 'SECUNDARIA',
+      grado: 1,
       letra: 'A',
       turno: 'Mañana',
       cupo: 35,
@@ -64,6 +92,7 @@ export const AcademicPage: React.FC = () => {
       id: 'p-2',
       cursoNombre: '1° de Secundaria Comunitaria Productiva',
       nivel: 'SECUNDARIA',
+      grado: 1,
       letra: 'B',
       turno: 'Tarde',
       cupo: 35,
@@ -73,6 +102,7 @@ export const AcademicPage: React.FC = () => {
       id: 'p-3',
       cursoNombre: '2° de Secundaria Comunitaria Productiva',
       nivel: 'SECUNDARIA',
+      grado: 2,
       letra: 'A',
       turno: 'Mañana',
       cupo: 35,
@@ -80,16 +110,105 @@ export const AcademicPage: React.FC = () => {
     },
     {
       id: 'p-4',
+      cursoNombre: '3° de Secundaria Comunitaria Productiva',
+      nivel: 'SECUNDARIA',
+      grado: 3,
+      letra: 'A',
+      turno: 'Mañana',
+      cupo: 35,
+      inscritos: 26,
+    },
+    {
+      id: 'p-5',
       cursoNombre: '1° de Primaria Comunitaria Vocacional',
       nivel: 'PRIMARIA',
+      grado: 1,
       letra: 'A',
       turno: 'Mañana',
       cupo: 30,
       inscritos: 29,
     },
+    {
+      id: 'p-6',
+      cursoNombre: '2° de Primaria Comunitaria Vocacional',
+      nivel: 'PRIMARIA',
+      grado: 2,
+      letra: 'A',
+      turno: 'Mañana',
+      cupo: 30,
+      inscritos: 27,
+    },
   ]);
 
-  // 2. Materias State
+  // 2. Plantel Docente (Profesores) State
+  const [docentes, setDocentes] = useState<TeacherItem[]>([
+    {
+      id: 't-1',
+      rda: '6849302',
+      ci: '6849302 LP',
+      nombres: 'Carlos',
+      primerApellido: 'Mamani',
+      segundoApellido: 'Choque',
+      tituloProfesional: 'Profesor Normalista de Secundaria',
+      especialidad: 'Comunicación y Lenguajes',
+      correo: 'carlos.mamani@minedu.gob.bo',
+      telefono: '71548923',
+      cargoOficial: 'Docente de Área y Tutor de Curso',
+      normalista: true,
+      estado: 'ACTIVO',
+      horasAsignadas: 16,
+    },
+    {
+      id: 't-2',
+      rda: '5748291',
+      ci: '5748291 LP',
+      nombres: 'Alberto',
+      primerApellido: 'Simón',
+      segundoApellido: 'Mercado',
+      tituloProfesional: 'Licenciado en Ciencias de la Educación',
+      especialidad: 'Matemática y Lógica',
+      correo: 'alberto.mercado@minedu.gob.bo',
+      telefono: '68923412',
+      cargoOficial: 'Docente de Matemática',
+      normalista: true,
+      estado: 'ACTIVO',
+      horasAsignadas: 20,
+    },
+    {
+      id: 't-3',
+      rda: '7214589',
+      ci: '7214589 LP',
+      nombres: 'Elena',
+      primerApellido: 'Flores',
+      segundoApellido: 'Mamani',
+      tituloProfesional: 'Licenciada en Gestión Educativa',
+      especialidad: 'Administración y Ciencias Sociales',
+      correo: 'elena.flores@minedu.gob.bo',
+      telefono: '73091823',
+      cargoOficial: 'Directora Institucional / Docente',
+      normalista: true,
+      estado: 'ACTIVO',
+      horasAsignadas: 8,
+    },
+    {
+      id: 't-4',
+      rda: '8192304',
+      ci: '8192304 LP',
+      nombres: 'Roberto',
+      primerApellido: 'Jaramillo',
+      segundoApellido: 'Quispe',
+      tituloProfesional: 'Profesor de Ciencias Naturales',
+      especialidad: 'Biología y Geografía',
+      correo: 'roberto.jaramillo@minedu.gob.bo',
+      telefono: '77291034',
+      cargoOficial: 'Docente de Biología',
+      normalista: true,
+      estado: 'ACTIVO',
+      horasAsignadas: 18,
+    },
+  ]);
+
+  // 3. Materias State
   const [materias, setMaterias] = useState<MateriaItem[]>([
     {
       id: 'm-1',
@@ -133,7 +252,7 @@ export const AcademicPage: React.FC = () => {
     },
   ]);
 
-  // 3. Asignaciones Docentes State
+  // 4. Asignaciones Docentes State
   const [asignaciones, setAsignaciones] = useState<AsignacionItem[]>([
     {
       id: 'as-1',
@@ -159,16 +278,50 @@ export const AcademicPage: React.FC = () => {
       horasSemanales: 6,
       esTutor: false,
     },
+    {
+      id: 'as-4',
+      maestroNombre: 'Prof. Roberto Jaramillo Quispe',
+      cursoParalelo: '1° de Secundaria - Paralelo A',
+      materiaNombre: 'Ciencias Naturales: Biología - Geografía',
+      horasSemanales: 4,
+      esTutor: false,
+    },
   ]);
 
-  // Modals for CRUD
+  // Modals state
+  const [showCursoModal, setShowCursoModal] = useState(false);
+  const [newCurso, setNewCurso] = useState({
+    nivel: 'SECUNDARIA',
+    grado: 4,
+    letra: 'A',
+    turno: 'Mañana',
+    cupo: 35,
+  });
+
   const [showParaleloModal, setShowParaleloModal] = useState(false);
   const [newParalelo, setNewParalelo] = useState({
     cursoNombre: '1° de Secundaria Comunitaria Productiva',
     nivel: 'SECUNDARIA',
+    grado: 1,
     letra: 'C',
     turno: 'Mañana',
     cupo: 35,
+  });
+
+  const [showTeacherModal, setShowTeacherModal] = useState(false);
+  const [newTeacher, setNewTeacher] = useState({
+    rda: '',
+    ci: '',
+    nombres: '',
+    primerApellido: '',
+    segundoApellido: '',
+    tituloProfesional: 'Profesor Normalista Superior',
+    especialidad: 'Comunicación y Lenguajes',
+    correo: '',
+    telefono: '',
+    cargoOficial: 'Docente de Asignatura',
+    normalista: true,
+    estado: 'ACTIVO' as 'ACTIVO' | 'LICENCIA' | 'TRASLADADO',
   });
 
   const [showMateriaModal, setShowMateriaModal] = useState(false);
@@ -194,6 +347,33 @@ export const AcademicPage: React.FC = () => {
     setTimeout(() => setFeedback(null), 3000);
   };
 
+  // Handlers for Cursos CRUD
+  const handleAddCurso = (e: React.FormEvent) => {
+    e.preventDefault();
+    const cursoNombre = `${newCurso.grado}° de ${
+      newCurso.nivel === 'SECUNDARIA'
+        ? 'Secundaria Comunitaria Productiva'
+        : newCurso.nivel === 'PRIMARIA'
+        ? 'Primaria Comunitaria Vocacional'
+        : 'Educación Inicial en Familia Comunitaria'
+    }`;
+
+    const item: ParaleloItem = {
+      id: `c-${Date.now()}`,
+      cursoNombre,
+      nivel: newCurso.nivel,
+      grado: newCurso.grado,
+      letra: newCurso.letra,
+      turno: newCurso.turno,
+      cupo: newCurso.cupo,
+      inscritos: 0,
+    };
+
+    setParalelos([...paralelos, item]);
+    setShowCursoModal(false);
+    triggerFeedback(`¡Curso "${cursoNombre}" y Paralelo "${newCurso.letra}" habilitados exitosamente!`);
+  };
+
   // Handlers for Paralelos CRUD
   const handleAddParalelo = (e: React.FormEvent) => {
     e.preventDefault();
@@ -204,12 +384,58 @@ export const AcademicPage: React.FC = () => {
     };
     setParalelos([...paralelos, item]);
     setShowParaleloModal(false);
-    triggerFeedback('¡Paralelo creado exitosamente en la estructura académica!');
+    triggerFeedback(`¡Paralelo "${newParalelo.letra}" añadido al curso exitosamente!`);
   };
 
   const handleDeleteParalelo = (id: string) => {
     setParalelos(paralelos.filter((p) => p.id !== id));
-    triggerFeedback('Paralelo eliminado de la gestión escolar.');
+    triggerFeedback('Paralelo retirado de la gestión escolar.');
+  };
+
+  // Handlers for Plantel Docente CRUD
+  const handleAddTeacher = (e: React.FormEvent) => {
+    e.preventDefault();
+    const item: TeacherItem = {
+      id: `t-${Date.now()}`,
+      ...newTeacher,
+      horasAsignadas: 0,
+    };
+    setDocentes([item, ...docentes]);
+    setShowTeacherModal(false);
+    triggerFeedback(`¡Profesor(a) ${newTeacher.nombres} ${newTeacher.primerApellido} (RDA: ${newTeacher.rda}) vinculado al colegio con éxito!`);
+    // Reset form
+    setNewTeacher({
+      rda: '',
+      ci: '',
+      nombres: '',
+      primerApellido: '',
+      segundoApellido: '',
+      tituloProfesional: 'Profesor Normalista Superior',
+      especialidad: 'Comunicación y Lenguajes',
+      correo: '',
+      telefono: '',
+      cargoOficial: 'Docente de Asignatura',
+      normalista: true,
+      estado: 'ACTIVO',
+    });
+  };
+
+  const handleDeleteTeacher = (id: string) => {
+    setDocentes(docentes.filter((d) => d.id !== id));
+    triggerFeedback('Profesor desvinculado de la Unidad Educativa.');
+  };
+
+  const toggleTeacherStatus = (id: string) => {
+    setDocentes(
+      docentes.map((d) => {
+        if (d.id === id) {
+          const nextStatus = d.estado === 'ACTIVO' ? 'LICENCIA' : 'ACTIVO';
+          return { ...d, estado: nextStatus };
+        }
+        return d;
+      })
+    );
+    triggerFeedback('Estado de vinculación docente modificado.');
   };
 
   // Handlers for Materias CRUD
@@ -238,13 +464,22 @@ export const AcademicPage: React.FC = () => {
     };
     setAsignaciones([...asignaciones, item]);
     setShowAsignacionModal(false);
-    triggerFeedback('¡Asignación académica vinculada al docente exitosamente!');
+    triggerFeedback('¡Carga horaria asignada al docente exitosamente!');
   };
 
   const handleDeleteAsignacion = (id: string) => {
     setAsignaciones(asignaciones.filter((a) => a.id !== id));
     triggerFeedback('Asignación docente desvinculada.');
   };
+
+  const filteredDocentes = docentes.filter(
+    (d) =>
+      d.rda.includes(searchDocente) ||
+      d.ci.toLowerCase().includes(searchDocente.toLowerCase()) ||
+      d.primerApellido.toLowerCase().includes(searchDocente.toLowerCase()) ||
+      d.nombres.toLowerCase().includes(searchDocente.toLowerCase()) ||
+      d.especialidad.toLowerCase().includes(searchDocente.toLowerCase())
+  );
 
   return (
     <div className="space-y-6">
@@ -256,26 +491,56 @@ export const AcademicPage: React.FC = () => {
           </div>
           <div>
             <h1 className="text-xl font-bold text-slate-900 tracking-tight">
-              Estructura Curricular y Asignaciones Académicas
+              Gestión de Cursos, Plantel Docente y Asignaciones
             </h1>
             <p className="text-xs text-slate-500">
-              Administración de grados, paralelos, campos de saberes y carga horaria docente (Ley 070)
+              Administración de grados escolares, vinculación de profesores (RDA) y carga horaria (Ley 070)
             </p>
           </div>
         </div>
 
-        {/* Global Action Button per Tab */}
+        {/* Global Action Buttons based on active Tab */}
         {!isMaestro && (
-          <div>
+          <div className="flex flex-wrap items-center gap-2">
             {tab === 'cursos' && (
+              <>
+                <button
+                  onClick={() => setShowCursoModal(true)}
+                  className="inline-flex items-center space-x-1.5 px-3 py-2 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-lg text-xs font-semibold transition"
+                >
+                  <School className="w-3.5 h-3.5 text-emerald-600" />
+                  <span>+ Habilitar Curso</span>
+                </button>
+                <button
+                  onClick={() => setShowParaleloModal(true)}
+                  className="inline-flex items-center space-x-1.5 px-4 py-2 bg-emerald-600 hover:bg-emerald-700 text-white rounded-lg text-xs font-bold transition shadow-sm"
+                >
+                  <Plus className="w-4 h-4" />
+                  <span>+ Adicionar Paralelo</span>
+                </button>
+              </>
+            )}
+
+            {tab === 'docentes' && (
               <button
-                onClick={() => setShowParaleloModal(true)}
+                onClick={() => setShowTeacherModal(true)}
+                className="inline-flex items-center space-x-1.5 px-4 py-2 bg-emerald-600 hover:bg-emerald-700 text-white rounded-lg text-xs font-bold transition shadow-sm"
+              >
+                <UserPlus className="w-4 h-4" />
+                <span>+ Adicionar Profesor (Vincular RDA)</span>
+              </button>
+            )}
+
+            {tab === 'asignaciones' && (
+              <button
+                onClick={() => setShowAsignacionModal(true)}
                 className="inline-flex items-center space-x-1.5 px-4 py-2 bg-emerald-600 hover:bg-emerald-700 text-white rounded-lg text-xs font-bold transition shadow-sm"
               >
                 <Plus className="w-4 h-4" />
-                <span>+ Nuevo Paralelo</span>
+                <span>+ Asignar Carga Horaria</span>
               </button>
             )}
+
             {tab === 'materias' && (
               <button
                 onClick={() => setShowMateriaModal(true)}
@@ -283,15 +548,6 @@ export const AcademicPage: React.FC = () => {
               >
                 <Plus className="w-4 h-4" />
                 <span>+ Nueva Materia</span>
-              </button>
-            )}
-            {tab === 'asignaciones' && (
-              <button
-                onClick={() => setShowAsignacionModal(true)}
-                className="inline-flex items-center space-x-1.5 px-4 py-2 bg-emerald-600 hover:bg-emerald-700 text-white rounded-lg text-xs font-bold transition shadow-sm"
-              >
-                <Plus className="w-4 h-4" />
-                <span>+ Asignar Maestro</span>
               </button>
             )}
           </div>
@@ -305,11 +561,11 @@ export const AcademicPage: React.FC = () => {
         </div>
       )}
 
-      {/* Tabs */}
-      <div className="flex border-b border-slate-200 space-x-8 text-xs font-bold text-slate-600">
+      {/* Navigation Tabs */}
+      <div className="flex border-b border-slate-200 space-x-8 text-xs font-bold text-slate-600 overflow-x-auto">
         <button
           onClick={() => setTab('cursos')}
-          className={`pb-3 border-b-2 flex items-center space-x-2 cursor-pointer transition ${
+          className={`pb-3 border-b-2 flex items-center space-x-2 cursor-pointer transition whitespace-nowrap ${
             tab === 'cursos'
               ? 'border-emerald-600 text-emerald-600'
               : 'border-transparent hover:text-slate-900'
@@ -320,20 +576,20 @@ export const AcademicPage: React.FC = () => {
         </button>
 
         <button
-          onClick={() => setTab('materias')}
-          className={`pb-3 border-b-2 flex items-center space-x-2 cursor-pointer transition ${
-            tab === 'materias'
+          onClick={() => setTab('docentes')}
+          className={`pb-3 border-b-2 flex items-center space-x-2 cursor-pointer transition whitespace-nowrap ${
+            tab === 'docentes'
               ? 'border-emerald-600 text-emerald-600'
               : 'border-transparent hover:text-slate-900'
           }`}
         >
-          <BookOpen className="w-4 h-4" />
-          <span>Malla Curricular ({materias.length})</span>
+          <Users className="w-4 h-4" />
+          <span>Plantel Docente ({docentes.length})</span>
         </button>
 
         <button
           onClick={() => setTab('asignaciones')}
-          className={`pb-3 border-b-2 flex items-center space-x-2 cursor-pointer transition ${
+          className={`pb-3 border-b-2 flex items-center space-x-2 cursor-pointer transition whitespace-nowrap ${
             tab === 'asignaciones'
               ? 'border-emerald-600 text-emerald-600'
               : 'border-transparent hover:text-slate-900'
@@ -342,52 +598,271 @@ export const AcademicPage: React.FC = () => {
           <Clock className="w-4 h-4" />
           <span>Asignaciones Docentes ({asignaciones.length})</span>
         </button>
+
+        <button
+          onClick={() => setTab('materias')}
+          className={`pb-3 border-b-2 flex items-center space-x-2 cursor-pointer transition whitespace-nowrap ${
+            tab === 'materias'
+              ? 'border-emerald-600 text-emerald-600'
+              : 'border-transparent hover:text-slate-900'
+          }`}
+        >
+          <BookOpen className="w-4 h-4" />
+          <span>Malla Curricular ({materias.length})</span>
+        </button>
       </div>
 
-      {/* TAB 1: CURSOS Y PARALELOS */}
+      {/* ========================================================================= */}
+      {/* TAB 1: CURSOS Y PARALELOS                                                 */}
+      {/* ========================================================================= */}
       {tab === 'cursos' && (
+        <div className="space-y-4">
+          <div className="bg-white rounded-xl border border-slate-200 shadow-sm overflow-hidden">
+            <div className="px-6 py-4 border-b border-slate-200 bg-slate-50 flex items-center justify-between">
+              <div>
+                <h2 className="text-sm font-bold text-slate-800 uppercase tracking-wide">
+                  Cursos y Paralelos Habilitados en la Institución
+                </h2>
+                <p className="text-xs text-slate-500">
+                  Organización de aulas, turnos y cupos de matrícula (Gestión 2026)
+                </p>
+              </div>
+              <span className="text-xs font-semibold px-2.5 py-1 bg-emerald-100 text-emerald-800 rounded-full">
+                {paralelos.length} Paralelos Activos
+              </span>
+            </div>
+
+            <div className="overflow-x-auto">
+              <table className="w-full text-left border-collapse text-xs">
+                <thead>
+                  <tr className="bg-slate-100 border-b border-slate-200 text-slate-700 font-bold">
+                    <th className="py-3 px-4">Curso / Grado Oficial</th>
+                    <th className="py-3 px-3 text-center">Nivel Educativo</th>
+                    <th className="py-3 px-3 text-center">Paralelo</th>
+                    <th className="py-3 px-3 text-center">Turno</th>
+                    <th className="py-3 px-3 text-center">Cupo Máximo</th>
+                    <th className="py-3 px-3 text-center">Alumnos Matriculados</th>
+                    {!isMaestro && <th className="py-3 px-3 text-center w-24">Acciones</th>}
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-slate-100">
+                  {paralelos.map((p) => (
+                    <tr key={p.id} className="hover:bg-slate-50 transition">
+                      <td className="py-3 px-4 font-semibold text-slate-900 flex items-center space-x-2">
+                        <School className="w-3.5 h-3.5 text-emerald-600" />
+                        <span>{p.cursoNombre}</span>
+                      </td>
+                      <td className="py-3 px-3 text-center">
+                        <span className="px-2 py-0.5 rounded bg-slate-100 text-slate-700 font-bold text-[10px]">
+                          {formatNivelEducativo(p.nivel)}
+                        </span>
+                      </td>
+                      <td className="py-3 px-3 text-center font-bold text-emerald-700 text-sm">
+                        "{p.letra}"
+                      </td>
+                      <td className="py-3 px-3 text-center text-slate-600 font-medium">{p.turno}</td>
+                      <td className="py-3 px-3 text-center font-mono font-bold text-slate-700">
+                        {p.cupo}
+                      </td>
+                      <td className="py-3 px-3 text-center">
+                        <span className="font-bold text-emerald-800">{p.inscritos}</span>
+                        <span className="text-slate-400"> / {p.cupo}</span>
+                      </td>
+                      {!isMaestro && (
+                        <td className="py-3 px-3 text-center">
+                          <button
+                            onClick={() => handleDeleteParalelo(p.id)}
+                            className="p-1.5 text-slate-400 hover:text-rose-600 transition"
+                            title="Eliminar Paralelo"
+                          >
+                            <Trash2 className="w-3.5 h-3.5" />
+                          </button>
+                        </td>
+                      )}
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* ========================================================================= */}
+      {/* TAB 2: PLANTEL DOCENTE (PROFESORES / MAESTROS)                            */}
+      {/* ========================================================================= */}
+      {tab === 'docentes' && (
+        <div className="space-y-4">
+          {/* Search bar for teachers */}
+          <div className="bg-white p-3 rounded-xl border border-slate-200 shadow-sm flex items-center space-x-3">
+            <Search className="w-4 h-4 text-slate-400 ml-2" />
+            <input
+              type="text"
+              value={searchDocente}
+              onChange={(e) => setSearchDocente(e.target.value)}
+              placeholder="Buscar profesor por número de RDA, carnet de identidad, apellido o especialidad..."
+              className="w-full text-xs bg-transparent border-none focus:outline-none text-slate-800 placeholder-slate-400"
+            />
+          </div>
+
+          <div className="bg-white rounded-xl border border-slate-200 shadow-sm overflow-hidden">
+            <div className="px-6 py-4 border-b border-slate-200 bg-slate-50 flex items-center justify-between">
+              <div>
+                <h2 className="text-sm font-bold text-slate-800 uppercase tracking-wide">
+                  Nómina del Plantel Docente Institucional ({filteredDocentes.length} Maestros)
+                </h2>
+                <p className="text-xs text-slate-500">
+                  Expediente profesional verificado con el Registro Docente Administrativo (RDA) del Ministerio
+                </p>
+              </div>
+              <span className="text-xs font-semibold px-2.5 py-1 bg-emerald-100 text-emerald-800 rounded-full">
+                Gestión 2026
+              </span>
+            </div>
+
+            <div className="overflow-x-auto">
+              <table className="w-full text-left border-collapse text-xs">
+                <thead>
+                  <tr className="bg-slate-100 border-b border-slate-200 text-slate-700 font-bold">
+                    <th className="py-3 px-3 w-8">#</th>
+                    <th className="py-3 px-3 w-28">Nº RDA</th>
+                    <th className="py-3 px-4 min-w-[200px]">Apellidos y Nombres</th>
+                    <th className="py-3 px-3 w-28">Carnet Identidad</th>
+                    <th className="py-3 px-4 min-w-[180px]">Especialidad / Título</th>
+                    <th className="py-3 px-4 min-w-[180px]">Contacto Oficial</th>
+                    <th className="py-3 px-3 text-center">Carga Horaria</th>
+                    <th className="py-3 px-3 text-center w-24">Estado</th>
+                    {!isMaestro && <th className="py-3 px-3 text-center w-24">Acciones</th>}
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-slate-100">
+                  {filteredDocentes.map((d, idx) => (
+                    <tr key={d.id} className="hover:bg-slate-50 transition">
+                      <td className="py-3 px-3 text-slate-400 font-mono">{idx + 1}</td>
+                      <td className="py-3 px-3 font-mono font-bold text-emerald-800">
+                        {d.rda}
+                      </td>
+                      <td className="py-3 px-4">
+                        <div className="font-bold text-slate-900 uppercase">
+                          {d.primerApellido} {d.segundoApellido} {d.nombres}
+                        </div>
+                        <div className="text-[11px] text-slate-500">{d.cargoOficial}</div>
+                      </td>
+                      <td className="py-3 px-3 font-mono text-slate-600">{d.ci}</td>
+                      <td className="py-3 px-4">
+                        <div className="font-semibold text-slate-800">{d.especialidad}</div>
+                        <div className="text-[11px] text-slate-500">{d.tituloProfesional}</div>
+                      </td>
+                      <td className="py-3 px-4">
+                        <div className="flex items-center space-x-1 text-slate-600 text-[11px]">
+                          <Mail className="w-3 h-3 text-slate-400" />
+                          <span>{d.correo}</span>
+                        </div>
+                        {d.telefono && (
+                          <div className="flex items-center space-x-1 text-emerald-700 text-[11px] mt-0.5">
+                            <Phone className="w-3 h-3" />
+                            <span>{d.telefono}</span>
+                          </div>
+                        )}
+                      </td>
+                      <td className="py-3 px-3 text-center font-mono font-bold text-slate-800">
+                        {d.horasAsignadas > 0 ? `${d.horasAsignadas} hrs/sem` : 'Sin carga'}
+                      </td>
+                      <td className="py-3 px-3 text-center">
+                        <span
+                          className={`px-2.5 py-1 rounded-full text-[10px] font-bold ${
+                            d.estado === 'ACTIVO'
+                              ? 'bg-emerald-100 text-emerald-800'
+                              : 'bg-amber-100 text-amber-800'
+                          }`}
+                        >
+                          {d.estado}
+                        </span>
+                      </td>
+                      {!isMaestro && (
+                        <td className="py-3 px-3 text-center">
+                          <div className="flex items-center justify-center space-x-1">
+                            <button
+                              onClick={() => toggleTeacherStatus(d.id)}
+                              className="p-1.5 text-slate-400 hover:text-amber-600 transition"
+                              title="Cambiar Estado (Licencia / Activo)"
+                            >
+                              <UserCheck className="w-3.5 h-3.5" />
+                            </button>
+                            <button
+                              onClick={() => handleDeleteTeacher(d.id)}
+                              className="p-1.5 text-slate-400 hover:text-rose-600 transition"
+                              title="Desvincular Profesor"
+                            >
+                              <Trash2 className="w-3.5 h-3.5" />
+                            </button>
+                          </div>
+                        </td>
+                      )}
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* ========================================================================= */}
+      {/* TAB 3: ASIGNACIONES DOCENTES (CARGA HORARIA)                              */}
+      {/* ========================================================================= */}
+      {tab === 'asignaciones' && (
         <div className="bg-white rounded-xl border border-slate-200 shadow-sm overflow-hidden">
           <div className="px-6 py-4 border-b border-slate-200 bg-slate-50 flex items-center justify-between">
-            <h2 className="text-sm font-bold text-slate-800 uppercase tracking-wide">
-              Catálogo de Paralelos Habilitados
-            </h2>
-            <span className="text-xs text-slate-500">Gestión Escolar 2026</span>
+            <div>
+              <h2 className="text-sm font-bold text-slate-800 uppercase tracking-wide">
+                Distribución de Carga Horaria y Asignaciones
+              </h2>
+              <p className="text-xs text-slate-500">
+                Vinculación de docentes con sus materias y cursos asignados
+              </p>
+            </div>
+            <span className="text-xs text-slate-500 font-mono">
+              {asignaciones.length} Asignaciones Activas
+            </span>
           </div>
+
           <div className="overflow-x-auto">
             <table className="w-full text-left border-collapse text-xs">
               <thead>
                 <tr className="bg-slate-100 border-b border-slate-200 text-slate-700 font-bold">
-                  <th className="py-3 px-4">Curso / Grado Oficial</th>
-                  <th className="py-3 px-3 text-center">Nivel</th>
-                  <th className="py-3 px-3 text-center">Paralelo</th>
-                  <th className="py-3 px-3 text-center">Turno</th>
-                  <th className="py-3 px-3 text-center">Cupo Máximo</th>
-                  <th className="py-3 px-3 text-center">Estudiantes Inscritos</th>
+                  <th className="py-3 px-4">Maestro / Docente Responsable</th>
+                  <th className="py-3 px-4">Curso y Paralelo</th>
+                  <th className="py-3 px-4">Asignatura Curricular</th>
+                  <th className="py-3 px-3 text-center">Carga Horaria</th>
+                  <th className="py-3 px-3 text-center">Tutoría</th>
                   {!isMaestro && <th className="py-3 px-3 text-center w-24">Acciones</th>}
                 </tr>
               </thead>
               <tbody className="divide-y divide-slate-100">
-                {paralelos.map((p) => (
-                  <tr key={p.id} className="hover:bg-slate-50 transition">
-                    <td className="py-3 px-4 font-semibold text-slate-900">{p.cursoNombre}</td>
-                    <td className="py-3 px-3 text-center">
-                      <span className="px-2 py-0.5 rounded bg-slate-100 text-slate-700 font-bold text-[10px]">
-                        {formatNivelEducativo(p.nivel)}
-                      </span>
+                {asignaciones.map((as) => (
+                  <tr key={as.id} className="hover:bg-slate-50 transition">
+                    <td className="py-3 px-4 font-semibold text-slate-900">{as.maestroNombre}</td>
+                    <td className="py-3 px-4 text-slate-700 font-medium">{as.cursoParalelo}</td>
+                    <td className="py-3 px-4 text-emerald-800 font-bold">{as.materiaNombre}</td>
+                    <td className="py-3 px-3 text-center font-mono font-bold text-slate-800">
+                      {as.horasSemanales} hrs/sem
                     </td>
-                    <td className="py-3 px-3 text-center font-bold text-emerald-700">"{p.letra}"</td>
-                    <td className="py-3 px-3 text-center text-slate-600">{p.turno}</td>
-                    <td className="py-3 px-3 text-center font-mono font-bold text-slate-700">{p.cupo}</td>
                     <td className="py-3 px-3 text-center">
-                      <span className="font-bold text-emerald-800">{p.inscritos}</span>
-                      <span className="text-slate-400"> / {p.cupo}</span>
+                      {as.esTutor ? (
+                        <span className="px-2 py-0.5 rounded-full bg-amber-100 text-amber-800 font-bold text-[10px]">
+                          Tutor de Curso
+                        </span>
+                      ) : (
+                        <span className="text-slate-400 text-[10px]">Docente</span>
+                      )}
                     </td>
                     {!isMaestro && (
                       <td className="py-3 px-3 text-center">
                         <button
-                          onClick={() => handleDeleteParalelo(p.id)}
+                          onClick={() => handleDeleteAsignacion(as.id)}
                           className="p-1.5 text-slate-400 hover:text-rose-600 transition"
-                          title="Eliminar Paralelo"
+                          title="Desvincular Asignación"
                         >
                           <Trash2 className="w-3.5 h-3.5" />
                         </button>
@@ -401,7 +876,9 @@ export const AcademicPage: React.FC = () => {
         </div>
       )}
 
-      {/* TAB 2: MALLA CURRICULAR */}
+      {/* ========================================================================= */}
+      {/* TAB 4: MALLA CURRICULAR                                                   */}
+      {/* ========================================================================= */}
       {tab === 'materias' && (
         <div className="bg-white rounded-xl border border-slate-200 shadow-sm overflow-hidden">
           <div className="px-6 py-4 border-b border-slate-200 bg-slate-50 flex items-center justify-between">
@@ -457,65 +934,111 @@ export const AcademicPage: React.FC = () => {
         </div>
       )}
 
-      {/* TAB 3: ASIGNACIONES DOCENTES */}
-      {tab === 'asignaciones' && (
-        <div className="bg-white rounded-xl border border-slate-200 shadow-sm overflow-hidden">
-          <div className="px-6 py-4 border-b border-slate-200 bg-slate-50 flex items-center justify-between">
-            <h2 className="text-sm font-bold text-slate-800 uppercase tracking-wide">
-              Distribución de Asignaciones y Carga Horaria
-            </h2>
-            <span className="text-xs text-slate-500">Gestión Escolar 2026</span>
-          </div>
-          <div className="overflow-x-auto">
-            <table className="w-full text-left border-collapse text-xs">
-              <thead>
-                <tr className="bg-slate-100 border-b border-slate-200 text-slate-700 font-bold">
-                  <th className="py-3 px-4">Maestro / Docente Responsable</th>
-                  <th className="py-3 px-4">Curso y Paralelo</th>
-                  <th className="py-3 px-4">Asignatura</th>
-                  <th className="py-3 px-3 text-center">Carga Horaria</th>
-                  <th className="py-3 px-3 text-center">Tutoría</th>
-                  {!isMaestro && <th className="py-3 px-3 text-center w-24">Acciones</th>}
-                </tr>
-              </thead>
-              <tbody className="divide-y divide-slate-100">
-                {asignaciones.map((as) => (
-                  <tr key={as.id} className="hover:bg-slate-50 transition">
-                    <td className="py-3 px-4 font-semibold text-slate-900">{as.maestroNombre}</td>
-                    <td className="py-3 px-4 text-slate-700 font-medium">{as.cursoParalelo}</td>
-                    <td className="py-3 px-4 text-emerald-800 font-bold">{as.materiaNombre}</td>
-                    <td className="py-3 px-3 text-center font-mono font-bold text-slate-800">
-                      {as.horasSemanales} hrs/sem
-                    </td>
-                    <td className="py-3 px-3 text-center">
-                      {as.esTutor ? (
-                        <span className="px-2 py-0.5 rounded-full bg-amber-100 text-amber-800 font-bold text-[10px]">
-                          Tutor de Curso
-                        </span>
-                      ) : (
-                        <span className="text-slate-400 text-[10px]">Docente</span>
-                      )}
-                    </td>
-                    {!isMaestro && (
-                      <td className="py-3 px-3 text-center">
-                        <button
-                          onClick={() => handleDeleteAsignacion(as.id)}
-                          className="p-1.5 text-slate-400 hover:text-rose-600 transition"
-                          title="Desvincular Asignación"
-                        >
-                          <Trash2 className="w-3.5 h-3.5" />
-                        </button>
-                      </td>
-                    )}
-                  </tr>
-                ))}
-              </tbody>
-            </table>
+      {/* ========================================================================= */}
+      {/* MODAL: HABILITAR NUEVO CURSO / GRADO                                      */}
+      {/* ========================================================================= */}
+      {showCursoModal && (
+        <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+          <div className="bg-white rounded-2xl max-w-md w-full p-6 shadow-2xl border border-slate-200 space-y-4 animate-scaleUp">
+            <div className="flex justify-between items-center border-b border-slate-200 pb-3">
+              <h2 className="text-sm font-bold text-slate-900 uppercase">Habilitar Nuevo Curso / Grado Escolar</h2>
+              <button onClick={() => setShowCursoModal(false)} className="text-slate-400 hover:text-slate-600">
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+            <form onSubmit={handleAddCurso} className="space-y-3 text-xs">
+              <div className="grid grid-cols-2 gap-3">
+                <div>
+                  <label className="font-bold text-slate-700 block mb-1">Nivel Educativo:</label>
+                  <select
+                    value={newCurso.nivel}
+                    onChange={(e) => setNewCurso({ ...newCurso, nivel: e.target.value })}
+                    className="w-full bg-slate-50 border border-slate-200 rounded-lg p-2 font-medium"
+                  >
+                    <option value="SECUNDARIA">Secundaria</option>
+                    <option value="PRIMARIA">Primaria</option>
+                    <option value="INICIAL">Inicial en Familia</option>
+                  </select>
+                </div>
+                <div>
+                  <label className="font-bold text-slate-700 block mb-1">Año de Escolaridad:</label>
+                  <select
+                    value={newCurso.grado}
+                    onChange={(e) => setNewCurso({ ...newCurso, grado: Number(e.target.value) })}
+                    className="w-full bg-slate-50 border border-slate-200 rounded-lg p-2 font-bold"
+                  >
+                    <option value={1}>1º de Escolaridad</option>
+                    <option value={2}>2º de Escolaridad</option>
+                    <option value={3}>3º de Escolaridad</option>
+                    <option value={4}>4º de Escolaridad</option>
+                    <option value={5}>5º de Escolaridad</option>
+                    <option value={6}>6º de Escolaridad</option>
+                  </select>
+                </div>
+              </div>
+
+              <div className="grid grid-cols-2 gap-3">
+                <div>
+                  <label className="font-bold text-slate-700 block mb-1">Paralelo Inicial:</label>
+                  <input
+                    type="text"
+                    required
+                    maxLength={2}
+                    value={newCurso.letra}
+                    onChange={(e) => setNewCurso({ ...newCurso, letra: e.target.value.toUpperCase() })}
+                    className="w-full bg-slate-50 border border-slate-200 rounded-lg p-2 font-bold text-center"
+                    placeholder="A"
+                  />
+                </div>
+                <div>
+                  <label className="font-bold text-slate-700 block mb-1">Turno de Clases:</label>
+                  <select
+                    value={newCurso.turno}
+                    onChange={(e) => setNewCurso({ ...newCurso, turno: e.target.value })}
+                    className="w-full bg-slate-50 border border-slate-200 rounded-lg p-2"
+                  >
+                    <option value="Mañana">Turno Mañana</option>
+                    <option value="Tarde">Turno Tarde</option>
+                    <option value="Noche">Turno Noche</option>
+                  </select>
+                </div>
+              </div>
+
+              <div>
+                <label className="font-bold text-slate-700 block mb-1">Cupo Máximo:</label>
+                <input
+                  type="number"
+                  min="1"
+                  max="45"
+                  value={newCurso.cupo}
+                  onChange={(e) => setNewCurso({ ...newCurso, cupo: Number(e.target.value) })}
+                  className="w-full bg-slate-50 border border-slate-200 rounded-lg p-2 font-bold"
+                />
+              </div>
+
+              <div className="flex justify-end space-x-2 pt-3 border-t border-slate-100">
+                <button
+                  type="button"
+                  onClick={() => setShowCursoModal(false)}
+                  className="px-4 py-2 text-slate-600 hover:bg-slate-100 rounded-lg"
+                >
+                  Cancelar
+                </button>
+                <button
+                  type="submit"
+                  className="px-4 py-2 bg-emerald-600 hover:bg-emerald-700 text-white font-bold rounded-lg shadow-sm"
+                >
+                  Habilitar Curso
+                </button>
+              </div>
+            </form>
           </div>
         </div>
       )}
 
-      {/* MODAL 1: NUEVO PARALELO */}
+      {/* ========================================================================= */}
+      {/* MODAL: ADICIONAR PARALELO                                                 */}
+      {/* ========================================================================= */}
       {showParaleloModal && (
         <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-50 flex items-center justify-center p-4">
           <div className="bg-white rounded-2xl max-w-md w-full p-6 shadow-2xl border border-slate-200 space-y-4 animate-scaleUp">
@@ -535,7 +1058,9 @@ export const AcademicPage: React.FC = () => {
                 >
                   <option value="1° de Secundaria Comunitaria Productiva">1° de Secundaria Comunitaria Productiva</option>
                   <option value="2° de Secundaria Comunitaria Productiva">2° de Secundaria Comunitaria Productiva</option>
+                  <option value="3° de Secundaria Comunitaria Productiva">3° de Secundaria Comunitaria Productiva</option>
                   <option value="1° de Primaria Comunitaria Vocacional">1° de Primaria Comunitaria Vocacional</option>
+                  <option value="2° de Primaria Comunitaria Vocacional">2° de Primaria Comunitaria Vocacional</option>
                 </select>
               </div>
               <div className="grid grid-cols-2 gap-3">
@@ -548,7 +1073,7 @@ export const AcademicPage: React.FC = () => {
                     value={newParalelo.letra}
                     onChange={(e) => setNewParalelo({ ...newParalelo, letra: e.target.value.toUpperCase() })}
                     className="w-full bg-slate-50 border border-slate-200 rounded-lg p-2 font-bold text-center"
-                    placeholder="A, B, C..."
+                    placeholder="B, C, D..."
                   />
                 </div>
                 <div>
@@ -565,14 +1090,14 @@ export const AcademicPage: React.FC = () => {
                 </div>
               </div>
               <div>
-                <label className="font-bold text-slate-700 block mb-1">Cupo Máximo de Estudiantes:</label>
+                <label className="font-bold text-slate-700 block mb-1">Cupo Máximo:</label>
                 <input
                   type="number"
                   min="1"
                   max="45"
                   value={newParalelo.cupo}
                   onChange={(e) => setNewParalelo({ ...newParalelo, cupo: Number(e.target.value) })}
-                  className="w-full bg-slate-50 border border-slate-200 rounded-lg p-2"
+                  className="w-full bg-slate-50 border border-slate-200 rounded-lg p-2 font-bold"
                 />
               </div>
               <div className="flex justify-end space-x-2 pt-3 border-t border-slate-100">
@@ -595,7 +1120,280 @@ export const AcademicPage: React.FC = () => {
         </div>
       )}
 
-      {/* MODAL 2: NUEVA MATERIA */}
+      {/* ========================================================================= */}
+      {/* MODAL: ADICIONAR PROFESOR / REGISTRAR MAESTRO (RDA)                       */}
+      {/* ========================================================================= */}
+      {showTeacherModal && (
+        <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+          <div className="bg-white rounded-2xl max-w-lg w-full p-6 shadow-2xl border border-slate-200 space-y-4 animate-scaleUp">
+            <div className="flex justify-between items-center border-b border-slate-200 pb-3">
+              <div>
+                <h2 className="text-sm font-bold text-slate-900 uppercase">
+                  Adicionar Profesor / Vincular Maestro
+                </h2>
+                <p className="text-[11px] text-slate-500">
+                  Registro oficial en la Unidad Educativa con Cédula y Nº RDA
+                </p>
+              </div>
+              <button onClick={() => setShowTeacherModal(false)} className="text-slate-400 hover:text-slate-600">
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+
+            <form onSubmit={handleAddTeacher} className="space-y-3 text-xs">
+              <div className="grid grid-cols-2 gap-3">
+                <div>
+                  <label className="font-bold text-slate-700 block mb-1">
+                    Número de RDA (Registro Docente):
+                  </label>
+                  <input
+                    type="text"
+                    required
+                    value={newTeacher.rda}
+                    onChange={(e) => setNewTeacher({ ...newTeacher, rda: e.target.value })}
+                    className="w-full bg-slate-50 border border-slate-200 rounded-lg p-2 font-mono font-bold text-emerald-800"
+                    placeholder="ej. 6849302"
+                  />
+                </div>
+                <div>
+                  <label className="font-bold text-slate-700 block mb-1">Carnet de Identidad (CI):</label>
+                  <input
+                    type="text"
+                    required
+                    value={newTeacher.ci}
+                    onChange={(e) => setNewTeacher({ ...newTeacher, ci: e.target.value })}
+                    className="w-full bg-slate-50 border border-slate-200 rounded-lg p-2 font-mono"
+                    placeholder="ej. 7214589 LP"
+                  />
+                </div>
+              </div>
+
+              <div className="grid grid-cols-3 gap-3">
+                <div>
+                  <label className="font-bold text-slate-700 block mb-1">Nombres:</label>
+                  <input
+                    type="text"
+                    required
+                    value={newTeacher.nombres}
+                    onChange={(e) => setNewTeacher({ ...newTeacher, nombres: e.target.value })}
+                    className="w-full bg-slate-50 border border-slate-200 rounded-lg p-2"
+                    placeholder="ej. Juan Carlos"
+                  />
+                </div>
+                <div>
+                  <label className="font-bold text-slate-700 block mb-1">Primer Apellido:</label>
+                  <input
+                    type="text"
+                    required
+                    value={newTeacher.primerApellido}
+                    onChange={(e) => setNewTeacher({ ...newTeacher, primerApellido: e.target.value })}
+                    className="w-full bg-slate-50 border border-slate-200 rounded-lg p-2"
+                    placeholder="ej. Mamani"
+                  />
+                </div>
+                <div>
+                  <label className="font-bold text-slate-700 block mb-1">Segundo Apellido:</label>
+                  <input
+                    type="text"
+                    value={newTeacher.segundoApellido}
+                    onChange={(e) => setNewTeacher({ ...newTeacher, segundoApellido: e.target.value })}
+                    className="w-full bg-slate-50 border border-slate-200 rounded-lg p-2"
+                    placeholder="ej. Choque"
+                  />
+                </div>
+              </div>
+
+              <div className="grid grid-cols-2 gap-3">
+                <div>
+                  <label className="font-bold text-slate-700 block mb-1">Especialidad Principal:</label>
+                  <select
+                    value={newTeacher.especialidad}
+                    onChange={(e) => setNewTeacher({ ...newTeacher, especialidad: e.target.value })}
+                    className="w-full bg-slate-50 border border-slate-200 rounded-lg p-2 font-medium"
+                  >
+                    <option value="Comunicación y Lenguajes">Comunicación y Lenguajes</option>
+                    <option value="Matemática y Lógica">Matemática y Lógica</option>
+                    <option value="Ciencias Sociales e Historia">Ciencias Sociales e Historia</option>
+                    <option value="Biología y Geografía">Biología y Geografía</option>
+                    <option value="Física y Química">Física y Química</option>
+                    <option value="Lengua Extranjera (Inglés)">Lengua Extranjera (Inglés)</option>
+                    <option value="Educación Musical">Educación Musical</option>
+                    <option value="Educación Física y Deportes">Educación Física y Deportes</option>
+                    <option value="Cosmovisiones y Filosofía">Cosmovisiones y Filosofía</option>
+                  </select>
+                </div>
+                <div>
+                  <label className="font-bold text-slate-700 block mb-1">Título Profesional:</label>
+                  <select
+                    value={newTeacher.tituloProfesional}
+                    onChange={(e) => setNewTeacher({ ...newTeacher, tituloProfesional: e.target.value })}
+                    className="w-full bg-slate-50 border border-slate-200 rounded-lg p-2"
+                  >
+                    <option value="Profesor Normalista Superior">Profesor Normalista Superior</option>
+                    <option value="Licenciado en Ciencias de la Educación">Licenciado en Educación</option>
+                    <option value="Maestro con Especialidad SEP">Maestro Especialista SEP</option>
+                  </select>
+                </div>
+              </div>
+
+              <div className="grid grid-cols-2 gap-3">
+                <div>
+                  <label className="font-bold text-slate-700 block mb-1">Correo Institucional:</label>
+                  <input
+                    type="email"
+                    required
+                    value={newTeacher.correo}
+                    onChange={(e) => setNewTeacher({ ...newTeacher, correo: e.target.value })}
+                    className="w-full bg-slate-50 border border-slate-200 rounded-lg p-2"
+                    placeholder="docente@minedu.gob.bo"
+                  />
+                </div>
+                <div>
+                  <label className="font-bold text-slate-700 block mb-1">Celular / Teléfono:</label>
+                  <input
+                    type="text"
+                    value={newTeacher.telefono}
+                    onChange={(e) => setNewTeacher({ ...newTeacher, telefono: e.target.value })}
+                    className="w-full bg-slate-50 border border-slate-200 rounded-lg p-2"
+                    placeholder="ej. 71548923"
+                  />
+                </div>
+              </div>
+
+              <div>
+                <label className="font-bold text-slate-700 block mb-1">Cargo Oficial en el Colegio:</label>
+                <input
+                  type="text"
+                  required
+                  value={newTeacher.cargoOficial}
+                  onChange={(e) => setNewTeacher({ ...newTeacher, cargoOficial: e.target.value })}
+                  className="w-full bg-slate-50 border border-slate-200 rounded-lg p-2"
+                  placeholder="ej. Docente de Área / Maestro de Aula"
+                />
+              </div>
+
+              <div className="flex justify-end space-x-2 pt-3 border-t border-slate-100">
+                <button
+                  type="button"
+                  onClick={() => setShowTeacherModal(false)}
+                  className="px-4 py-2 text-slate-600 hover:bg-slate-100 rounded-lg"
+                >
+                  Cancelar
+                </button>
+                <button
+                  type="submit"
+                  className="px-4 py-2 bg-emerald-600 hover:bg-emerald-700 text-white font-bold rounded-lg shadow-sm"
+                >
+                  Registrar Profesor
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
+
+      {/* ========================================================================= */}
+      {/* MODAL: ASIGNAR CARGA HORARIA                                              */}
+      {/* ========================================================================= */}
+      {showAsignacionModal && (
+        <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+          <div className="bg-white rounded-2xl max-w-md w-full p-6 shadow-2xl border border-slate-200 space-y-4 animate-scaleUp">
+            <div className="flex justify-between items-center border-b border-slate-200 pb-3">
+              <h2 className="text-sm font-bold text-slate-900 uppercase">Asignar Carga Horaria a Maestro</h2>
+              <button onClick={() => setShowAsignacionModal(false)} className="text-slate-400 hover:text-slate-600">
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+            <form onSubmit={handleAddAsignacion} className="space-y-3 text-xs">
+              <div>
+                <label className="font-bold text-slate-700 block mb-1">Maestro(a):</label>
+                <select
+                  value={newAsignacion.maestroNombre}
+                  onChange={(e) => setNewAsignacion({ ...newAsignacion, maestroNombre: e.target.value })}
+                  className="w-full bg-slate-50 border border-slate-200 rounded-lg p-2 font-medium"
+                >
+                  {docentes.map((doc) => (
+                    <option key={doc.id} value={`Prof. ${doc.nombres} ${doc.primerApellido}`}>
+                      Prof. {doc.nombres} {doc.primerApellido} (RDA: {doc.rda})
+                    </option>
+                  ))}
+                </select>
+              </div>
+              <div>
+                <label className="font-bold text-slate-700 block mb-1">Curso y Paralelo:</label>
+                <select
+                  value={newAsignacion.cursoParalelo}
+                  onChange={(e) => setNewAsignacion({ ...newAsignacion, cursoParalelo: e.target.value })}
+                  className="w-full bg-slate-50 border border-slate-200 rounded-lg p-2"
+                >
+                  {paralelos.map((p) => (
+                    <option key={p.id} value={`${p.cursoNombre} - Paralelo ${p.letra}`}>
+                      {p.cursoNombre} - Paralelo {p.letra} ({p.turno})
+                    </option>
+                  ))}
+                </select>
+              </div>
+              <div>
+                <label className="font-bold text-slate-700 block mb-1">Asignatura:</label>
+                <select
+                  value={newAsignacion.materiaNombre}
+                  onChange={(e) => setNewAsignacion({ ...newAsignacion, materiaNombre: e.target.value })}
+                  className="w-full bg-slate-50 border border-slate-200 rounded-lg p-2"
+                >
+                  {materias.map((m) => (
+                    <option key={m.id} value={m.nombre}>
+                      {m.nombre} ({m.codigo})
+                    </option>
+                  ))}
+                </select>
+              </div>
+              <div className="grid grid-cols-2 gap-3">
+                <div>
+                  <label className="font-bold text-slate-700 block mb-1">Horas Semanales:</label>
+                  <input
+                    type="number"
+                    min="1"
+                    max="16"
+                    value={newAsignacion.horasSemanales}
+                    onChange={(e) => setNewAsignacion({ ...newAsignacion, horasSemanales: Number(e.target.value) })}
+                    className="w-full bg-slate-50 border border-slate-200 rounded-lg p-2 font-bold"
+                  />
+                </div>
+                <div className="flex items-center pt-5">
+                  <label className="flex items-center space-x-2 text-xs font-semibold text-slate-800 cursor-pointer">
+                    <input
+                      type="checkbox"
+                      checked={newAsignacion.esTutor}
+                      onChange={(e) => setNewAsignacion({ ...newAsignacion, esTutor: e.target.checked })}
+                      className="rounded text-emerald-600 focus:ring-emerald-500"
+                    />
+                    <span>Es Tutor de Curso</span>
+                  </label>
+                </div>
+              </div>
+              <div className="flex justify-end space-x-2 pt-3 border-t border-slate-100">
+                <button
+                  type="button"
+                  onClick={() => setShowAsignacionModal(false)}
+                  className="px-4 py-2 text-slate-600 hover:bg-slate-100 rounded-lg"
+                >
+                  Cancelar
+                </button>
+                <button
+                  type="submit"
+                  className="px-4 py-2 bg-emerald-600 hover:bg-emerald-700 text-white font-bold rounded-lg shadow-sm"
+                >
+                  Guardar Asignación
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
+
+      {/* ========================================================================= */}
+      {/* MODAL: NUEVA MATERIA                                                      */}
+      {/* ========================================================================= */}
       {showMateriaModal && (
         <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-50 flex items-center justify-center p-4">
           <div className="bg-white rounded-2xl max-w-md w-full p-6 shadow-2xl border border-slate-200 space-y-4 animate-scaleUp">
@@ -668,98 +1466,6 @@ export const AcademicPage: React.FC = () => {
                   className="px-4 py-2 bg-emerald-600 hover:bg-emerald-700 text-white font-bold rounded-lg shadow-sm"
                 >
                   Registrar Asignatura
-                </button>
-              </div>
-            </form>
-          </div>
-        </div>
-      )}
-
-      {/* MODAL 3: ASIGNAR MAESTRO */}
-      {showAsignacionModal && (
-        <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-50 flex items-center justify-center p-4">
-          <div className="bg-white rounded-2xl max-w-md w-full p-6 shadow-2xl border border-slate-200 space-y-4 animate-scaleUp">
-            <div className="flex justify-between items-center border-b border-slate-200 pb-3">
-              <h2 className="text-sm font-bold text-slate-900 uppercase">Asignar Carga Horaria a Maestro</h2>
-              <button onClick={() => setShowAsignacionModal(false)} className="text-slate-400 hover:text-slate-600">
-                <X className="w-5 h-5" />
-              </button>
-            </div>
-            <form onSubmit={handleAddAsignacion} className="space-y-3 text-xs">
-              <div>
-                <label className="font-bold text-slate-700 block mb-1">Maestro(a):</label>
-                <select
-                  value={newAsignacion.maestroNombre}
-                  onChange={(e) => setNewAsignacion({ ...newAsignacion, maestroNombre: e.target.value })}
-                  className="w-full bg-slate-50 border border-slate-200 rounded-lg p-2 font-medium"
-                >
-                  <option value="Prof. Carlos Mamani Choque">Prof. Carlos Mamani Choque (RDA: 6849302)</option>
-                  <option value="Prof. Alberto Simón Mercado">Prof. Alberto Simón Mercado (RDA: 5748291)</option>
-                  <option value="Prof. Elena Flores Mamani">Prof. Elena Flores Mamani (RDA: 7214589)</option>
-                </select>
-              </div>
-              <div>
-                <label className="font-bold text-slate-700 block mb-1">Curso y Paralelo:</label>
-                <select
-                  value={newAsignacion.cursoParalelo}
-                  onChange={(e) => setNewAsignacion({ ...newAsignacion, cursoParalelo: e.target.value })}
-                  className="w-full bg-slate-50 border border-slate-200 rounded-lg p-2"
-                >
-                  <option value="1° de Secundaria - Paralelo A">1° de Secundaria - Paralelo A</option>
-                  <option value="1° de Secundaria - Paralelo B">1° de Secundaria - Paralelo B</option>
-                  <option value="2° de Secundaria - Paralelo A">2° de Secundaria - Paralelo A</option>
-                </select>
-              </div>
-              <div>
-                <label className="font-bold text-slate-700 block mb-1">Asignatura:</label>
-                <select
-                  value={newAsignacion.materiaNombre}
-                  onChange={(e) => setNewAsignacion({ ...newAsignacion, materiaNombre: e.target.value })}
-                  className="w-full bg-slate-50 border border-slate-200 rounded-lg p-2"
-                >
-                  <option value="Comunicación y Lenguajes">Comunicación y Lenguajes</option>
-                  <option value="Matemática y Lógica">Matemática y Lógica</option>
-                  <option value="Ciencias Naturales">Ciencias Naturales</option>
-                  <option value="Ciencias Sociales">Ciencias Sociales</option>
-                </select>
-              </div>
-              <div className="grid grid-cols-2 gap-3">
-                <div>
-                  <label className="font-bold text-slate-700 block mb-1">Horas Semanales:</label>
-                  <input
-                    type="number"
-                    min="1"
-                    max="12"
-                    value={newAsignacion.horasSemanales}
-                    onChange={(e) => setNewAsignacion({ ...newAsignacion, horasSemanales: Number(e.target.value) })}
-                    className="w-full bg-slate-50 border border-slate-200 rounded-lg p-2 font-bold"
-                  />
-                </div>
-                <div className="flex items-center pt-5">
-                  <label className="flex items-center space-x-2 text-xs font-semibold text-slate-800 cursor-pointer">
-                    <input
-                      type="checkbox"
-                      checked={newAsignacion.esTutor}
-                      onChange={(e) => setNewAsignacion({ ...newAsignacion, esTutor: e.target.checked })}
-                      className="rounded text-emerald-600 focus:ring-emerald-500"
-                    />
-                    <span>Es Tutor de Curso</span>
-                  </label>
-                </div>
-              </div>
-              <div className="flex justify-end space-x-2 pt-3 border-t border-slate-100">
-                <button
-                  type="button"
-                  onClick={() => setShowAsignacionModal(false)}
-                  className="px-4 py-2 text-slate-600 hover:bg-slate-100 rounded-lg"
-                >
-                  Cancelar
-                </button>
-                <button
-                  type="submit"
-                  className="px-4 py-2 bg-emerald-600 hover:bg-emerald-700 text-white font-bold rounded-lg shadow-sm"
-                >
-                  Guardar Asignación
                 </button>
               </div>
             </form>
