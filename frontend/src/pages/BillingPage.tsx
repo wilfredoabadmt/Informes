@@ -102,7 +102,7 @@ export const BillingPage: React.FC = () => {
       );
       setQrIntent({
         ...res.data,
-        qrImageUrl: res.data?.qrImageUrl || qrImg,
+        qrImageUrl: qrImg,
       });
     } catch (err) {
       // Intent local con QR Simple oficial proporcionado
@@ -401,13 +401,10 @@ export const BillingPage: React.FC = () => {
                 <div className="text-center p-4 bg-slate-50 rounded-2xl border border-slate-200">
                   <div className="relative inline-block mx-auto group">
                     <img
-                      src={qrIntent?.qrImageUrl || qrImg}
-                      alt="Código QR Simple Oficial"
+                      src={qrImg}
+                      alt="Código QR Simple"
                       className="w-56 h-56 mx-auto rounded-2xl shadow-md border-4 border-white object-contain bg-white transition-transform duration-300 group-hover:scale-105"
                     />
-                    <div className="absolute top-2 right-2 bg-emerald-600 text-white text-[9px] font-black px-2 py-0.5 rounded-full shadow tracking-wider uppercase">
-                      QR Simple Oficial
-                    </div>
                   </div>
 
                   <div className="mt-3">
@@ -424,7 +421,7 @@ export const BillingPage: React.FC = () => {
 
                   <div className="mt-3 flex items-center justify-center space-x-3">
                     <a
-                      href={qrIntent?.qrImageUrl || qrImg}
+                      href={qrImg}
                       download="qr-pago-sigma.png"
                       className="inline-flex items-center space-x-1.5 text-xs text-slate-600 hover:text-emerald-700 bg-white px-3 py-1.5 rounded-xl border border-slate-200 shadow-sm font-semibold transition"
                     >

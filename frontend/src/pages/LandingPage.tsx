@@ -546,12 +546,9 @@ export const LandingPage: React.FC = () => {
               <div className="relative inline-block mx-auto group">
                 <img
                   src={qrImg}
-                  alt="QR Simple Oficial SIGMA"
+                  alt="QR Simple"
                   className="w-60 h-60 mx-auto rounded-2xl shadow-lg border-4 border-white object-contain bg-white transition-transform duration-300 group-hover:scale-105"
                 />
-                <div className="absolute top-2 right-2 bg-emerald-600 text-white text-[9px] font-black px-2 py-0.5 rounded-full shadow tracking-wider uppercase">
-                  QR OFICIAL BOLIVIA
-                </div>
               </div>
 
               <div className="p-3 bg-slate-50 rounded-2xl border border-slate-200 text-left text-xs space-y-1.5">

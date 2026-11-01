@@ -186,7 +186,7 @@ export class SubscriptionsService {
       planNombre: plan.nombre,
       periodo,
       qrPayload,
-      qrImageUrl: `https://api.qrserver.com/v1/create-qr-code/?size=300x300&data=${encodeURIComponent(qrPayload)}`,
+      qrImageUrl: null,
       beneficiario: 'SIGMA Plataforma Educativa Bolivia',
       cuentaDestino: 'Banco Unión Cta Cte: 10000049281726',
       pagoId: pago.id,
