@@ -8,7 +8,9 @@ import {
   getStoredInstitutions,
   syncApiInstitutions,
   resolveTenantKey,
+  getGlobalAnnouncement,
   type TenantInstitution,
+  type GlobalAnnouncement,
 } from '../utils/multiTenantStore';
 import {
   LayoutDashboard,
@@ -27,6 +29,8 @@ import {
   CreditCard,
   ShieldAlert,
   PhoneCall,
+  Bell,
+  X,
 } from 'lucide-react';
 
 export const Layout: React.FC = () => {
@@ -45,6 +49,19 @@ export const Layout: React.FC = () => {
   const [storedInstitutions, setStoredInstitutions] = useState<TenantInstitution[]>(() =>
     getStoredInstitutions()
   );
+  const [announcement, setAnnouncement] = useState<GlobalAnnouncement | null>(() =>
+    getGlobalAnnouncement()
+  );
+  const [dismissedAnnounceId, setDismissedAnnounceId] = useState<string | null>(null);
+
+  useEffect(() => {
+    // Escuchar actualizaciones de avisos del Superadmin
+    const handleAnn = (e: any) => {
+      setAnnouncement(e.detail);
+    };
+    window.addEventListener('sigma_announcement_updated', handleAnn);
+    return () => window.removeEventListener('sigma_announcement_updated', handleAnn);
+  }, []);
 
   useEffect(() => {
     // 1. Escuchar actualizaciones locales de instituciones
@@ -311,6 +328,55 @@ export const Layout: React.FC = () => {
 
         {/* Content Outlet o Pantalla de Suspensión */}
         <main className="flex-1 min-w-0">
+          {/* Banner de Comunicado Oficial Visible para Colegios (Directores y Maestros) */}
+          {announcement && announcement.activo && dismissedAnnounceId !== announcement.id && (
+            <div
+              className={`mb-6 p-4 rounded-2xl border flex items-start justify-between gap-3 shadow-sm animate-in fade-in duration-200 ${
+                announcement.tipo === 'ALERTA'
+                  ? 'bg-rose-50 border-rose-300 text-rose-950'
+                  : announcement.tipo === 'IMPORTANTE'
+                  ? 'bg-amber-50 border-amber-300 text-amber-950'
+                  : 'bg-blue-50 border-blue-300 text-blue-950'
+              }`}
+            >
+              <div className="flex items-start space-x-3">
+                <div
+                  className={`p-2 rounded-xl shrink-0 mt-0.5 shadow-xs ${
+                    announcement.tipo === 'ALERTA'
+                      ? 'bg-rose-100 text-rose-700'
+                      : announcement.tipo === 'IMPORTANTE'
+                      ? 'bg-amber-100 text-amber-700'
+                      : 'bg-blue-100 text-blue-700'
+                  }`}
+                >
+                  <Bell className="w-5 h-5" />
+                </div>
+                <div>
+                  <div className="font-bold text-sm flex items-center gap-2">
+                    <span>{announcement.titulo}</span>
+                    <span className="text-[10px] uppercase font-black px-2 py-0.5 rounded-full bg-white/90 border border-current/20">
+                      {announcement.tipo}
+                    </span>
+                  </div>
+                  <p className="text-xs mt-1 leading-relaxed text-slate-700 font-medium">
+                    {announcement.mensaje}
+                  </p>
+                  <div className="text-[10px] text-slate-500 mt-1 font-mono">
+                    Emitido por: {announcement.autor} • {announcement.fecha}
+                  </div>
+                </div>
+              </div>
+              <button
+                type="button"
+                onClick={() => setDismissedAnnounceId(announcement.id)}
+                title="Cerrar aviso temporalmente"
+                className="text-slate-400 hover:text-slate-700 p-1 rounded-lg hover:bg-black/5 transition cursor-pointer"
+              >
+                <X className="w-4 h-4" />
+              </button>
+            </div>
+          )}
+
           <ErrorBoundary>
             {!isSuperAdmin && currentInstitution && currentInstitution.activo === false ? (
               <div className="p-4 sm:p-8 max-w-2xl mx-auto my-8 sm:my-14">

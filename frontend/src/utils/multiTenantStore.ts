@@ -1129,7 +1129,15 @@ export function registerManualPayment(
 export function getGlobalAnnouncement(): GlobalAnnouncement | null {
   try {
     const raw = localStorage.getItem('sigma_global_announcement');
-    if (raw) return JSON.parse(raw);
+    if (raw !== null) {
+      if (raw === 'null' || !raw) return null;
+      const parsed = JSON.parse(raw);
+      if (parsed && typeof parsed === 'object') {
+        if (parsed.activo === false) return null;
+        return parsed;
+      }
+      return null;
+    }
   } catch (e) {
     console.error('Error loading global announcement', e);
   }
@@ -1145,12 +1153,12 @@ export function getGlobalAnnouncement(): GlobalAnnouncement | null {
 }
 
 export function saveGlobalAnnouncement(ann: GlobalAnnouncement | null): void {
-  if (ann) {
+  if (ann && ann.activo) {
     localStorage.setItem('sigma_global_announcement', JSON.stringify(ann));
   } else {
-    localStorage.removeItem('sigma_global_announcement');
+    localStorage.setItem('sigma_global_announcement', 'null');
   }
   if (typeof window !== 'undefined') {
-    window.dispatchEvent(new CustomEvent('sigma_announcement_updated', { detail: ann }));
+    window.dispatchEvent(new CustomEvent('sigma_announcement_updated', { detail: ann && ann.activo ? ann : null }));
   }
 }
