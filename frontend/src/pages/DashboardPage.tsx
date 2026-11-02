@@ -402,13 +402,12 @@ export const DashboardPage: React.FC = () => {
     <div className="space-y-6">
       {/* Comunicado Global Activo si existe */}
       {announcement && announcement.activo && (
-        <div className={`p-4 rounded-2xl border flex items-start justify-between gap-3 shadow-sm ${
-          announcement.tipo === 'ALERTA'
+        <div className={`p-4 rounded-2xl border flex items-start justify-between gap-3 shadow-sm ${announcement.tipo === 'ALERTA'
             ? 'bg-rose-50 border-rose-300 text-rose-950'
             : announcement.tipo === 'IMPORTANTE'
-            ? 'bg-amber-50 border-amber-300 text-amber-950'
-            : 'bg-blue-50 border-blue-300 text-blue-950'
-        }`}>
+              ? 'bg-amber-50 border-amber-300 text-amber-950'
+              : 'bg-blue-50 border-blue-300 text-blue-950'
+          }`}>
           <div className="flex items-start space-x-3">
             <div className="p-2 rounded-xl bg-white/80 shadow-xs shrink-0 mt-0.5">
               <Bell className="w-5 h-5 text-amber-600" />
@@ -507,9 +506,8 @@ export const DashboardPage: React.FC = () => {
         {/* Colegios */}
         <div
           onClick={() => isSuperAdmin && setActiveTab('colegios')}
-          className={`bg-white p-5 rounded-2xl border transition shadow-sm cursor-pointer ${
-            activeTab === 'colegios' && isSuperAdmin ? 'border-emerald-500 ring-2 ring-emerald-500/20' : 'border-slate-200 hover:border-slate-300'
-          }`}
+          className={`bg-white p-5 rounded-2xl border transition shadow-sm cursor-pointer ${activeTab === 'colegios' && isSuperAdmin ? 'border-emerald-500 ring-2 ring-emerald-500/20' : 'border-slate-200 hover:border-slate-300'
+            }`}
         >
           <div className="flex items-center justify-between">
             <span className="text-xs font-bold text-slate-500 uppercase tracking-wider">Unidades Educativas</span>
@@ -528,9 +526,8 @@ export const DashboardPage: React.FC = () => {
         {/* Verificación de Pagos */}
         <div
           onClick={() => isSuperAdmin && setActiveTab('pagos')}
-          className={`bg-white p-5 rounded-2xl border transition shadow-sm cursor-pointer relative ${
-            activeTab === 'pagos' && isSuperAdmin ? 'border-amber-500 ring-2 ring-amber-500/20' : 'border-slate-200 hover:border-slate-300'
-          }`}
+          className={`bg-white p-5 rounded-2xl border transition shadow-sm cursor-pointer relative ${activeTab === 'pagos' && isSuperAdmin ? 'border-amber-500 ring-2 ring-amber-500/20' : 'border-slate-200 hover:border-slate-300'
+            }`}
         >
           {pagosPendientes.length > 0 && (
             <span className="absolute -top-1.5 -right-1.5 px-2 py-0.5 bg-rose-600 text-white text-[10px] font-black rounded-full animate-bounce">
@@ -554,9 +551,8 @@ export const DashboardPage: React.FC = () => {
         {/* Recaudación Total en Bs. */}
         <div
           onClick={() => isSuperAdmin && setActiveTab('metricas')}
-          className={`bg-white p-5 rounded-2xl border transition shadow-sm cursor-pointer ${
-            activeTab === 'metricas' && isSuperAdmin ? 'border-purple-500 ring-2 ring-purple-500/20' : 'border-slate-200 hover:border-slate-300'
-          }`}
+          className={`bg-white p-5 rounded-2xl border transition shadow-sm cursor-pointer ${activeTab === 'metricas' && isSuperAdmin ? 'border-purple-500 ring-2 ring-purple-500/20' : 'border-slate-200 hover:border-slate-300'
+            }`}
         >
           <div className="flex items-center justify-between">
             <span className="text-xs font-bold text-slate-500 uppercase tracking-wider">Ingresos Facturados</span>
@@ -571,9 +567,8 @@ export const DashboardPage: React.FC = () => {
         {/* Seguridad & Sistema */}
         <div
           onClick={() => isSuperAdmin && setActiveTab('comunicados')}
-          className={`bg-white p-5 rounded-2xl border transition shadow-sm cursor-pointer ${
-            activeTab === 'comunicados' && isSuperAdmin ? 'border-emerald-500 ring-2 ring-emerald-500/20' : 'border-slate-200 hover:border-slate-300'
-          }`}
+          className={`bg-white p-5 rounded-2xl border transition shadow-sm cursor-pointer ${activeTab === 'comunicados' && isSuperAdmin ? 'border-emerald-500 ring-2 ring-emerald-500/20' : 'border-slate-200 hover:border-slate-300'
+            }`}
         >
           <div className="flex items-center justify-between">
             <span className="text-xs font-bold text-slate-500 uppercase tracking-wider">Comunicados & Aviso</span>
@@ -596,11 +591,10 @@ export const DashboardPage: React.FC = () => {
           <div className="flex items-center space-x-2 border-b border-slate-200 pb-2">
             <button
               onClick={() => setActiveTab('colegios')}
-              className={`px-4 py-2 rounded-xl text-xs font-bold transition flex items-center space-x-2 cursor-pointer ${
-                activeTab === 'colegios'
+              className={`px-4 py-2 rounded-xl text-xs font-bold transition flex items-center space-x-2 cursor-pointer ${activeTab === 'colegios'
                   ? 'bg-slate-900 text-white shadow-sm'
                   : 'text-slate-600 hover:bg-slate-100'
-              }`}
+                }`}
             >
               <Building2 className="w-4 h-4" />
               <span>Control Total de Colegios ({institutions.length})</span>
@@ -608,11 +602,10 @@ export const DashboardPage: React.FC = () => {
 
             <button
               onClick={() => setActiveTab('pagos')}
-              className={`px-4 py-2 rounded-xl text-xs font-bold transition flex items-center space-x-2 cursor-pointer relative ${
-                activeTab === 'pagos'
+              className={`px-4 py-2 rounded-xl text-xs font-bold transition flex items-center space-x-2 cursor-pointer relative ${activeTab === 'pagos'
                   ? 'bg-slate-900 text-white shadow-sm'
                   : 'text-slate-600 hover:bg-slate-100'
-              }`}
+                }`}
             >
               <CreditCard className="w-4 h-4" />
               <span>Verificación de Pagos ({payments.length})</span>
@@ -623,11 +616,10 @@ export const DashboardPage: React.FC = () => {
 
             <button
               onClick={() => setActiveTab('comunicados')}
-              className={`px-4 py-2 rounded-xl text-xs font-bold transition flex items-center space-x-2 cursor-pointer ${
-                activeTab === 'comunicados'
+              className={`px-4 py-2 rounded-xl text-xs font-bold transition flex items-center space-x-2 cursor-pointer ${activeTab === 'comunicados'
                   ? 'bg-slate-900 text-white shadow-sm'
                   : 'text-slate-600 hover:bg-slate-100'
-              }`}
+                }`}
             >
               <Bell className="w-4 h-4" />
               <span>Comunicado Global</span>
@@ -635,11 +627,10 @@ export const DashboardPage: React.FC = () => {
 
             <button
               onClick={() => setActiveTab('metricas')}
-              className={`px-4 py-2 rounded-xl text-xs font-bold transition flex items-center space-x-2 cursor-pointer ${
-                activeTab === 'metricas'
+              className={`px-4 py-2 rounded-xl text-xs font-bold transition flex items-center space-x-2 cursor-pointer ${activeTab === 'metricas'
                   ? 'bg-slate-900 text-white shadow-sm'
                   : 'text-slate-600 hover:bg-slate-100'
-              }`}
+                }`}
             >
               <TrendingUp className="w-4 h-4" />
               <span>Estadísticas de Ingresos</span>
@@ -707,17 +698,15 @@ export const DashboardPage: React.FC = () => {
                   return (
                     <div
                       key={inst.id}
-                      className={`bg-white rounded-2xl border p-5 shadow-sm transition hover:shadow-md flex flex-col justify-between ${
-                        isSuspended ? 'border-rose-200 bg-rose-50/20' : 'border-slate-200'
-                      }`}
+                      className={`bg-white rounded-2xl border p-5 shadow-sm transition hover:shadow-md flex flex-col justify-between ${isSuspended ? 'border-rose-200 bg-rose-50/20' : 'border-slate-200'
+                        }`}
                     >
                       <div>
                         <div className="flex items-start justify-between">
                           <div className="flex items-center space-x-3">
                             <div
-                              className={`p-2.5 rounded-xl ${
-                                isSuspended ? 'bg-rose-100 text-rose-700' : 'bg-emerald-50 text-emerald-700'
-                              }`}
+                              className={`p-2.5 rounded-xl ${isSuspended ? 'bg-rose-100 text-rose-700' : 'bg-emerald-50 text-emerald-700'
+                                }`}
                             >
                               <School className="w-6 h-6" />
                             </div>
@@ -727,9 +716,8 @@ export const DashboardPage: React.FC = () => {
                             </div>
                           </div>
                           <span
-                            className={`px-2.5 py-1 rounded-full text-[10px] font-black uppercase tracking-wider ${
-                              isSuspended ? 'bg-rose-100 text-rose-800' : 'bg-emerald-100 text-emerald-800'
-                            }`}
+                            className={`px-2.5 py-1 rounded-full text-[10px] font-black uppercase tracking-wider ${isSuspended ? 'bg-rose-100 text-rose-800' : 'bg-emerald-100 text-emerald-800'
+                              }`}
                           >
                             {isSuspended ? 'SUSPENDIDA' : 'ACTIVA'}
                           </span>
@@ -883,13 +871,12 @@ export const DashboardPage: React.FC = () => {
                             </td>
                             <td className="py-3 px-3">
                               <span
-                                className={`px-2 py-0.5 rounded-full text-[10px] font-black uppercase ${
-                                  isPendiente
+                                className={`px-2 py-0.5 rounded-full text-[10px] font-black uppercase ${isPendiente
                                     ? 'bg-amber-100 text-amber-800 animate-pulse'
                                     : isAprobado
-                                    ? 'bg-emerald-100 text-emerald-800'
-                                    : 'bg-rose-100 text-rose-800'
-                                }`}
+                                      ? 'bg-emerald-100 text-emerald-800'
+                                      : 'bg-rose-100 text-rose-800'
+                                  }`}
                               >
                                 {p.estado}
                               </span>

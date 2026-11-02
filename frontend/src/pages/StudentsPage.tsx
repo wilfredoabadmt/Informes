@@ -50,6 +50,68 @@ interface StudentItem {
   estado: string;
 }
 
+// Helper para coincidencia exacta e inteligente de curso
+export const parseCourseParts = (str: string) => {
+  if (!str) return { grado: 0, nivel: '', paralelo: '' };
+  const s = str.toLowerCase();
+  
+  let grado = 0;
+  const gMatch = s.match(/(\d+)\s*(?:°|º)?/);
+  if (gMatch) grado = parseInt(gMatch[1], 10);
+  else if (s.includes('primer')) grado = 1;
+  else if (s.includes('segund')) grado = 2;
+  else if (s.includes('tercer')) grado = 3;
+  else if (s.includes('cuart')) grado = 4;
+  else if (s.includes('quint')) grado = 5;
+  else if (s.includes('sext')) grado = 6;
+
+  const nivel = s.includes('prim') ? 'PRIMARIA' : s.includes('sec') ? 'SECUNDARIA' : '';
+
+  let paralelo = '';
+  const pMatch = s.match(/(?:paralelo|paralelo\s*["']?)\s*([a-z])\b/i) ||
+                 s.match(/["']([a-z])["']/i) ||
+                 s.match(/\b([a-z])\s*$/i);
+  if (pMatch) paralelo = pMatch[1].toUpperCase();
+
+  return { grado, nivel, paralelo };
+};
+
+export const matchesCourseSelection = (
+  studentCourse: string,
+  filterCurso: string,
+  availableCourses: TenantParalelo[]
+): boolean => {
+  if (!filterCurso || filterCurso === 'ALL') return true;
+  if (!studentCourse) return false;
+
+  // Si filterCurso es el id de un curso o su nombre completo
+  const targetCourse = availableCourses.find(
+    (c) => c.id === filterCurso || `${c.cursoNombre} - Paralelo ${c.letra}` === filterCurso
+  );
+
+  const sParts = parseCourseParts(studentCourse);
+
+  if (targetCourse) {
+    const tNivel = targetCourse.nivel || (targetCourse.cursoNombre.toLowerCase().includes('primaria') ? 'PRIMARIA' : 'SECUNDARIA');
+    const tGrado = targetCourse.grado || parseCourseParts(targetCourse.cursoNombre).grado;
+    const tLetra = (targetCourse.letra || 'A').toUpperCase();
+
+    const gradoMatches = sParts.grado === 0 || tGrado === 0 || sParts.grado === tGrado;
+    const nivelMatches = !sParts.nivel || !tNivel || sParts.nivel === tNivel;
+    const paraleloMatches = !sParts.paralelo || !tLetra || sParts.paralelo === tLetra;
+
+    return gradoMatches && nivelMatches && paraleloMatches;
+  }
+
+  // Si no se encontró el curso en availableCourses, comparar directo con las partes del filtro
+  const fParts = parseCourseParts(filterCurso);
+  const gradoMatches = sParts.grado === 0 || fParts.grado === 0 || sParts.grado === fParts.grado;
+  const nivelMatches = !sParts.nivel || !fParts.nivel || sParts.nivel === fParts.nivel;
+  const paraleloMatches = !sParts.paralelo || !fParts.paralelo || sParts.paralelo === fParts.paralelo;
+
+  return gradoMatches && nivelMatches && paraleloMatches;
+};
+
 export const StudentsPage: React.FC = () => {
   const { user, isMaestro, isDirector, isSuperAdmin, currentInstitutionId, setCurrentInstitutionId } = useAuth();
   const [storedInstitutions, setStoredInstitutions] = useState<TenantInstitution[]>(() => getStoredInstitutions());
@@ -438,7 +500,14 @@ export const StudentsPage: React.FC = () => {
       estado: s.estado,
     }));
 
-    exportCourseRosterToExcel(filterCurso === 'ALL' ? 'Todos los Cursos' : filterCurso, exportList);
+    const targetCourseObj = availableCourses.find((c) => c.id === filterCurso);
+    const exportLabel = filterCurso === 'ALL'
+      ? 'Todos los Cursos'
+      : targetCourseObj
+      ? `${targetCourseObj.cursoNombre} - Paralelo ${targetCourseObj.letra}`
+      : filterCurso;
+
+    exportCourseRosterToExcel(exportLabel, exportList);
     setFeedbackMessage('✅ Nómina oficial de estudiantes exportada a Excel (.xlsx) exitosamente.');
     setTimeout(() => setFeedbackMessage(null), 3000);
   };
@@ -450,7 +519,7 @@ export const StudentsPage: React.FC = () => {
       s.nombres.toLowerCase().includes(searchTerm.toLowerCase()) ||
       s.ci.includes(searchTerm);
 
-    const matchesCurso = filterCurso === 'ALL' || s.curso.includes(filterCurso);
+    const matchesCurso = matchesCourseSelection(s.curso, filterCurso, availableCourses);
     const matchesEstado = filterEstado === 'ALL' || s.estado === filterEstado;
 
     return matchesSearch && matchesCurso && matchesEstado;
@@ -587,9 +656,10 @@ export const StudentsPage: React.FC = () => {
             <option value="ALL">Todos los Cursos ({students.length})</option>
             {availableCourses.map((c) => {
               const cName = `${c.cursoNombre} - Paralelo ${c.letra}`;
+              const countInC = students.filter((s) => matchesCourseSelection(s.curso, c.id, availableCourses)).length;
               return (
-                <option key={c.id} value={cName}>
-                  {cName} ({c.turno})
+                <option key={c.id} value={c.id}>
+                  {cName} ({countInC} alumnos - {c.turno})
                 </option>
               );
             })}
@@ -623,18 +693,17 @@ export const StudentsPage: React.FC = () => {
           Todos ({students.length})
         </button>
         {availableCourses.map((c) => {
-          const courseFullName = `${c.cursoNombre} - Paralelo ${c.letra}`;
-          const isSelected = filterCurso === courseFullName;
-          const countInCourse = students.filter(
-            (s) => s.curso.includes(courseFullName) || s.curso.includes(`Paralelo ${c.letra}`)
+          const isSelected = filterCurso === c.id || filterCurso === `${c.cursoNombre} - Paralelo ${c.letra}`;
+          const countInCourse = students.filter((s) =>
+            matchesCourseSelection(s.curso, c.id, availableCourses)
           ).length;
           return (
             <button
               key={c.id}
-              onClick={() => setFilterCurso(courseFullName)}
+              onClick={() => setFilterCurso(c.id)}
               className={`px-3 py-1.5 rounded-xl text-xs font-bold transition cursor-pointer ${
                 isSelected
-                  ? 'bg-emerald-600 text-white shadow-sm'
+                  ? 'bg-emerald-600 text-white shadow-sm ring-2 ring-emerald-500/20'
                   : 'bg-white text-slate-600 hover:bg-slate-100 border border-slate-200'
               }`}
             >

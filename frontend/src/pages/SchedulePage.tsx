@@ -144,7 +144,7 @@ const SCHEDULE_SEC_1A: ScheduleSlot[] = [
   },
 ];
 
-// Horario específico de 1° Secundaria B
+// Horario específico de 1° Secundaria B (Turno Tarde Oficial)
 const SCHEDULE_SEC_1B: ScheduleSlot[] = [
   {
     period: 1,
@@ -169,36 +169,58 @@ const SCHEDULE_SEC_1B: ScheduleSlot[] = [
     },
   },
   {
+    period: 3,
+    timeRange: '15:00 - 15:45',
+    days: {
+      lunes: { subject: 'Lengua Extranjera (Inglés)', grade: '1º Sec "B"', room: 'Aula 102', teacher: 'Prof. Gary Nina', isMine: false, color: 'bg-sky-50 border-sky-200 text-sky-900' },
+      martes: { subject: 'Artes Plásticas y Visuales', grade: '1º Sec "B"', room: 'Aula 102', teacher: 'Prof. Javier Gomez', isMine: false, color: 'bg-rose-50 border-rose-200 text-rose-900' },
+      miercoles: { subject: 'Educación Física y Deportes', grade: '1º Sec "B"', room: 'Canchas', teacher: 'Prof. Hugo Morales', isMine: false, color: 'bg-teal-50 border-teal-200 text-teal-900' },
+      jueves: { subject: 'Comunicación y Lenguajes', grade: '1º Sec "B"', room: 'Aula 102', teacher: 'Prof. Carlos Mamani C.', isMine: true, color: 'bg-emerald-50 border-emerald-300 text-emerald-900' },
+      viernes: { subject: 'Lengua Originaria (Guaraní)', grade: '1º Sec "B"', room: 'Aula 102', teacher: 'Prof. Sonia Choque', isMine: false, color: 'bg-purple-50 border-purple-200 text-purple-900' },
+    },
+  },
+  {
     period: 0,
     timeRange: '15:45 - 16:15',
     isRecess: true,
     days: {},
   },
   {
-    period: 3,
-    timeRange: '15:00 - 15:45',
-    days: {
-      lunes: { subject: 'Lengua Extranjera', grade: '1º Sec "B"', room: 'Aula 102', teacher: 'Prof. Gary Nina', isMine: false, color: 'bg-sky-50 border-sky-200 text-sky-900' },
-      martes: { subject: 'Artes Plásticas', grade: '1º Sec "B"', room: 'Aula 102', teacher: 'Prof. Javier Gomez', isMine: false, color: 'bg-rose-50 border-rose-200 text-rose-900' },
-      miercoles: { subject: 'Educación Física', grade: '1º Sec "B"', room: 'Canchas', teacher: 'Prof. Hugo Morales', isMine: false, color: 'bg-teal-50 border-teal-200 text-teal-900' },
-      jueves: { subject: 'Comunicación y Lenguajes', grade: '1º Sec "B"', room: 'Aula 102', teacher: 'Prof. Carlos Mamani C.', isMine: true, color: 'bg-emerald-50 border-emerald-300 text-emerald-900' },
-      viernes: { subject: 'Lengua Originaria Guaraní', grade: '1º Sec "B"', room: 'Aula 102', teacher: 'Prof. Sonia Choque', isMine: false, color: 'bg-purple-50 border-purple-200 text-purple-900' },
-    },
-  },
-  {
     period: 4,
     timeRange: '16:15 - 17:00',
     days: {
-      lunes: { subject: 'Lengua Extranjera', grade: '1º Sec "B"', room: 'Aula 102', teacher: 'Prof. Gary Nina', isMine: false, color: 'bg-sky-50 border-sky-200 text-sky-900' },
-      martes: { subject: 'Artes Plásticas', grade: '1º Sec "B"', room: 'Aula 102', teacher: 'Prof. Javier Gomez', isMine: false, color: 'bg-rose-50 border-rose-200 text-rose-900' },
-      miercoles: { subject: 'Educación Física', grade: '1º Sec "B"', room: 'Canchas', teacher: 'Prof. Hugo Morales', isMine: false, color: 'bg-teal-50 border-teal-200 text-teal-900' },
+      lunes: { subject: 'Lengua Extranjera (Inglés)', grade: '1º Sec "B"', room: 'Aula 102', teacher: 'Prof. Gary Nina', isMine: false, color: 'bg-sky-50 border-sky-200 text-sky-900' },
+      martes: { subject: 'Artes Plásticas y Visuales', grade: '1º Sec "B"', room: 'Aula 102', teacher: 'Prof. Javier Gomez', isMine: false, color: 'bg-rose-50 border-rose-200 text-rose-900' },
+      miercoles: { subject: 'Educación Física y Deportes', grade: '1º Sec "B"', room: 'Canchas', teacher: 'Prof. Hugo Morales', isMine: false, color: 'bg-teal-50 border-teal-200 text-teal-900' },
       jueves: { subject: 'Comunicación y Lenguajes', grade: '1º Sec "B"', room: 'Aula 102', teacher: 'Prof. Carlos Mamani C.', isMine: true, color: 'bg-emerald-50 border-emerald-300 text-emerald-900' },
       viernes: { subject: 'Técnica Tecnológica', grade: '1º Sec "B"', room: 'Laboratorio', teacher: 'Prof. Walter Flores', isMine: false, color: 'bg-slate-100 border-slate-300 text-slate-800' },
     },
   },
+  {
+    period: 5,
+    timeRange: '17:00 - 17:45',
+    days: {
+      lunes: { subject: 'Valores, Espiritualidad y Religiones', grade: '1º Sec "B"', room: 'Aula 102', teacher: 'Prof. Miriam Cruz', isMine: false, color: 'bg-orange-50 border-orange-200 text-orange-900' },
+      martes: { subject: 'Educación Musical', grade: '1º Sec "B"', room: 'Aula Música', teacher: 'Prof. David Alanoca', isMine: false, color: 'bg-indigo-50 border-indigo-200 text-indigo-900' },
+      miercoles: { subject: 'Técnica Tecnológica', grade: '1º Sec "B"', room: 'Laboratorio', teacher: 'Prof. Walter Flores', isMine: false, color: 'bg-slate-100 border-slate-300 text-slate-800' },
+      jueves: { subject: 'Física y Química Inicial', grade: '1º Sec "B"', room: 'Aula 102', teacher: 'Prof. Alberto Simon', isMine: false, color: 'bg-blue-50 border-blue-200 text-blue-900' },
+      viernes: { subject: 'Consejo y Tutoría', grade: '1º Sec "B"', room: 'Aula 102', teacher: 'Prof. Carlos Mamani C.', isMine: true, color: 'bg-emerald-50 border-emerald-300 text-emerald-900' },
+    },
+  },
+  {
+    period: 6,
+    timeRange: '17:45 - 18:30',
+    days: {
+      lunes: { subject: 'Reforzamiento Pedagógico', grade: '1º Sec "B"', room: 'Aula 102', teacher: 'Prof. Carlos Mamani C.', isMine: true, color: 'bg-emerald-50 border-emerald-300 text-emerald-900' },
+      martes: { subject: 'Educación Musical', grade: '1º Sec "B"', room: 'Aula Música', teacher: 'Prof. David Alanoca', isMine: false, color: 'bg-indigo-50 border-indigo-200 text-indigo-900' },
+      miercoles: { subject: 'Taller de Lectura Crítica', grade: '1º Sec "B"', room: 'Aula 102', teacher: 'Prof. Carlos Mamani C.', isMine: true, color: 'bg-emerald-50 border-emerald-300 text-emerald-900' },
+      jueves: { subject: 'Ciencias Naturales', grade: '1º Sec "B"', room: 'Aula 102', teacher: 'Prof. Marleny Torrez', isMine: false, color: 'bg-blue-50 border-blue-200 text-blue-900' },
+      viernes: { subject: 'Orden y Limpieza', grade: '1º Sec "B"', room: 'Aula 102', teacher: 'Prof. Carlos Mamani C.', isMine: true, color: 'bg-emerald-50 border-emerald-300 text-emerald-900' },
+    },
+  },
 ];
 
-// Horario específico de 2° Secundaria A
+// Horario específico de 2° Secundaria A (Turno Mañana Oficial)
 const SCHEDULE_SEC_2A: ScheduleSlot[] = [
   {
     period: 1,
@@ -222,6 +244,386 @@ const SCHEDULE_SEC_2A: ScheduleSlot[] = [
       viernes: { subject: 'Ciencias Sociales', grade: '2º Sec "A"', room: 'Aula 103', teacher: 'Prof. Roberto Quispe', isMine: false, color: 'bg-amber-50 border-amber-200 text-amber-900' },
     },
   },
+  {
+    period: 3,
+    timeRange: '09:30 - 10:15',
+    days: {
+      lunes: { subject: 'Biología y Geografía', grade: '2º Sec "A"', room: 'Aula 103', teacher: 'Prof. Marleny Torrez', isMine: false, color: 'bg-teal-50 border-teal-200 text-teal-900' },
+      martes: { subject: 'Lengua Extranjera (Inglés)', grade: '2º Sec "A"', room: 'Aula 103', teacher: 'Prof. Gary Nina', isMine: false, color: 'bg-sky-50 border-sky-200 text-sky-900' },
+      miercoles: { subject: 'Educación Física y Deportes', grade: '2º Sec "A"', room: 'Canchas', teacher: 'Prof. Hugo Morales', isMine: false, color: 'bg-teal-50 border-teal-200 text-teal-900' },
+      jueves: { subject: 'Lengua Originaria (Aymara)', grade: '2º Sec "A"', room: 'Aula 103', teacher: 'Prof. Sonia Choque', isMine: false, color: 'bg-purple-50 border-purple-200 text-purple-900' },
+      viernes: { subject: 'Artes Plásticas y Visuales', grade: '2º Sec "A"', room: 'Aula 103', teacher: 'Prof. Javier Gomez', isMine: false, color: 'bg-rose-50 border-rose-200 text-rose-900' },
+    },
+  },
+  {
+    period: 0,
+    timeRange: '10:15 - 10:45',
+    isRecess: true,
+    days: {},
+  },
+  {
+    period: 4,
+    timeRange: '10:45 - 11:30',
+    days: {
+      lunes: { subject: 'Biología y Geografía', grade: '2º Sec "A"', room: 'Aula 103', teacher: 'Prof. Marleny Torrez', isMine: false, color: 'bg-teal-50 border-teal-200 text-teal-900' },
+      martes: { subject: 'Lengua Extranjera (Inglés)', grade: '2º Sec "A"', room: 'Aula 103', teacher: 'Prof. Gary Nina', isMine: false, color: 'bg-sky-50 border-sky-200 text-sky-900' },
+      miercoles: { subject: 'Educación Física y Deportes', grade: '2º Sec "A"', room: 'Canchas', teacher: 'Prof. Hugo Morales', isMine: false, color: 'bg-teal-50 border-teal-200 text-teal-900' },
+      jueves: { subject: 'Técnica Tecnológica General', grade: '2º Sec "A"', room: 'Laboratorio', teacher: 'Prof. Walter Flores', isMine: false, color: 'bg-slate-100 border-slate-300 text-slate-800' },
+      viernes: { subject: 'Artes Plásticas y Visuales', grade: '2º Sec "A"', room: 'Aula 103', teacher: 'Prof. Javier Gomez', isMine: false, color: 'bg-rose-50 border-rose-200 text-rose-900' },
+    },
+  },
+  {
+    period: 5,
+    timeRange: '11:30 - 12:15',
+    days: {
+      lunes: { subject: 'Valores, Espiritualidad y Religiones', grade: '2º Sec "A"', room: 'Aula 103', teacher: 'Prof. Miriam Cruz', isMine: false, color: 'bg-orange-50 border-orange-200 text-orange-900' },
+      martes: { subject: 'Educación Musical', grade: '2º Sec "A"', room: 'Aula Música', teacher: 'Prof. David Alanoca', isMine: false, color: 'bg-indigo-50 border-indigo-200 text-indigo-900' },
+      miercoles: { subject: 'Técnica Tecnológica General', grade: '2º Sec "A"', room: 'Laboratorio', teacher: 'Prof. Walter Flores', isMine: false, color: 'bg-slate-100 border-slate-300 text-slate-800' },
+      jueves: { subject: 'Física y Química', grade: '2º Sec "A"', room: 'Aula 103', teacher: 'Prof. Alberto Simon', isMine: false, color: 'bg-blue-50 border-blue-200 text-blue-900' },
+      viernes: { subject: 'Consejo y Tutoría', grade: '2º Sec "A"', room: 'Aula 103', teacher: 'Prof. Carlos Mamani C.', isMine: true, color: 'bg-emerald-50 border-emerald-300 text-emerald-900' },
+    },
+  },
+  {
+    period: 6,
+    timeRange: '12:15 - 13:00',
+    days: {
+      lunes: { subject: 'Comunicación y Lenguajes', grade: '2º Sec "A"', room: 'Aula 103', teacher: 'Prof. Laura Mendoza', isMine: false, color: 'bg-indigo-50 border-indigo-200 text-indigo-900' },
+      martes: { subject: 'Educación Musical', grade: '2º Sec "A"', room: 'Aula Música', teacher: 'Prof. David Alanoca', isMine: false, color: 'bg-indigo-50 border-indigo-200 text-indigo-900' },
+      miercoles: { subject: 'Taller de Lectura', grade: '2º Sec "A"', room: 'Aula 103', teacher: 'Prof. Laura Mendoza', isMine: false, color: 'bg-indigo-50 border-indigo-200 text-indigo-900' },
+      jueves: { subject: 'Física y Química', grade: '2º Sec "A"', room: 'Aula 103', teacher: 'Prof. Alberto Simon', isMine: false, color: 'bg-blue-50 border-blue-200 text-blue-900' },
+      viernes: { subject: 'Reforzamiento Pedagógico', grade: '2º Sec "A"', room: 'Aula 103', teacher: 'Prof. Carlos Mamani C.', isMine: true, color: 'bg-emerald-50 border-emerald-300 text-emerald-900' },
+    },
+  },
+];
+
+// Horario específico de 3° Secundaria A (Turno Mañana Oficial)
+const SCHEDULE_SEC_3A: ScheduleSlot[] = [
+  {
+    period: 1,
+    timeRange: '08:00 - 08:45',
+    days: {
+      lunes: { subject: 'Física y Química', grade: '3º Sec "A"', room: 'Aula 104', teacher: 'Prof. Alberto Simon', isMine: false, color: 'bg-blue-50 border-blue-200 text-blue-900' },
+      martes: { subject: 'Matemática Superior', grade: '3º Sec "A"', room: 'Aula 104', teacher: 'Prof. Carlos Mamani C.', isMine: true, color: 'bg-emerald-50 border-emerald-300 text-emerald-900' },
+      miercoles: { subject: 'Literatura y Filosofía', grade: '3º Sec "A"', room: 'Aula 104', teacher: 'Prof. Laura Mendoza', isMine: false, color: 'bg-indigo-50 border-indigo-200 text-indigo-900' },
+      jueves: { subject: 'Ciencias Sociales e Historia', grade: '3º Sec "A"', room: 'Aula 104', teacher: 'Prof. Roberto Quispe', isMine: false, color: 'bg-amber-50 border-amber-200 text-amber-900' },
+      viernes: { subject: 'Matemática Superior', grade: '3º Sec "A"', room: 'Aula 104', teacher: 'Prof. Carlos Mamani C.', isMine: true, color: 'bg-emerald-50 border-emerald-300 text-emerald-900' },
+    },
+  },
+  {
+    period: 2,
+    timeRange: '08:45 - 09:30',
+    days: {
+      lunes: { subject: 'Física y Química', grade: '3º Sec "A"', room: 'Aula 104', teacher: 'Prof. Alberto Simon', isMine: false, color: 'bg-blue-50 border-blue-200 text-blue-900' },
+      martes: { subject: 'Matemática Superior', grade: '3º Sec "A"', room: 'Aula 104', teacher: 'Prof. Carlos Mamani C.', isMine: true, color: 'bg-emerald-50 border-emerald-300 text-emerald-900' },
+      miercoles: { subject: 'Literatura y Filosofía', grade: '3º Sec "A"', room: 'Aula 104', teacher: 'Prof. Laura Mendoza', isMine: false, color: 'bg-indigo-50 border-indigo-200 text-indigo-900' },
+      jueves: { subject: 'Ciencias Sociales e Historia', grade: '3º Sec "A"', room: 'Aula 104', teacher: 'Prof. Roberto Quispe', isMine: false, color: 'bg-amber-50 border-amber-200 text-amber-900' },
+      viernes: { subject: 'Matemática Superior', grade: '3º Sec "A"', room: 'Aula 104', teacher: 'Prof. Carlos Mamani C.', isMine: true, color: 'bg-emerald-50 border-emerald-300 text-emerald-900' },
+    },
+  },
+  {
+    period: 3,
+    timeRange: '09:30 - 10:15',
+    days: {
+      lunes: { subject: 'Biología y Anatomía', grade: '3º Sec "A"', room: 'Laboratorio', teacher: 'Prof. Marleny Torrez', isMine: false, color: 'bg-teal-50 border-teal-200 text-teal-900' },
+      martes: { subject: 'Lengua Extranjera (Inglés Técnico)', grade: '3º Sec "A"', room: 'Aula 104', teacher: 'Prof. Gary Nina', isMine: false, color: 'bg-sky-50 border-sky-200 text-sky-900' },
+      miercoles: { subject: 'Educación Física y Deportes', grade: '3º Sec "A"', room: 'Canchas', teacher: 'Prof. Hugo Morales', isMine: false, color: 'bg-teal-50 border-teal-200 text-teal-900' },
+      jueves: { subject: 'Lengua Originaria', grade: '3º Sec "A"', room: 'Aula 104', teacher: 'Prof. Sonia Choque', isMine: false, color: 'bg-purple-50 border-purple-200 text-purple-900' },
+      viernes: { subject: 'Artes Plásticas y Visuales', grade: '3º Sec "A"', room: 'Aula 104', teacher: 'Prof. Javier Gomez', isMine: false, color: 'bg-rose-50 border-rose-200 text-rose-900' },
+    },
+  },
+  {
+    period: 0,
+    timeRange: '10:15 - 10:45',
+    isRecess: true,
+    days: {},
+  },
+  {
+    period: 4,
+    timeRange: '10:45 - 11:30',
+    days: {
+      lunes: { subject: 'Biología y Anatomía', grade: '3º Sec "A"', room: 'Laboratorio', teacher: 'Prof. Marleny Torrez', isMine: false, color: 'bg-teal-50 border-teal-200 text-teal-900' },
+      martes: { subject: 'Lengua Extranjera (Inglés Técnico)', grade: '3º Sec "A"', room: 'Aula 104', teacher: 'Prof. Gary Nina', isMine: false, color: 'bg-sky-50 border-sky-200 text-sky-900' },
+      miercoles: { subject: 'Educación Física y Deportes', grade: '3º Sec "A"', room: 'Canchas', teacher: 'Prof. Hugo Morales', isMine: false, color: 'bg-teal-50 border-teal-200 text-teal-900' },
+      jueves: { subject: 'Técnica Tecnológica Especializada', grade: '3º Sec "A"', room: 'Laboratorio', teacher: 'Prof. Walter Flores', isMine: false, color: 'bg-slate-100 border-slate-300 text-slate-800' },
+      viernes: { subject: 'Artes Plásticas y Visuales', grade: '3º Sec "A"', room: 'Aula 104', teacher: 'Prof. Javier Gomez', isMine: false, color: 'bg-rose-50 border-rose-200 text-rose-900' },
+    },
+  },
+  {
+    period: 5,
+    timeRange: '11:30 - 12:15',
+    days: {
+      lunes: { subject: 'Cosmovisiones y Filosofía', grade: '3º Sec "A"', room: 'Aula 104', teacher: 'Prof. Miriam Cruz', isMine: false, color: 'bg-orange-50 border-orange-200 text-orange-900' },
+      martes: { subject: 'Educación Musical', grade: '3º Sec "A"', room: 'Aula Música', teacher: 'Prof. David Alanoca', isMine: false, color: 'bg-indigo-50 border-indigo-200 text-indigo-900' },
+      miercoles: { subject: 'Técnica Tecnológica Especializada', grade: '3º Sec "A"', room: 'Laboratorio', teacher: 'Prof. Walter Flores', isMine: false, color: 'bg-slate-100 border-slate-300 text-slate-800' },
+      jueves: { subject: 'Física y Química', grade: '3º Sec "A"', room: 'Aula 104', teacher: 'Prof. Alberto Simon', isMine: false, color: 'bg-blue-50 border-blue-200 text-blue-900' },
+      viernes: { subject: 'Consejo y Tutoría', grade: '3º Sec "A"', room: 'Aula 104', teacher: 'Prof. Carlos Mamani C.', isMine: true, color: 'bg-emerald-50 border-emerald-300 text-emerald-900' },
+    },
+  },
+  {
+    period: 6,
+    timeRange: '12:15 - 13:00',
+    days: {
+      lunes: { subject: 'Literatura', grade: '3º Sec "A"', room: 'Aula 104', teacher: 'Prof. Laura Mendoza', isMine: false, color: 'bg-indigo-50 border-indigo-200 text-indigo-900' },
+      martes: { subject: 'Educación Musical', grade: '3º Sec "A"', room: 'Aula Música', teacher: 'Prof. David Alanoca', isMine: false, color: 'bg-indigo-50 border-indigo-200 text-indigo-900' },
+      miercoles: { subject: 'Taller de Investigación', grade: '3º Sec "A"', room: 'Aula 104', teacher: 'Prof. Laura Mendoza', isMine: false, color: 'bg-indigo-50 border-indigo-200 text-indigo-900' },
+      jueves: { subject: 'Física y Química', grade: '3º Sec "A"', room: 'Aula 104', teacher: 'Prof. Alberto Simon', isMine: false, color: 'bg-blue-50 border-blue-200 text-blue-900' },
+      viernes: { subject: 'Reforzamiento Pedagógico', grade: '3º Sec "A"', room: 'Aula 104', teacher: 'Prof. Carlos Mamani C.', isMine: true, color: 'bg-emerald-50 border-emerald-300 text-emerald-900' },
+    },
+  },
+];
+
+// Horario específico de 1° Primaria A (Turno Mañana)
+const SCHEDULE_PRIM_1A: ScheduleSlot[] = [
+  {
+    period: 1,
+    timeRange: '08:00 - 08:45',
+    days: {
+      lunes: { subject: 'Comunicación y Lenguajes', grade: '1º Prim "A"', room: 'Aula 201', teacher: 'Prof. Patricia Ramos', isMine: false, color: 'bg-indigo-50 border-indigo-200 text-indigo-900' },
+      martes: { subject: 'Matemática Lúdica', grade: '1º Prim "A"', room: 'Aula 201', teacher: 'Prof. Patricia Ramos', isMine: false, color: 'bg-emerald-50 border-emerald-300 text-emerald-900' },
+      miercoles: { subject: 'Comunicación y Lenguajes', grade: '1º Prim "A"', room: 'Aula 201', teacher: 'Prof. Patricia Ramos', isMine: false, color: 'bg-indigo-50 border-indigo-200 text-indigo-900' },
+      jueves: { subject: 'Matemática Lúdica', grade: '1º Prim "A"', room: 'Aula 201', teacher: 'Prof. Patricia Ramos', isMine: false, color: 'bg-emerald-50 border-emerald-300 text-emerald-900' },
+      viernes: { subject: 'Ciencias Naturales', grade: '1º Prim "A"', room: 'Aula 201', teacher: 'Prof. Patricia Ramos', isMine: false, color: 'bg-teal-50 border-teal-200 text-teal-900' },
+    },
+  },
+  {
+    period: 2,
+    timeRange: '08:45 - 09:30',
+    days: {
+      lunes: { subject: 'Comunicación y Lenguajes', grade: '1º Prim "A"', room: 'Aula 201', teacher: 'Prof. Patricia Ramos', isMine: false, color: 'bg-indigo-50 border-indigo-200 text-indigo-900' },
+      martes: { subject: 'Matemática Lúdica', grade: '1º Prim "A"', room: 'Aula 201', teacher: 'Prof. Patricia Ramos', isMine: false, color: 'bg-emerald-50 border-emerald-300 text-emerald-900' },
+      miercoles: { subject: 'Comunicación y Lenguajes', grade: '1º Prim "A"', room: 'Aula 201', teacher: 'Prof. Patricia Ramos', isMine: false, color: 'bg-indigo-50 border-indigo-200 text-indigo-900' },
+      jueves: { subject: 'Matemática Lúdica', grade: '1º Prim "A"', room: 'Aula 201', teacher: 'Prof. Patricia Ramos', isMine: false, color: 'bg-emerald-50 border-emerald-300 text-emerald-900' },
+      viernes: { subject: 'Ciencias Naturales', grade: '1º Prim "A"', room: 'Aula 201', teacher: 'Prof. Patricia Ramos', isMine: false, color: 'bg-teal-50 border-teal-200 text-teal-900' },
+    },
+  },
+  {
+    period: 3,
+    timeRange: '09:30 - 10:15',
+    days: {
+      lunes: { subject: 'Ciencias Sociales', grade: '1º Prim "A"', room: 'Aula 201', teacher: 'Prof. Patricia Ramos', isMine: false, color: 'bg-amber-50 border-amber-200 text-amber-900' },
+      martes: { subject: 'Artes Plásticas y Visuales', grade: '1º Prim "A"', room: 'Aula 201', teacher: 'Prof. Javier Gomez', isMine: false, color: 'bg-rose-50 border-rose-200 text-rose-900' },
+      miercoles: { subject: 'Educación Física y Deportes', grade: '1º Prim "A"', room: 'Canchas', teacher: 'Prof. Hugo Morales', isMine: false, color: 'bg-teal-50 border-teal-200 text-teal-900' },
+      jueves: { subject: 'Valores, Espiritualidad y Religiones', grade: '1º Prim "A"', room: 'Aula 201', teacher: 'Prof. Miriam Cruz', isMine: false, color: 'bg-orange-50 border-orange-200 text-orange-900' },
+      viernes: { subject: 'Educación Musical', grade: '1º Prim "A"', room: 'Aula Música', teacher: 'Prof. David Alanoca', isMine: false, color: 'bg-indigo-50 border-indigo-200 text-indigo-900' },
+    },
+  },
+  {
+    period: 0,
+    timeRange: '10:15 - 10:45',
+    isRecess: true,
+    days: {},
+  },
+  {
+    period: 4,
+    timeRange: '10:45 - 11:30',
+    days: {
+      lunes: { subject: 'Ciencias Sociales', grade: '1º Prim "A"', room: 'Aula 201', teacher: 'Prof. Patricia Ramos', isMine: false, color: 'bg-amber-50 border-amber-200 text-amber-900' },
+      martes: { subject: 'Artes Plásticas y Visuales', grade: '1º Prim "A"', room: 'Aula 201', teacher: 'Prof. Javier Gomez', isMine: false, color: 'bg-rose-50 border-rose-200 text-rose-900' },
+      miercoles: { subject: 'Educación Física y Deportes', grade: '1º Prim "A"', room: 'Canchas', teacher: 'Prof. Hugo Morales', isMine: false, color: 'bg-teal-50 border-teal-200 text-teal-900' },
+      jueves: { subject: 'Lengua Extranjera Inicial', grade: '1º Prim "A"', room: 'Aula 201', teacher: 'Prof. Gary Nina', isMine: false, color: 'bg-sky-50 border-sky-200 text-sky-900' },
+      viernes: { subject: 'Educación Musical', grade: '1º Prim "A"', room: 'Aula Música', teacher: 'Prof. David Alanoca', isMine: false, color: 'bg-indigo-50 border-indigo-200 text-indigo-900' },
+    },
+  },
+  {
+    period: 5,
+    timeRange: '11:30 - 12:15',
+    days: {
+      lunes: { subject: 'Taller de Lectura y Cuentos', grade: '1º Prim "A"', room: 'Aula 201', teacher: 'Prof. Patricia Ramos', isMine: false, color: 'bg-indigo-50 border-indigo-200 text-indigo-900' },
+      martes: { subject: 'Lengua Originaria', grade: '1º Prim "A"', room: 'Aula 201', teacher: 'Prof. Sonia Choque', isMine: false, color: 'bg-purple-50 border-purple-200 text-purple-900' },
+      miercoles: { subject: 'Técnica Tecnológica Productiva', grade: '1º Prim "A"', room: 'Aula 201', teacher: 'Prof. Walter Flores', isMine: false, color: 'bg-slate-100 border-slate-300 text-slate-800' },
+      jueves: { subject: 'Lengua Extranjera Inicial', grade: '1º Prim "A"', room: 'Aula 201', teacher: 'Prof. Gary Nina', isMine: false, color: 'bg-sky-50 border-sky-200 text-sky-900' },
+      viernes: { subject: 'Tutoría y Convivencia Escolar', grade: '1º Prim "A"', room: 'Aula 201', teacher: 'Prof. Patricia Ramos', isMine: false, color: 'bg-emerald-50 border-emerald-300 text-emerald-900' },
+    },
+  },
+  {
+    period: 6,
+    timeRange: '12:15 - 13:00',
+    days: {
+      lunes: { subject: 'Reforzamiento Escolar', grade: '1º Prim "A"', room: 'Aula 201', teacher: 'Prof. Patricia Ramos', isMine: false, color: 'bg-indigo-50 border-indigo-200 text-indigo-900' },
+      martes: { subject: 'Juegos Lógicos', grade: '1º Prim "A"', room: 'Aula 201', teacher: 'Prof. Patricia Ramos', isMine: false, color: 'bg-emerald-50 border-emerald-300 text-emerald-900' },
+      miercoles: { subject: 'Técnica Tecnológica Productiva', grade: '1º Prim "A"', room: 'Aula 201', teacher: 'Prof. Walter Flores', isMine: false, color: 'bg-slate-100 border-slate-300 text-slate-800' },
+      jueves: { subject: 'Club de Lectura', grade: '1º Prim "A"', room: 'Aula 201', teacher: 'Prof. Patricia Ramos', isMine: false, color: 'bg-indigo-50 border-indigo-200 text-indigo-900' },
+      viernes: { subject: 'Limpieza y Orden', grade: '1º Prim "A"', room: 'Aula 201', teacher: 'Prof. Patricia Ramos', isMine: false, color: 'bg-emerald-50 border-emerald-300 text-emerald-900' },
+    },
+  },
+];
+
+// Horario específico de 2° Primaria A (Turno Mañana)
+const SCHEDULE_PRIM_2A: ScheduleSlot[] = [
+  {
+    period: 1,
+    timeRange: '08:00 - 08:45',
+    days: {
+      lunes: { subject: 'Matemática', grade: '2º Prim "A"', room: 'Aula 202', teacher: 'Prof. Patricia Ramos', isMine: false, color: 'bg-emerald-50 border-emerald-300 text-emerald-900' },
+      martes: { subject: 'Comunicación y Lenguajes', grade: '2º Prim "A"', room: 'Aula 202', teacher: 'Prof. Patricia Ramos', isMine: false, color: 'bg-indigo-50 border-indigo-200 text-indigo-900' },
+      miercoles: { subject: 'Matemática', grade: '2º Prim "A"', room: 'Aula 202', teacher: 'Prof. Patricia Ramos', isMine: false, color: 'bg-emerald-50 border-emerald-300 text-emerald-900' },
+      jueves: { subject: 'Comunicación y Lenguajes', grade: '2º Prim "A"', room: 'Aula 202', teacher: 'Prof. Patricia Ramos', isMine: false, color: 'bg-indigo-50 border-indigo-200 text-indigo-900' },
+      viernes: { subject: 'Ciencias Sociales', grade: '2º Prim "A"', room: 'Aula 202', teacher: 'Prof. Patricia Ramos', isMine: false, color: 'bg-amber-50 border-amber-200 text-amber-900' },
+    },
+  },
+  {
+    period: 2,
+    timeRange: '08:45 - 09:30',
+    days: {
+      lunes: { subject: 'Matemática', grade: '2º Prim "A"', room: 'Aula 202', teacher: 'Prof. Patricia Ramos', isMine: false, color: 'bg-emerald-50 border-emerald-300 text-emerald-900' },
+      martes: { subject: 'Comunicación y Lenguajes', grade: '2º Prim "A"', room: 'Aula 202', teacher: 'Prof. Patricia Ramos', isMine: false, color: 'bg-indigo-50 border-indigo-200 text-indigo-900' },
+      miercoles: { subject: 'Matemática', grade: '2º Prim "A"', room: 'Aula 202', teacher: 'Prof. Patricia Ramos', isMine: false, color: 'bg-emerald-50 border-emerald-300 text-emerald-900' },
+      jueves: { subject: 'Comunicación y Lenguajes', grade: '2º Prim "A"', room: 'Aula 202', teacher: 'Prof. Patricia Ramos', isMine: false, color: 'bg-indigo-50 border-indigo-200 text-indigo-900' },
+      viernes: { subject: 'Ciencias Sociales', grade: '2º Prim "A"', room: 'Aula 202', teacher: 'Prof. Patricia Ramos', isMine: false, color: 'bg-amber-50 border-amber-200 text-amber-900' },
+    },
+  },
+  {
+    period: 3,
+    timeRange: '09:30 - 10:15',
+    days: {
+      lunes: { subject: 'Ciencias Naturales', grade: '2º Prim "A"', room: 'Aula 202', teacher: 'Prof. Patricia Ramos', isMine: false, color: 'bg-teal-50 border-teal-200 text-teal-900' },
+      martes: { subject: 'Lengua Extranjera (Inglés)', grade: '2º Prim "A"', room: 'Aula 202', teacher: 'Prof. Gary Nina', isMine: false, color: 'bg-sky-50 border-sky-200 text-sky-900' },
+      miercoles: { subject: 'Educación Física y Deportes', grade: '2º Prim "A"', room: 'Canchas', teacher: 'Prof. Hugo Morales', isMine: false, color: 'bg-teal-50 border-teal-200 text-teal-900' },
+      jueves: { subject: 'Artes Plásticas y Visuales', grade: '2º Prim "A"', room: 'Aula 202', teacher: 'Prof. Javier Gomez', isMine: false, color: 'bg-rose-50 border-rose-200 text-rose-900' },
+      viernes: { subject: 'Educación Musical', grade: '2º Prim "A"', room: 'Aula Música', teacher: 'Prof. David Alanoca', isMine: false, color: 'bg-indigo-50 border-indigo-200 text-indigo-900' },
+    },
+  },
+  {
+    period: 0,
+    timeRange: '10:15 - 10:45',
+    isRecess: true,
+    days: {},
+  },
+  {
+    period: 4,
+    timeRange: '10:45 - 11:30',
+    days: {
+      lunes: { subject: 'Ciencias Naturales', grade: '2º Prim "A"', room: 'Aula 202', teacher: 'Prof. Patricia Ramos', isMine: false, color: 'bg-teal-50 border-teal-200 text-teal-900' },
+      martes: { subject: 'Lengua Extranjera (Inglés)', grade: '2º Prim "A"', room: 'Aula 202', teacher: 'Prof. Gary Nina', isMine: false, color: 'bg-sky-50 border-sky-200 text-sky-900' },
+      miercoles: { subject: 'Educación Física y Deportes', grade: '2º Prim "A"', room: 'Canchas', teacher: 'Prof. Hugo Morales', isMine: false, color: 'bg-teal-50 border-teal-200 text-teal-900' },
+      jueves: { subject: 'Artes Plásticas y Visuales', grade: '2º Prim "A"', room: 'Aula 202', teacher: 'Prof. Javier Gomez', isMine: false, color: 'bg-rose-50 border-rose-200 text-rose-900' },
+      viernes: { subject: 'Educación Musical', grade: '2º Prim "A"', room: 'Aula Música', teacher: 'Prof. David Alanoca', isMine: false, color: 'bg-indigo-50 border-indigo-200 text-indigo-900' },
+    },
+  },
+  {
+    period: 5,
+    timeRange: '11:30 - 12:15',
+    days: {
+      lunes: { subject: 'Valores, Espiritualidad y Religiones', grade: '2º Prim "A"', room: 'Aula 202', teacher: 'Prof. Miriam Cruz', isMine: false, color: 'bg-orange-50 border-orange-200 text-orange-900' },
+      martes: { subject: 'Lengua Originaria', grade: '2º Prim "A"', room: 'Aula 202', teacher: 'Prof. Sonia Choque', isMine: false, color: 'bg-purple-50 border-purple-200 text-purple-900' },
+      miercoles: { subject: 'Técnica Tecnológica Productiva', grade: '2º Prim "A"', room: 'Aula 202', teacher: 'Prof. Walter Flores', isMine: false, color: 'bg-slate-100 border-slate-300 text-slate-800' },
+      jueves: { subject: 'Taller de Lectura Comprensiva', grade: '2º Prim "A"', room: 'Aula 202', teacher: 'Prof. Patricia Ramos', isMine: false, color: 'bg-indigo-50 border-indigo-200 text-indigo-900' },
+      viernes: { subject: 'Consejo y Tutoría', grade: '2º Prim "A"', room: 'Aula 202', teacher: 'Prof. Patricia Ramos', isMine: false, color: 'bg-emerald-50 border-emerald-300 text-emerald-900' },
+    },
+  },
+  {
+    period: 6,
+    timeRange: '12:15 - 13:00',
+    days: {
+      lunes: { subject: 'Reforzamiento Escolar', grade: '2º Prim "A"', room: 'Aula 202', teacher: 'Prof. Patricia Ramos', isMine: false, color: 'bg-indigo-50 border-indigo-200 text-indigo-900' },
+      martes: { subject: 'Juegos de Razonamiento', grade: '2º Prim "A"', room: 'Aula 202', teacher: 'Prof. Patricia Ramos', isMine: false, color: 'bg-emerald-50 border-emerald-300 text-emerald-900' },
+      miercoles: { subject: 'Técnica Tecnológica Productiva', grade: '2º Prim "A"', room: 'Aula 202', teacher: 'Prof. Walter Flores', isMine: false, color: 'bg-slate-100 border-slate-300 text-slate-800' },
+      jueves: { subject: 'Club de Lectura', grade: '2º Prim "A"', room: 'Aula 202', teacher: 'Prof. Patricia Ramos', isMine: false, color: 'bg-indigo-50 border-indigo-200 text-indigo-900' },
+      viernes: { subject: 'Limpieza y Orden', grade: '2º Prim "A"', room: 'Aula 202', teacher: 'Prof. Patricia Ramos', isMine: false, color: 'bg-emerald-50 border-emerald-300 text-emerald-900' },
+    },
+  },
+];
+
+// Generador Dinámico de Malla para cualquier otro Curso o Colegio
+const generateDynamicSchedule = (
+  curso: {
+    shortName: string;
+    aula: string;
+    turno: string;
+    nivel: string;
+    grado: number;
+  },
+  teachers: TenantTeacher[],
+  materias: TenantMateria[],
+  user: any
+): ScheduleSlot[] => {
+  const isTarde = curso.turno === 'Tarde';
+  const isPrimaria = curso.nivel === 'PRIMARIA';
+  const myName = (user?.persona?.primerApellido || 'Mamani').toLowerCase();
+
+  const periods = [
+    { period: 1, timeRange: isTarde ? '13:30 - 14:15' : '08:00 - 08:45' },
+    { period: 2, timeRange: isTarde ? '14:15 - 15:00' : '08:45 - 09:30' },
+    { period: 3, timeRange: isTarde ? '15:00 - 15:45' : '09:30 - 10:15' },
+    { period: 0, timeRange: isTarde ? '15:45 - 16:15' : '10:15 - 10:45', isRecess: true },
+    { period: 4, timeRange: isTarde ? '16:15 - 17:00' : '10:45 - 11:30' },
+    { period: 5, timeRange: isTarde ? '17:00 - 17:45' : '11:30 - 12:15' },
+    { period: 6, timeRange: isTarde ? '17:45 - 18:30' : '12:15 - 13:00' },
+  ];
+
+  const relevantMaterias = materias.filter((m) =>
+    isPrimaria
+      ? m.nivel === 'PRIMARIA' || m.nivel === 'AMBOS'
+      : m.nivel === 'SECUNDARIA' || m.nivel === 'AMBOS'
+  );
+
+  const fallbackMaterias = isPrimaria
+    ? [
+        { nombre: 'Comunicación y Lenguajes', color: 'bg-indigo-50 border-indigo-200 text-indigo-900' },
+        { nombre: 'Matemática', color: 'bg-emerald-50 border-emerald-300 text-emerald-900' },
+        { nombre: 'Ciencias Naturales', color: 'bg-teal-50 border-teal-200 text-teal-900' },
+        { nombre: 'Ciencias Sociales', color: 'bg-amber-50 border-amber-200 text-amber-900' },
+        { nombre: 'Artes Plásticas y Visuales', color: 'bg-rose-50 border-rose-200 text-rose-900' },
+        { nombre: 'Educación Física y Deportes', color: 'bg-teal-50 border-teal-200 text-teal-900' },
+        { nombre: 'Educación Musical', color: 'bg-indigo-50 border-indigo-200 text-indigo-900' },
+      ]
+    : [
+        { nombre: 'Matemática', color: 'bg-emerald-50 border-emerald-300 text-emerald-900' },
+        { nombre: 'Comunicación y Lenguajes', color: 'bg-indigo-50 border-indigo-200 text-indigo-900' },
+        { nombre: 'Física y Química', color: 'bg-blue-50 border-blue-200 text-blue-900' },
+        { nombre: 'Biología y Geografía', color: 'bg-teal-50 border-teal-200 text-teal-900' },
+        { nombre: 'Ciencias Sociales', color: 'bg-amber-50 border-amber-200 text-amber-900' },
+        { nombre: 'Lengua Extranjera (Inglés)', color: 'bg-sky-50 border-sky-200 text-sky-900' },
+        { nombre: 'Técnica Tecnológica', color: 'bg-slate-100 border-slate-300 text-slate-800' },
+      ];
+
+  const pool = relevantMaterias.length > 0 ? relevantMaterias : fallbackMaterias;
+  const days: Array<'lunes' | 'martes' | 'miercoles' | 'jueves' | 'viernes'> = [
+    'lunes', 'martes', 'miercoles', 'jueves', 'viernes'
+  ];
+
+  return periods.map((p) => {
+    if (p.isRecess) {
+      return { period: 0, timeRange: p.timeRange, isRecess: true, days: {} };
+    }
+
+    const daysObj: Record<string, SlotDetail> = {};
+    days.forEach((day, dIdx) => {
+      const matIdx = (p.period * 2 + dIdx + curso.grado) % pool.length;
+      const mat = pool[matIdx];
+      const teaIdx = (p.period + dIdx + curso.grado) % Math.max(1, teachers.length);
+      const tea = teachers[teaIdx]
+        ? `Prof. ${teachers[teaIdx].nombres} ${teachers[teaIdx].primerApellido}`
+        : 'Prof. Asignado SEP';
+
+      const isMine = tea.toLowerCase().includes(myName);
+
+      daysObj[day] = {
+        subject: mat.nombre,
+        grade: curso.shortName,
+        room: curso.aula,
+        teacher: tea,
+        isMine,
+        color: mat.color || 'bg-slate-50 border-slate-200 text-slate-800',
+      };
+    });
+
+    return {
+      period: p.period,
+      timeRange: p.timeRange,
+      days: daysObj,
+    };
+  });
+};
+
+const EMPTY_SCHEDULE: ScheduleSlot[] = [
+  { period: 1, timeRange: '08:00 - 08:45', days: {} },
+  { period: 2, timeRange: '08:45 - 09:30', days: {} },
+  { period: 3, timeRange: '09:30 - 10:15', days: {} },
+  { period: 0, timeRange: '10:15 - 10:45', isRecess: true, days: {} },
+  { period: 4, timeRange: '10:45 - 11:30', days: {} },
+  { period: 5, timeRange: '11:30 - 12:15', days: {} },
+  { period: 6, timeRange: '12:15 - 13:00', days: {} },
 ];
 
 // Horario específico del Maestro (Carlos Mamani: 16 hrs semanales consolidadas)
@@ -274,16 +676,6 @@ const SCHEDULE_MAESTRO_PERSONAL: ScheduleSlot[] = [
       viernes: { subject: 'Reforzamiento Pedagógico', grade: '1º Sec "A"', room: 'Aula 101', teacher: 'Prof. Carlos Mamani C.', isMine: true, color: 'bg-emerald-50 border-emerald-300 text-emerald-900' },
     },
   },
-];
-
-const EMPTY_SCHEDULE: ScheduleSlot[] = [
-  { period: 1, timeRange: '08:00 - 08:45', days: {} },
-  { period: 2, timeRange: '08:45 - 09:30', days: {} },
-  { period: 3, timeRange: '09:30 - 10:15', days: {} },
-  { period: 0, timeRange: '10:15 - 10:45', isRecess: true, days: {} },
-  { period: 4, timeRange: '10:45 - 11:30', days: {} },
-  { period: 5, timeRange: '11:30 - 12:15', days: {} },
-  { period: 6, timeRange: '12:15 - 13:00', days: {} },
 ];
 
 export const SchedulePage: React.FC = () => {
@@ -355,13 +747,28 @@ export const SchedulePage: React.FC = () => {
     setSelectedCursoId(defaultCourses[0].id);
   };
 
-  const cursosDisponibles = coursesList.map((c) => ({
-    id: c.id,
-    nombre: `${c.cursoNombre} - Paralelo "${c.letra}"`,
-    turno: c.turno,
-    aula: `Aula ${c.grado}0${c.letra.charCodeAt(0) - 64}`,
-    nivel: c.nivel,
-  }));
+  const cursosDisponibles = coursesList.map((c) => {
+    let grado = c.grado || 1;
+    const gMatch = c.cursoNombre.match(/(\d+)/);
+    if (gMatch) grado = parseInt(gMatch[1], 10);
+
+    const nivel = c.nivel || (c.cursoNombre.toLowerCase().includes('primaria') ? 'PRIMARIA' : 'SECUNDARIA');
+    const letra = (c.letra || 'A').toUpperCase();
+    const aulaNum = grado * 100 + (letra.charCodeAt(0) - 64);
+    const shortName = `${grado}º ${nivel === 'PRIMARIA' ? 'Prim' : 'Sec'} "${letra}"`;
+
+    return {
+      id: c.id,
+      nombre: `${c.cursoNombre} - Paralelo "${letra}"`,
+      shortName,
+      turno: c.turno || 'Mañana',
+      aula: `Aula ${aulaNum}`,
+      nivel,
+      grado,
+      letra,
+      rawCourse: c,
+    };
+  });
 
   // Vista: 'my_schedule' (Mi Horario Docente) vs 'course' (Horario por Curso y Paralelo)
   const [viewMode, setViewMode] = useState<'my_schedule' | 'course'>(
@@ -400,15 +807,16 @@ export const SchedulePage: React.FC = () => {
       const daysOrder: Array<'lunes' | 'martes' | 'miercoles' | 'jueves' | 'viernes'> = [
         'lunes', 'martes', 'miercoles', 'jueves', 'viernes'
       ];
+      const isTarde = currentCurso?.turno === 'Tarde';
 
       return [
-        { period: 1, timeRange: '08:00 - 08:45', days: {} },
-        { period: 2, timeRange: '08:45 - 09:30', days: {} },
-        { period: 3, timeRange: '09:30 - 10:15', days: {} },
-        { period: 0, timeRange: '10:15 - 10:45', isRecess: true, days: {} },
-        { period: 4, timeRange: '10:45 - 11:30', days: {} },
-        { period: 5, timeRange: '11:30 - 12:15', days: {} },
-        { period: 6, timeRange: '12:15 - 13:00', days: {} },
+        { period: 1, timeRange: isTarde ? '13:30 - 14:15' : '08:00 - 08:45', days: {} },
+        { period: 2, timeRange: isTarde ? '14:15 - 15:00' : '08:45 - 09:30', days: {} },
+        { period: 3, timeRange: isTarde ? '15:00 - 15:45' : '09:30 - 10:15', days: {} },
+        { period: 0, timeRange: isTarde ? '15:45 - 16:15' : '10:15 - 10:45', isRecess: true, days: {} },
+        { period: 4, timeRange: isTarde ? '16:15 - 17:00' : '10:45 - 11:30', days: {} },
+        { period: 5, timeRange: isTarde ? '17:00 - 17:45' : '11:30 - 12:15', days: {} },
+        { period: 6, timeRange: isTarde ? '17:45 - 18:30' : '12:15 - 13:00', days: {} },
       ].map((slot) => {
         if (slot.isRecess) return slot;
         const daysObj: Record<string, SlotDetail> = {};
@@ -417,8 +825,8 @@ export const SchedulePage: React.FC = () => {
           if (match) {
             daysObj[day] = {
               subject: match.materiaNombre,
-              grade: currentCurso ? currentCurso.nombre : '',
-              room: match.aula,
+              grade: currentCurso ? currentCurso.shortName : '',
+              room: match.aula || (currentCurso?.aula || 'Aula 101'),
               teacher: match.docenteNombre,
               isMine: match.docenteNombre.toLowerCase().includes((user?.persona?.nombres || 'Mamani').toLowerCase()),
               color: match.color || 'bg-emerald-50 border-emerald-300 text-emerald-900',
@@ -432,14 +840,23 @@ export const SchedulePage: React.FC = () => {
       });
     }
 
-    if (activeSie === '80730045') {
-      if (selectedCursoId === 'SEC_1B') return SCHEDULE_SEC_1B;
-      if (selectedCursoId === 'SEC_2A') return SCHEDULE_SEC_2A;
-      return SCHEDULE_SEC_1A;
-    }
+    if (!currentCurso) return EMPTY_SCHEDULE;
 
-    return EMPTY_SCHEDULE;
-  }, [viewMode, courseCustomSlots, selectedCursoId, activeSie, currentCurso, user]);
+    const isSec = currentCurso.nivel === 'SECUNDARIA';
+    const grado = currentCurso.grado;
+    const letra = currentCurso.letra.toUpperCase();
+
+    // Horarios oficiales de alta precisión para cursos estándar
+    if (isSec && grado === 1 && letra === 'A') return SCHEDULE_SEC_1A;
+    if (isSec && grado === 1 && letra === 'B') return SCHEDULE_SEC_1B;
+    if (isSec && grado === 2 && letra === 'A') return SCHEDULE_SEC_2A;
+    if (isSec && grado === 3 && letra === 'A') return SCHEDULE_SEC_3A;
+    if (!isSec && grado === 1) return SCHEDULE_PRIM_1A;
+    if (!isSec && grado === 2) return SCHEDULE_PRIM_2A;
+
+    // Horario generado dinámicamente según la malla y docentes del colegio
+    return generateDynamicSchedule(currentCurso, teachersList, materiasList, user);
+  }, [viewMode, courseCustomSlots, selectedCursoId, currentCurso, teachersList, materiasList, user]);
 
   // Handlers para Asignación Interactiva de Horarios
   const handleOpenSlotModal = (
@@ -825,6 +1242,36 @@ export const SchedulePage: React.FC = () => {
           </div>
         </div>
       </div>
+
+      {/* Course Quick Navigation Pills */}
+      {viewMode === 'course' && (
+        <div className="flex flex-wrap items-center gap-2">
+          {cursosDisponibles.map((c) => {
+            const isSelected = selectedCursoId === c.id;
+            return (
+              <button
+                key={c.id}
+                type="button"
+                onClick={() => setSelectedCursoId(c.id)}
+                className={`px-3 py-1.5 rounded-xl text-xs font-bold transition cursor-pointer flex items-center space-x-1.5 ${
+                  isSelected
+                    ? 'bg-emerald-600 text-white shadow-sm ring-2 ring-emerald-500/20'
+                    : 'bg-white text-slate-600 hover:bg-slate-100 border border-slate-200'
+                }`}
+              >
+                <span>{c.shortName}</span>
+                <span
+                  className={`text-[10px] px-1.5 py-0.5 rounded-md ${
+                    isSelected ? 'bg-emerald-700 text-emerald-100' : 'bg-slate-100 text-slate-500'
+                  }`}
+                >
+                  {c.aula}
+                </span>
+              </button>
+            );
+          })}
+        </div>
+      )}
 
       {/* Weekly Timetable Grid */}
       <div className="bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden">
