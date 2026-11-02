@@ -276,6 +276,7 @@ export class InstitutionsService {
         nombre: inst.nombre,
         estadoAnterior: inst.activo,
         estadoNuevo: dto.activo,
+        motivo: dto.motivo || (dto.activo ? 'Reactivación del servicio institucional' : 'Suspensión administrativa por regularización SaaS'),
       },
       ip,
       userAgent,

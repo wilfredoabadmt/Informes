@@ -1,5 +1,6 @@
 import React, { createContext, useContext, useState, useEffect } from 'react';
 import { apiClient } from '../api/client';
+import { getStoredInstitutions } from '../utils/multiTenantStore';
 
 export interface User {
   id: string;
@@ -67,6 +68,39 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     });
 
     const { tokens, user: userData, institutions } = response.data;
+
+    // Validación preventiva: Si es Director o Maestro y su colegio está suspendido
+    if (userData.globalRole !== 'SUPERADMIN' && userData.globalRole !== 'CENTRAL_ADMIN') {
+      const stored = getStoredInstitutions();
+      const userInstIds = (institutions || []).map((i: any) => i.institutionId || i.id || i.sie);
+      const matched = stored.filter(
+        (s) => userInstIds.includes(s.id) || userInstIds.includes(s.sie) || (institutions && institutions.some((i: any) => i.sie === s.sie))
+      );
+
+      if (matched.length > 0 && matched.every((s) => s.activo === false)) {
+        localStorage.removeItem('token');
+        localStorage.removeItem('refreshToken');
+        localStorage.removeItem('user');
+        localStorage.removeItem('currentInstitutionId');
+        setUser(null);
+        setCurrentInstitutionId(null);
+
+        const inst = matched[0];
+        const motivo = inst.motivoSuspension || 'Regularización de suscripción SaaS o disposición administrativa.';
+        const err: any = new Error(
+          `ACCESO INSTITUCIONAL SUSPENDIDO: La Unidad Educativa "${inst.nombre}" (SIE: ${inst.sie}) se encuentra suspendida. Motivo: ${motivo}. El Director y los Maestros no tienen permitido el ingreso al sistema mientras dure la suspensión.`
+        );
+        err.isSuspended = true;
+        err.suspensionData = {
+          nombre: inst.nombre,
+          sie: inst.sie,
+          motivo,
+          fecha: inst.fechaSuspension,
+        };
+        throw err;
+      }
+    }
+
     localStorage.setItem('token', tokens.accessToken);
     localStorage.setItem('refreshToken', tokens.refreshToken);
 

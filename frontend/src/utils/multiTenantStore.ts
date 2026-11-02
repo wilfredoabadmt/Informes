@@ -13,6 +13,8 @@ export interface TenantInstitution {
   tipo: string;
   nivel: string;
   activo: boolean;
+  motivoSuspension?: string;
+  fechaSuspension?: string;
   totalMaestrosVinculados: number;
 }
 
@@ -449,6 +451,8 @@ export function syncApiInstitutions(apiList: TenantInstitution[]): TenantInstitu
     tipo: item.tipo || 'FISCAL',
     nivel: item.nivel || 'INTEGRADO',
     activo: item.activo !== undefined ? item.activo : true,
+    motivoSuspension: item.motivoSuspension,
+    fechaSuspension: item.fechaSuspension,
     totalMaestrosVinculados: item.totalMaestrosVinculados || 0,
   }));
 
@@ -466,6 +470,70 @@ export function syncApiInstitutions(apiList: TenantInstitution[]): TenantInstitu
 export function addStoredInstitution(inst: TenantInstitution): void {
   const current = getStoredInstitutions();
   const updated = [inst, ...current.filter((i) => i.sie !== inst.sie && i.id !== inst.id)];
+  saveStoredInstitutions(updated);
+  if (typeof window !== 'undefined') {
+    window.dispatchEvent(
+      new CustomEvent('sigma_institutions_updated', { detail: updated })
+    );
+  }
+}
+
+export function isInstitutionSuspended(idOrSie: string | null | undefined): {
+  suspended: boolean;
+  nombre?: string;
+  sie?: string;
+  motivo?: string;
+  fecha?: string;
+} {
+  if (!idOrSie) return { suspended: false };
+  const insts = getStoredInstitutions();
+  const found = insts.find((i) => i.id === idOrSie || i.sie === idOrSie);
+  if (found && found.activo === false) {
+    return {
+      suspended: true,
+      nombre: found.nombre,
+      sie: found.sie,
+      motivo: found.motivoSuspension || 'Regularización de suscripción SaaS o disposición administrativa.',
+      fecha: found.fechaSuspension,
+    };
+  }
+  return { suspended: false };
+}
+
+export function suspendInstitution(idOrSie: string, motivo?: string): void {
+  const current = getStoredInstitutions();
+  const updated = current.map((i) => {
+    if (i.id === idOrSie || i.sie === idOrSie) {
+      return {
+        ...i,
+        activo: false,
+        motivoSuspension: motivo || 'Suspensión administrativa por regularización de suscripción SaaS.',
+        fechaSuspension: new Date().toISOString(),
+      };
+    }
+    return i;
+  });
+  saveStoredInstitutions(updated);
+  if (typeof window !== 'undefined') {
+    window.dispatchEvent(
+      new CustomEvent('sigma_institutions_updated', { detail: updated })
+    );
+  }
+}
+
+export function activateInstitution(idOrSie: string): void {
+  const current = getStoredInstitutions();
+  const updated = current.map((i) => {
+    if (i.id === idOrSie || i.sie === idOrSie) {
+      return {
+        ...i,
+        activo: true,
+        motivoSuspension: undefined,
+        fechaSuspension: undefined,
+      };
+    }
+    return i;
+  });
   saveStoredInstitutions(updated);
   if (typeof window !== 'undefined') {
     window.dispatchEvent(

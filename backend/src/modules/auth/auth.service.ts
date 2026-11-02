@@ -122,6 +122,31 @@ export class AuthService {
       },
     });
 
+    // 4.1 Validar si las Unidades Educativas del Director o Maestro están suspendidas
+    if (user.rolGlobal !== RolGlobal.SUPERADMIN) {
+      if (vinculaciones.length > 0) {
+        const activas = vinculaciones.filter((v) => v.institucion.activo);
+        if (activas.length === 0) {
+          const instNames = vinculaciones
+            .map((v) => `${v.institucion.nombre} (SIE: ${v.institucion.sie})`)
+            .join(', ');
+
+          await this.auditService.log({
+            usuarioId: user.id,
+            tipo: TipoAuditoria.LOGIN_FAILED,
+            accion: 'INTENTO_LOGIN_COLEGIO_SUSPENDIDO',
+            detalle: { institucionesSuspendidas: instNames },
+            ip,
+            userAgent,
+          });
+
+          throw new ForbiddenException(
+            `ACCESO INSTITUCIONAL SUSPENDIDO: La Unidad Educativa "${instNames}" se encuentra temporalmente suspendida por administración o regularización de suscripción SaaS. El Director y los Maestros no tienen permitido el acceso al sistema. Comuníquese con la administración para reactivar el servicio.`
+          );
+        }
+      }
+    }
+
     // 5. Cargar perfil de maestro si existe
     const maestro = await this.prisma.maestro.findUnique({
       where: { personaId: user.personaId },

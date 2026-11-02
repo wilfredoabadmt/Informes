@@ -1,12 +1,18 @@
 import React, { useState } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
-import { School, KeyRound, User, AlertCircle, Sparkles } from 'lucide-react';
+import { School, KeyRound, User, AlertCircle, Sparkles, ShieldAlert, PhoneCall, HelpCircle } from 'lucide-react';
 
 export const LoginPage: React.FC = () => {
   const [identifier, setIdentifier] = useState('admin@minedu.gob.bo');
   const [password, setPassword] = useState('Bolivia2026!');
   const [error, setError] = useState<string | null>(null);
+  const [suspensionInfo, setSuspensionInfo] = useState<{
+    colegio?: string;
+    sie?: string;
+    motivo?: string;
+    fecha?: string;
+  } | null>(null);
   const [loading, setLoading] = useState(false);
   const { login } = useAuth();
   const navigate = useNavigate();
@@ -14,16 +20,27 @@ export const LoginPage: React.FC = () => {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setError(null);
+    setSuspensionInfo(null);
     setLoading(true);
 
     try {
       await login(identifier, password);
       navigate('/');
     } catch (err: any) {
-      setError(
+      const msg =
         err.response?.data?.message ||
-          'Credenciales inválidas. Por favor verifica tu correo oficial o carnet de identidad.'
-      );
+        err.message ||
+        'Credenciales inválidas. Por favor verifica tu correo oficial o carnet de identidad.';
+
+      setError(msg);
+
+      if (err.isSuspended || msg.toUpperCase().includes('SUSPENDID')) {
+        setSuspensionInfo(
+          err.suspensionData || {
+            motivo: msg,
+          }
+        );
+      }
     } finally {
       setLoading(false);
     }
@@ -71,10 +88,39 @@ export const LoginPage: React.FC = () => {
           </p>
 
           {error && (
-            <div className="mb-5 p-3.5 bg-red-50 border border-red-200 rounded-xl flex items-start space-x-3 text-red-700 text-xs">
-              <AlertCircle className="w-4 h-4 flex-shrink-0 mt-0.5" />
-              <span>{error}</span>
-            </div>
+            suspensionInfo || error.toUpperCase().includes('SUSPENDID') ? (
+              <div className="mb-5 p-4 bg-rose-50 border-2 border-rose-300 rounded-2xl shadow-sm text-xs space-y-2 animate-in fade-in">
+                <div className="flex items-center space-x-2 text-rose-800 font-extrabold text-sm">
+                  <ShieldAlert className="w-5 h-5 text-rose-600 shrink-0" />
+                  <span>Acceso Institucional Suspendido</span>
+                </div>
+
+                <p className="text-slate-700 leading-relaxed font-medium">
+                  {error}
+                </p>
+
+                <div className="pt-2 border-t border-rose-200/80 flex items-center justify-between text-[11px] text-rose-800">
+                  <span className="font-bold flex items-center space-x-1">
+                    <HelpCircle className="w-3.5 h-3.5 text-rose-600" />
+                    <span>¿Necesitas reactivar tu Unidad Educativa?</span>
+                  </span>
+                  <a
+                    href="https://wa.me/59170000000?text=Hola,%20deseo%20regularizar%20la%20suscripci%C3%B3n%20y%20reactivar%20mi%20colegio%20en%20SIGMA-SEP"
+                    target="_blank"
+                    rel="noreferrer"
+                    className="font-bold text-rose-700 hover:text-rose-900 underline flex items-center space-x-1"
+                  >
+                    <PhoneCall className="w-3 h-3" />
+                    <span>Contactar Administración</span>
+                  </a>
+                </div>
+              </div>
+            ) : (
+              <div className="mb-5 p-3.5 bg-red-50 border border-red-200 rounded-xl flex items-start space-x-3 text-red-700 text-xs">
+                <AlertCircle className="w-4 h-4 flex-shrink-0 mt-0.5" />
+                <span>{error}</span>
+              </div>
+            )
           )}
 
           <form onSubmit={handleSubmit} className="space-y-4">

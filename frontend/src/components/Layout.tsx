@@ -25,6 +25,8 @@ import {
   ClipboardList,
   Clock,
   CreditCard,
+  ShieldAlert,
+  PhoneCall,
 } from 'lucide-react';
 
 export const Layout: React.FC = () => {
@@ -120,7 +122,7 @@ export const Layout: React.FC = () => {
   // Instituciones estrictamente accesibles para el usuario actual:
   // Si es Superadmin o Administrador Central -> Ve todas las instituciones registradas.
   // Si es Director o Maestro -> ÚNICAMENTE ve las instituciones a las que pertenece (user.institutions o /institutions del backend).
-  const authorizedInstitutions = React.useMemo(() => {
+  const authorizedInstitutions: TenantInstitution[] = React.useMemo(() => {
     if (isSuperAdmin) {
       return storedInstitutions;
     }
@@ -139,8 +141,10 @@ export const Layout: React.FC = () => {
             provincia: '',
             municipio: '',
             distrito: '',
-            tipo: 'FISCAL' as any,
-            nivel: 'INTEGRADO' as any,
+            direccion: '',
+            telefono: '',
+            tipo: 'FISCAL',
+            nivel: 'INTEGRADO',
             activo: true,
             totalMaestrosVinculados: 0,
           }
@@ -280,8 +284,21 @@ export const Layout: React.FC = () => {
 
             {/* Context summary box */}
             {currentInstitution && (
-              <div className="mt-6 p-3 bg-slate-50 border border-slate-200 rounded-lg text-xs">
-                <div className="text-slate-400 font-semibold mb-1">Unidad Educativa Activa:</div>
+              <div className={`mt-6 p-3 rounded-xl border text-xs ${
+                currentInstitution.activo === false
+                  ? 'bg-rose-50 border-rose-300'
+                  : 'bg-slate-50 border-slate-200'
+              }`}>
+                <div className="flex items-center justify-between mb-1">
+                  <span className="text-slate-400 font-semibold">Unidad Educativa:</span>
+                  <span className={`text-[9px] font-black px-1.5 py-0.5 rounded ${
+                    currentInstitution.activo === false
+                      ? 'bg-rose-600 text-white'
+                      : 'bg-emerald-100 text-emerald-800'
+                  }`}>
+                    {currentInstitution.activo === false ? 'SUSPENDIDA' : 'ACTIVA'}
+                  </span>
+                </div>
                 <div className="font-bold text-slate-800 truncate">{currentInstitution.nombre}</div>
                 <div className="text-slate-500 mt-0.5">Código SIE: {currentInstitution.sie}</div>
                 <div className="text-emerald-700 font-semibold mt-1">
@@ -292,10 +309,67 @@ export const Layout: React.FC = () => {
           </nav>
         </aside>
 
-        {/* Content Outlet */}
+        {/* Content Outlet o Pantalla de Suspensión */}
         <main className="flex-1 min-w-0">
           <ErrorBoundary>
-            <Outlet />
+            {!isSuperAdmin && currentInstitution && currentInstitution.activo === false ? (
+              <div className="p-4 sm:p-8 max-w-2xl mx-auto my-8 sm:my-14">
+                <div className="bg-white rounded-3xl border-2 border-rose-300 shadow-2xl p-6 sm:p-10 text-center space-y-6 animate-in fade-in zoom-in-95 duration-200">
+                  <div className="w-20 h-20 bg-rose-50 border-2 border-rose-200 text-rose-600 rounded-3xl flex items-center justify-center mx-auto shadow-inner">
+                    <ShieldAlert className="w-10 h-10" />
+                  </div>
+
+                  <div>
+                    <span className="text-[11px] font-black tracking-widest uppercase text-rose-700 bg-rose-100/80 px-3.5 py-1.5 rounded-full border border-rose-300 shadow-xs">
+                      Acceso Institucional Suspendido
+                    </span>
+                    <h2 className="text-2xl font-black text-slate-900 mt-3 tracking-tight">
+                      {currentInstitution.nombre}
+                    </h2>
+                    <p className="text-xs text-slate-500 font-mono mt-1 font-semibold">
+                      Código SIE Oficial: {currentInstitution.sie}
+                    </p>
+                  </div>
+
+                  <div className="p-5 bg-rose-50/70 border border-rose-200 rounded-2xl text-left text-xs space-y-2.5">
+                    <div className="font-bold text-rose-950 flex items-center space-x-1.5 text-sm">
+                      <span>⚠️ ¿Por qué se encuentra suspendido el ingreso al sistema?</span>
+                    </div>
+                    <div className="text-slate-700 leading-relaxed font-medium bg-white/80 p-3 rounded-xl border border-rose-200/60">
+                      <strong className="text-rose-900 block mb-1">Motivo Registrado por Administración:</strong>
+                      <span className="text-slate-800 text-xs">
+                        {currentInstitution.motivoSuspension ||
+                          'Suspensión administrativa por regularización de suscripción SaaS pendiente o vencida.'}
+                      </span>
+                    </div>
+                    <p className="text-slate-600 leading-relaxed text-[11px]">
+                      🔒 Por política institucional y resguardo del subsistema regular, las funciones de planillas pedagógicas, registro de asistencia, calificaciones y horarios para el Director y los Maestros de esta Unidad Educativa se encuentran temporalmente inhabilitadas hasta su regularización.
+                    </p>
+                  </div>
+
+                  <div className="pt-2 flex flex-col sm:flex-row items-center justify-center gap-3">
+                    <a
+                      href="https://wa.me/59170000000?text=Hola,%20solicito%20informaci%C3%B3n%20para%20regularizar%20la%20suscripci%C3%B3n%20y%20reactivar%20mi%20Unidad%20Educativa"
+                      target="_blank"
+                      rel="noreferrer"
+                      className="w-full sm:w-auto px-6 py-3 bg-rose-600 hover:bg-rose-700 text-white rounded-xl text-xs font-bold transition shadow-md flex items-center justify-center space-x-2 cursor-pointer"
+                    >
+                      <PhoneCall className="w-4 h-4" />
+                      <span>Contactar Administración / Soporte</span>
+                    </a>
+                    <button
+                      type="button"
+                      onClick={logout}
+                      className="w-full sm:w-auto px-6 py-3 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-xl text-xs font-bold transition cursor-pointer"
+                    >
+                      Cerrar Sesión
+                    </button>
+                  </div>
+                </div>
+              </div>
+            ) : (
+              <Outlet />
+            )}
           </ErrorBoundary>
         </main>
       </div>
