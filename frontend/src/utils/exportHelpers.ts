@@ -203,10 +203,10 @@ export function exportGradesToPdf(
   doc.setFont('helvetica', 'bold');
   doc.setFontSize(9);
   doc.setTextColor(40, 45, 55);
-  doc.text(`Unidad Educativa: ${instInfo.nombre} (SIE: ${instInfo.sie})`, 40, 80);
-  doc.text(`Curso y Paralelo: ${curso}`, 40, 95);
-  doc.text(`Asignatura: ${asignatura}`, 380, 80);
-  doc.text(`Trimestre: ${trimestre} | Gestión 2026`, 380, 95);
+  doc.text(`Unidad Educativa: ${instInfo.nombre} (SIE: ${instInfo.sie})`, 40, 80, { maxWidth: 330 });
+  doc.text(`Curso y Paralelo: ${curso}`, 40, 95, { maxWidth: 330 });
+  doc.text(`Asignatura: ${asignatura}`, 390, 80, { maxWidth: 350 });
+  doc.text(`Trimestre: ${trimestre} | Gestión 2026`, 390, 95, { maxWidth: 350 });
 
   const tableBody = rows.map((r, idx) => {
     const autoTotal = Number(r.autoSer || 0) + Number(r.autoDecidir || 0);
@@ -247,7 +247,8 @@ export function exportGradesToPdf(
       textColor: [255, 255, 255],
       fontStyle: 'bold',
       halign: 'center',
-      fontSize: 8,
+      fontSize: 7.5,
+      cellPadding: [3, 1],
     },
     bodyStyles: {
       fontSize: 8,
@@ -257,13 +258,13 @@ export function exportGradesToPdf(
       0: { halign: 'center', cellWidth: 25 },
       1: { halign: 'center', cellWidth: 85 },
       2: { halign: 'left', cellWidth: 190 },
-      3: { halign: 'center', cellWidth: 35 },
-      4: { halign: 'center', cellWidth: 40 },
-      5: { halign: 'center', cellWidth: 40 },
-      6: { halign: 'center', cellWidth: 40 },
-      7: { halign: 'center', cellWidth: 40 },
-      8: { halign: 'center', cellWidth: 45 },
-      9: { halign: 'center', cellWidth: 45, fontStyle: 'bold' },
+      3: { halign: 'center', cellWidth: 38 },
+      4: { halign: 'center', cellWidth: 42 },
+      5: { halign: 'center', cellWidth: 42 },
+      6: { halign: 'center', cellWidth: 46 }, // DECIDIR
+      7: { halign: 'center', cellWidth: 42 },
+      8: { halign: 'center', cellWidth: 46 },
+      9: { halign: 'center', cellWidth: 48, fontStyle: 'bold' },
       10: { halign: 'center', cellWidth: 70 },
     },
     didParseCell: (data) => {
@@ -561,19 +562,28 @@ export function exportBulletinPdf(
   // Ficha del Estudiante (Recuadro delimitado a 540 pt sin desbordes)
   doc.setFillColor(241, 245, 249);
   doc.setDrawColor(226, 232, 240);
-  doc.roundedRect(36, 72, 540, 46, 4, 4, 'FD');
+  doc.roundedRect(36, 70, 540, 58, 4, 4, 'FD');
 
   doc.setFont('helvetica', 'bold');
-  doc.setFontSize(8.5);
+  doc.setFontSize(8);
   doc.setTextColor(30, 41, 59);
 
-  // Columna Izquierda (Ancho máximo 260 pt)
-  doc.text(`Estudiante: ${estudiante.toUpperCase()}`, 46, 88, { maxWidth: 260 });
-  doc.text(`Código RUDE: ${rude}`, 46, 104, { maxWidth: 260 });
+  // Fila 1 (y = 82): Estudiante y RUDE
+  doc.text(`ESTUDIANTE: ${estudiante.toUpperCase()}`, 46, 82, { maxWidth: 280 });
+  doc.text(`CÓDIGO RUDE: ${rude}`, 340, 82, { maxWidth: 220 });
 
-  // Columna Derecha (Ancho máximo 250 pt)
-  doc.text(`Curso / Paralelo: ${curso}`, 316, 88, { maxWidth: 250 });
-  doc.text(`Periodo Evaluado: ${trimestre}`, 316, 104, { maxWidth: 250 });
+  // Fila 2 (y = 94): Unidad Educativa y Periodo/Gestión
+  doc.text(`UNIDAD EDUCATIVA: ${instInfo.nombre.toUpperCase()} (SIE: ${instInfo.sie})`, 46, 94, { maxWidth: 280 });
+  doc.text(`PERIODO EVALUADO: ${trimestre.toUpperCase()}   |   GESTIÓN: 2026`, 340, 94, { maxWidth: 220 });
+
+  // Fila 3 (y = 106): Curso y Paralelo a todo el ancho (515 pt disponibles - CERO DESBORDES)
+  doc.text(`CURSO Y PARALELO: ${curso}`, 46, 106, { maxWidth: 515 });
+
+  // Fila 4 (y = 118): Distrito Educativo y Modelo de Evaluación
+  doc.setFont('helvetica', 'normal');
+  doc.setFontSize(7.5);
+  doc.setTextColor(71, 85, 105);
+  doc.text(`DISTRITO EDUCATIVO: ${instInfo.distrito.toUpperCase()}   •   VALORACIÓN CUALICUANTITATIVA POR DIMENSIONES (LEY 070)`, 46, 118, { maxWidth: 515 });
 
   const tableBody = materias.map((m, idx) => [
     idx + 1,
@@ -592,7 +602,7 @@ export function exportBulletinPdf(
 
   // Tabla con anchos exactos sumando 540 pt
   autoTable(doc, {
-    startY: 126,
+    startY: 134,
     margin: { left: 36, right: 36 },
     head: [[
       '#',
@@ -613,8 +623,8 @@ export function exportBulletinPdf(
       textColor: [255, 255, 255],
       halign: 'center',
       fontStyle: 'bold',
-      fontSize: 7.5,
-      cellPadding: 2.5,
+      fontSize: 7.2,
+      cellPadding: [3, 1],
     },
     bodyStyles: {
       fontSize: 7.5,
@@ -622,16 +632,16 @@ export function exportBulletinPdf(
       textColor: [30, 41, 59],
     },
     columnStyles: {
-      0: { halign: 'center', cellWidth: 20 },
-      1: { halign: 'left', cellWidth: 180 },
-      2: { halign: 'center', cellWidth: 35 },
-      3: { halign: 'center', cellWidth: 40 },
-      4: { halign: 'center', cellWidth: 40 },
-      5: { halign: 'center', cellWidth: 40 },
-      6: { halign: 'center', cellWidth: 40 },
-      7: { halign: 'center', cellWidth: 45 },
-      8: { halign: 'center', cellWidth: 45, fontStyle: 'bold' },
-      9: { halign: 'center', cellWidth: 55 },
+      0: { halign: 'center', cellWidth: 18 },
+      1: { halign: 'left', cellWidth: 162 },
+      2: { halign: 'center', cellWidth: 38 },
+      3: { halign: 'center', cellWidth: 42 },
+      4: { halign: 'center', cellWidth: 42 },
+      5: { halign: 'center', cellWidth: 46 }, // DECIDIR (10) con ancho amplio para evitar que rompa en DECIDI R
+      6: { halign: 'center', cellWidth: 42 },
+      7: { halign: 'center', cellWidth: 48 },
+      8: { halign: 'center', cellWidth: 48, fontStyle: 'bold' },
+      9: { halign: 'center', cellWidth: 54 },
     },
   });
 
@@ -729,24 +739,31 @@ export function exportSchoolReportCardPdf(
   doc.setTextColor(16, 120, 75);
   doc.text('LIBRETA ESCOLAR ELECTRÓNICA - GESTIÓN ESCOLAR 2026', 36, 62);
 
-  // Recuadro Institucional y de Filiación (540 pt de ancho, delimitado en 2 columnas sin sobreposiciones)
+  // Recuadro Institucional y de Filiación (540 pt de ancho, delimitado en 4 filas sin sobreposiciones)
   doc.setFillColor(248, 250, 252);
   doc.setDrawColor(203, 213, 225);
-  doc.roundedRect(36, 70, 540, 50, 4, 4, 'FD');
+  doc.roundedRect(36, 70, 540, 58, 4, 4, 'FD');
 
   doc.setFont('helvetica', 'bold');
   doc.setFontSize(8);
   doc.setTextColor(30, 41, 59);
 
-  // Columna Izquierda: Datos del Estudiante (Ancho máximo 260 pt)
-  doc.text(`ESTUDIANTE: ${estudiante.toUpperCase()}`, 46, 85, { maxWidth: 260 });
-  doc.text(`CÓDIGO RUDE: ${rude}   |   C.I.: ${ci || 'S/C'}`, 46, 98, { maxWidth: 260 });
-  doc.text(`AÑO DE ESCOLARIDAD: ${curso}`, 46, 111, { maxWidth: 260 });
+  // Fila 1 (y = 82): Estudiante y RUDE / CI
+  doc.text(`ESTUDIANTE: ${estudiante.toUpperCase()}`, 46, 82, { maxWidth: 280 });
+  doc.text(`CÓDIGO RUDE: ${rude}${ci ? `   |   C.I.: ${ci}` : ''}`, 340, 82, { maxWidth: 220 });
 
-  // Columna Derecha: Datos Institucionales (Ancho máximo 250 pt)
-  doc.text(`UNIDAD EDUCATIVA: ${instInfo.nombre.toUpperCase()}`, 316, 85, { maxWidth: 250 });
-  doc.text(`CÓDIGO SIE: ${instInfo.sie}   |   DISTRITO: ${instInfo.distrito.toUpperCase()}`, 316, 98, { maxWidth: 250 });
-  doc.text(`DEPARTAMENTO: ${instInfo.depto.toUpperCase()}   |   GESTIÓN: 2026`, 316, 111, { maxWidth: 250 });
+  // Fila 2 (y = 94): Unidad Educativa y Código SIE / Distrito
+  doc.text(`UNIDAD EDUCATIVA: ${instInfo.nombre.toUpperCase()}`, 46, 94, { maxWidth: 280 });
+  doc.text(`CÓDIGO SIE: ${instInfo.sie}   |   DISTRITO: ${instInfo.distrito.toUpperCase()}`, 340, 94, { maxWidth: 220 });
+
+  // Fila 3 (y = 106): Año de Escolaridad a todo el ancho (515 pt disponibles - CERO COLISIONES)
+  doc.text(`AÑO DE ESCOLARIDAD: ${curso}`, 46, 106, { maxWidth: 515 });
+
+  // Fila 4 (y = 118): Departamento, Gestión Escolar y Subsistema
+  doc.setFont('helvetica', 'normal');
+  doc.setFontSize(7.5);
+  doc.setTextColor(71, 85, 105);
+  doc.text(`DEPARTAMENTO: ${instInfo.depto.toUpperCase()}   |   GESTIÓN ESCOLAR: 2026   |   SISTEMA DE INFORMACIÓN EDUCATIVA (SIE)`, 46, 118, { maxWidth: 515 });
 
   // Construcción de la tabla jerárquica con Campos de Saberes
   const tableBody: any[][] = [];
@@ -775,7 +792,7 @@ export function exportSchoolReportCardPdf(
 
   // Tabla con anchos sumando exactamente 540 pt
   autoTable(doc, {
-    startY: 126,
+    startY: 134,
     margin: { left: 36, right: 36 },
     head: [[
       '#',
