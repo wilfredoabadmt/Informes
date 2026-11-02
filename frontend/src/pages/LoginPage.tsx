@@ -25,7 +25,7 @@ export const LoginPage: React.FC = () => {
 
     try {
       await login(identifier, password);
-      navigate('/');
+      navigate('/dashboard');
     } catch (err: any) {
       const msg =
         err.response?.data?.message ||

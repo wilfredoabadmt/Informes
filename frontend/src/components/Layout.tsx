@@ -78,7 +78,7 @@ export const Layout: React.FC = () => {
 
   if (isSuperAdmin) {
     navItems = [
-      { label: 'Panel Nacional', path: '/', icon: LayoutDashboard },
+      { label: 'Panel Nacional', path: '/dashboard', icon: LayoutDashboard },
       { label: 'Unidades Educativas (Colegios)', path: '/institutions', icon: Building2 },
       { label: 'Cursos, Docentes & Materias', path: '/academic', icon: GraduationCap },
       { label: 'Estudiantes & Matrícula RUDE', path: '/students', icon: Users },
@@ -92,7 +92,7 @@ export const Layout: React.FC = () => {
     ];
   } else if (isDirector) {
     navItems = [
-      { label: 'Panel Institucional', path: '/', icon: LayoutDashboard },
+      { label: 'Panel Institucional', path: '/dashboard', icon: LayoutDashboard },
       { label: 'Cursos & Docentes', path: '/academic', icon: GraduationCap },
       { label: 'Estudiantes & Matrícula', path: '/students', icon: Users },
       { label: 'Supervisión de Calificaciones', path: '/grades', icon: BookOpenCheck },
@@ -105,7 +105,7 @@ export const Layout: React.FC = () => {
     ];
   } else if (isMaestro) {
     navItems = [
-      { label: 'Mis Asignaciones', path: '/', icon: LayoutDashboard },
+      { label: 'Mis Asignaciones', path: '/dashboard', icon: LayoutDashboard },
       { label: 'Planilla de Calificaciones (Ley 070)', path: '/grades', icon: BookOpenCheck },
       { label: 'Control de Asistencia Mensual', path: '/attendance', icon: CalendarCheck },
       { label: 'Kardex Escolar de Seguimiento', path: '/kardex', icon: ClipboardList },
@@ -115,7 +115,7 @@ export const Layout: React.FC = () => {
     ];
   } else {
     navItems = [
-      { label: 'Panel de Usuario', path: '/', icon: LayoutDashboard },
+      { label: 'Panel de Usuario', path: '/dashboard', icon: LayoutDashboard },
     ];
   }
 
@@ -185,8 +185,8 @@ export const Layout: React.FC = () => {
       {/* Top Navbar */}
       <header className="bg-white border-b border-slate-200 sticky top-0 z-40 shadow-sm">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-16 flex items-center justify-between">
-          <div className="flex items-center space-x-3">
-            <div className="bg-emerald-600 p-2 rounded-lg text-white shadow-md">
+          <Link to="/dashboard" className="flex items-center space-x-3 cursor-pointer group">
+            <div className="bg-emerald-600 p-2 rounded-lg text-white shadow-md group-hover:bg-emerald-700 transition">
               <School className="w-6 h-6" />
             </div>
             <div>
@@ -197,7 +197,7 @@ export const Layout: React.FC = () => {
                 Sistema Integral de Gestión de Maestros - Bolivia
               </span>
             </div>
-          </div>
+          </Link>
 
           <div className="flex items-center space-x-4">
             {/* Si es Superadmin o tiene múltiples colegios asignados, mostrar selector */}

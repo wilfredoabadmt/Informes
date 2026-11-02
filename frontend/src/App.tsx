@@ -42,32 +42,33 @@ export const App: React.FC = () => {
     <AuthProvider>
       <BrowserRouter>
         <Routes>
-          {/* Rutas Públicas SaaS */}
+          {/* Rutas Públicas SaaS: La primera página que se ve es la Landing de Venta */}
+          <Route path="/" element={<LandingPage />} />
           <Route path="/landing" element={<LandingPage />} />
           <Route path="/planes" element={<LandingPage />} />
           <Route path="/registro-colegio" element={<RegisterSchoolPage />} />
           <Route path="/onboarding" element={<RegisterSchoolPage />} />
           <Route path="/login" element={<LoginPage />} />
 
+          {/* Plataforma Integral Protegida (Dashboard y Módulos Multi-Tenant) */}
           <Route
-            path="/"
             element={
               <ProtectedRoute>
                 <Layout />
               </ProtectedRoute>
             }
           >
-            <Route index element={<DashboardPage />} />
-            <Route path="institutions" element={<InstitutionsPage />} />
-            <Route path="academic" element={<AcademicPage />} />
-            <Route path="students" element={<StudentsPage />} />
-            <Route path="grades" element={<GradesPage />} />
-            <Route path="attendance" element={<AttendancePage />} />
-            <Route path="kardex" element={<KardexPage />} />
-            <Route path="schedule" element={<SchedulePage />} />
-            <Route path="reports" element={<CentralizerReportsPage />} />
-            <Route path="billing" element={<BillingPage />} />
-            <Route path="audit" element={<AuditPage />} />
+            <Route path="/dashboard" element={<DashboardPage />} />
+            <Route path="/institutions" element={<InstitutionsPage />} />
+            <Route path="/academic" element={<AcademicPage />} />
+            <Route path="/students" element={<StudentsPage />} />
+            <Route path="/grades" element={<GradesPage />} />
+            <Route path="/attendance" element={<AttendancePage />} />
+            <Route path="/kardex" element={<KardexPage />} />
+            <Route path="/schedule" element={<SchedulePage />} />
+            <Route path="/reports" element={<CentralizerReportsPage />} />
+            <Route path="/billing" element={<BillingPage />} />
+            <Route path="/audit" element={<AuditPage />} />
           </Route>
           <Route path="*" element={<Navigate to="/" replace />} />
         </Routes>

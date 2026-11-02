@@ -116,6 +116,33 @@ export interface TenantTrimestreStatus {
   motivoRectificacion?: string;
 }
 
+export interface TenantPayment {
+  id: string;
+  codigoTransaccion: string;
+  sie: string;
+  colegioNombre: string;
+  plan: string;
+  periodo: 'MENSUAL' | 'ANUAL';
+  monto: number;
+  metodo: 'QR_SIMPLE' | 'TRANSFERENCIA_BANCARIA' | 'EFECTIVO';
+  referenciaBancaria?: string;
+  estado: 'PENDIENTE' | 'APROBADO' | 'RECHAZADO';
+  fechaRegistro: string;
+  fechaVerificacion?: string;
+  verificadoPor?: string;
+  observaciones?: string;
+}
+
+export interface GlobalAnnouncement {
+  id: string;
+  activo: boolean;
+  tipo: 'INFO' | 'ALERTA' | 'IMPORTANTE';
+  titulo: string;
+  mensaje: string;
+  fecha: string;
+  autor: string;
+}
+
 // 1. Colegios Semilla Oficiales alineados con la Base de Datos PostgreSQL
 export const DEFAULT_INSTITUTIONS: TenantInstitution[] = [
   {
@@ -896,5 +923,234 @@ export function saveGradesForInstitutionAndKey(idOrSie: string, key: string, row
   localStorage.setItem(`sigma_grades_${sie}_${key}`, JSON.stringify(rows));
   if (typeof window !== 'undefined') {
     window.dispatchEvent(new CustomEvent('sigma_grades_updated', { detail: { sie, key, rows } }));
+  }
+}
+
+// =========================================================================
+// CRUD AVANZADO DE INSTITUCIONES (ACTUALIZAR Y ELIMINAR COLEGIOS)
+// =========================================================================
+
+export function deleteStoredInstitution(idOrSie: string): void {
+  const current = getStoredInstitutions();
+  const updated = current.filter((i) => i.id !== idOrSie && i.sie !== idOrSie);
+  saveStoredInstitutions(updated);
+  if (typeof window !== 'undefined') {
+    window.dispatchEvent(
+      new CustomEvent('sigma_institutions_updated', { detail: updated })
+    );
+  }
+}
+
+export function updateStoredInstitution(inst: TenantInstitution): void {
+  const current = getStoredInstitutions();
+  const index = current.findIndex((i) => i.id === inst.id || i.sie === inst.sie);
+  let updated: TenantInstitution[];
+  if (index >= 0) {
+    updated = [...current];
+    updated[index] = { ...updated[index], ...inst };
+  } else {
+    updated = [inst, ...current];
+  }
+  saveStoredInstitutions(updated);
+  if (typeof window !== 'undefined') {
+    window.dispatchEvent(
+      new CustomEvent('sigma_institutions_updated', { detail: updated })
+    );
+  }
+}
+
+// =========================================================================
+// SISTEMA DE VERIFICACIÓN DE PAGOS Y ACTIVACIÓN SAAS POR SUPERADMIN
+// =========================================================================
+
+export const DEFAULT_PAYMENTS: TenantPayment[] = [
+  {
+    id: 'pay-001',
+    codigoTransaccion: 'SIGMA-80730045-202601',
+    sie: '80730045',
+    colegioNombre: 'Unidad Educativa Franz Tamayo',
+    plan: 'Colegio Profesional (SaaS Cloud)',
+    periodo: 'ANUAL',
+    monto: 2400,
+    metodo: 'QR_SIMPLE',
+    referenciaBancaria: 'BNB-QR-98234102',
+    estado: 'PENDIENTE',
+    fechaRegistro: '01/11/2026, 18:30',
+    observaciones: 'Pago anual enviado vía QR Simple Interoperable para activar gestión 2026 completa.',
+  },
+  {
+    id: 'pay-002',
+    codigoTransaccion: 'SIGMA-807966698-202602',
+    sie: '807966698',
+    colegioNombre: 'San Pablo',
+    plan: 'Colegio Profesional (SaaS Cloud)',
+    periodo: 'MENSUAL',
+    monto: 250,
+    metodo: 'QR_SIMPLE',
+    referenciaBancaria: 'BUN-QR-5541092',
+    estado: 'PENDIENTE',
+    fechaRegistro: '01/11/2026, 20:15',
+    observaciones: 'Comprobante de pago para reactivación de acceso a la plataforma.',
+  },
+  {
+    id: 'pay-003',
+    codigoTransaccion: 'SIGMA-42608102-202603',
+    sie: '42608102',
+    colegioNombre: 'San Simon de Ayacucho',
+    plan: 'Red Educativa / Multisede',
+    periodo: 'ANUAL',
+    monto: 5800,
+    metodo: 'TRANSFERENCIA_BANCARIA',
+    referenciaBancaria: 'BCP-TRANS-771923',
+    estado: 'APROBADO',
+    fechaRegistro: '28/10/2026, 11:20',
+    fechaVerificacion: '28/10/2026, 11:45',
+    verificadoPor: 'Superadministrador Nacional',
+    observaciones: 'Activación anual confirmada contra extracto bancario Banco Unión.',
+  },
+  {
+    id: 'pay-004',
+    codigoTransaccion: 'SIGMA-80730046-202604',
+    sie: '80730046',
+    colegioNombre: 'Unidad Educativa Mariscal Sucre',
+    plan: 'Colegio Profesional (SaaS Cloud)',
+    periodo: 'MENSUAL',
+    monto: 250,
+    metodo: 'EFECTIVO',
+    referenciaBancaria: 'RECIBO-CAJA-0419',
+    estado: 'APROBADO',
+    fechaRegistro: '30/10/2026, 09:10',
+    fechaVerificacion: '30/10/2026, 09:15',
+    verificadoPor: 'Superadministrador Nacional',
+    observaciones: 'Pago en oficina central registrado por caja.',
+  },
+];
+
+export function getStoredPayments(): TenantPayment[] {
+  try {
+    const raw = localStorage.getItem('sigma_payments');
+    if (raw) {
+      const parsed: TenantPayment[] = JSON.parse(raw);
+      if (parsed && Array.isArray(parsed) && parsed.length > 0) return parsed;
+    }
+  } catch (e) {
+    console.error('Error loading stored payments', e);
+  }
+  localStorage.setItem('sigma_payments', JSON.stringify(DEFAULT_PAYMENTS));
+  return DEFAULT_PAYMENTS;
+}
+
+export function saveStoredPayments(payments: TenantPayment[]): void {
+  localStorage.setItem('sigma_payments', JSON.stringify(payments));
+  if (typeof window !== 'undefined') {
+    window.dispatchEvent(new CustomEvent('sigma_payments_updated', { detail: payments }));
+  }
+}
+
+export function approvePayment(paymentId: string, verificadoPor: string): boolean {
+  const payments = getStoredPayments();
+  const idx = payments.findIndex((p) => p.id === paymentId);
+  if (idx === -1) return false;
+
+  const now = new Date().toLocaleString('es-BO', {
+    day: '2-digit',
+    month: '2-digit',
+    year: 'numeric',
+    hour: '2-digit',
+    minute: '2-digit',
+  });
+
+  const pay = payments[idx];
+  pay.estado = 'APROBADO';
+  pay.fechaVerificacion = now;
+  pay.verificadoPor = verificadoPor;
+
+  saveStoredPayments(payments);
+
+  // Reactivar automáticamente el colegio si estaba suspendido
+  activateInstitution(pay.sie);
+  return true;
+}
+
+export function rejectPayment(paymentId: string, verificadoPor: string, motivo: string): boolean {
+  const payments = getStoredPayments();
+  const idx = payments.findIndex((p) => p.id === paymentId);
+  if (idx === -1) return false;
+
+  const now = new Date().toLocaleString('es-BO', {
+    day: '2-digit',
+    month: '2-digit',
+    year: 'numeric',
+    hour: '2-digit',
+    minute: '2-digit',
+  });
+
+  payments[idx].estado = 'RECHAZADO';
+  payments[idx].fechaVerificacion = now;
+  payments[idx].verificadoPor = verificadoPor;
+  payments[idx].observaciones = motivo;
+
+  saveStoredPayments(payments);
+  return true;
+}
+
+export function registerManualPayment(
+  data: Omit<TenantPayment, 'id' | 'fechaRegistro'>
+): TenantPayment {
+  const payments = getStoredPayments();
+  const now = new Date().toLocaleString('es-BO', {
+    day: '2-digit',
+    month: '2-digit',
+    year: 'numeric',
+    hour: '2-digit',
+    minute: '2-digit',
+  });
+
+  const newPayment: TenantPayment = {
+    ...data,
+    id: `pay-${Date.now()}`,
+    fechaRegistro: now,
+  };
+
+  const updated = [newPayment, ...payments];
+  saveStoredPayments(updated);
+
+  if (newPayment.estado === 'APROBADO') {
+    activateInstitution(newPayment.sie);
+  }
+
+  return newPayment;
+}
+
+// =========================================================================
+// COMUNICADOS GLOBALES DEL SISTEMA (BROADCAST ANNOUNCEMENT)
+// =========================================================================
+
+export function getGlobalAnnouncement(): GlobalAnnouncement | null {
+  try {
+    const raw = localStorage.getItem('sigma_global_announcement');
+    if (raw) return JSON.parse(raw);
+  } catch (e) {
+    console.error('Error loading global announcement', e);
+  }
+  return {
+    id: 'ann-1',
+    activo: true,
+    tipo: 'IMPORTANTE',
+    titulo: 'Resolución Ministerial 0001/2026 - Gestión Escolar Oficial',
+    mensaje: 'Se recuerda a todos los directores y maestros que el cierre y aprobación de notas del 1° Trimestre debe realizarse antes de la fecha límite según calendario escolar del Ministerio de Educación.',
+    fecha: '01/11/2026',
+    autor: 'Ministerio de Educación / SIGMA Nacional',
+  };
+}
+
+export function saveGlobalAnnouncement(ann: GlobalAnnouncement | null): void {
+  if (ann) {
+    localStorage.setItem('sigma_global_announcement', JSON.stringify(ann));
+  } else {
+    localStorage.removeItem('sigma_global_announcement');
+  }
+  if (typeof window !== 'undefined') {
+    window.dispatchEvent(new CustomEvent('sigma_announcement_updated', { detail: ann }));
   }
 }
