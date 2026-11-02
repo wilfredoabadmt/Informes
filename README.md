@@ -84,6 +84,28 @@ Cualquier discrepancia entre especificaciones, planes técnicos o código de imp
 
 ---
 
+## 📊 Estado de las Features (Sincronizado con Git)
+
+| Feature | Estado | Artefactos SDD | Observaciones |
+| :--- | :--- | :--- | :--- |
+| **001-auth-multi-tenant** | ✅ Completado / Implementado | `spec.md`, `plan.md`, `tasks.md` | Autenticación JWT + contexto multi-tenant. |
+| **002-schools-management** | ✅ Completado / Implementado | `spec.md`, `plan.md`, `tasks.md` | Gestión de Unidades Educativas (códigos SIE). |
+| **003-teachers-management** | ✅ Completado / Implementado | `spec.md`, `plan.md`, `tasks.md` | Expediente profesional y RDA. |
+| **004-academic-structure** | ✅ Completado / Implementado | `spec.md`, `plan.md`, `tasks.md` | Cursos, grados, paralelos y materias. |
+| **005-teacher-assignments** | ✅ Completado / Implementado | `spec.md`, `plan.md`, `tasks.md` | Asignaciones docentes por materia y paralelo. |
+| **006-students-enrollment** | ✅ Completado / Implementado | `spec.md`, `plan.md`, `tasks.md` | Padrón de estudiantes con códigos RUDE. |
+| **007-attendance-control** | ✅ Completado / Implementado | `spec.md`, `plan.md`, `tasks.md` | Asistencia diaria y justificaciones. |
+| **008-evaluation-periods** | ✅ Completado / Implementado | `spec.md`, `plan.md`, `tasks.md` | Periodos evaluativos y dimensiones SEP. |
+| **009-grades-recording** | ✅ Completado / Implementado | `spec.md`, `plan.md`, `tasks.md` | Planilla de notas por trimestre. |
+| **010-grades-centralizers** | ✅ Completado / Implementado | `spec.md`, `plan.md`, `tasks.md` | Centralizadores y cierre anual (PROMOVIDO/RETENIDO). |
+| **011-basic-reports** | ✅ Completado / Implementado | `spec.md`, `plan.md`, `tasks.md` | Listas de curso, boletines y libretas en PDF (`pdfkit`). |
+| **012-system-audit** | ✅ Completado / Implementado | `spec.md`, `plan.md`, `tasks.md` | Consulta de bitácora inmutable, estadísticas y Principio 7. |
+| **013-bulk-import-export** | ✅ Completado / Implementado | `spec.md`, `plan.md`, `tasks.md` | Carga masiva de estudiantes/docentes y exportación XLSX/CSV. |
+
+> Todas las features 001–013 se encuentran fusionadas en la rama `main` con pruebas unitarias y E2E verificadas (multi-tenant RLS).
+
+---
+
 ## 🔄 Metodología de Desarrollo
 
 El proyecto prohíbe la escritura directa de código sin especificación previa. Todo desarrollo sigue el ciclo:

@@ -8,7 +8,7 @@
 ## Estado del Proyecto
 
 - **Constitución:** V1.1.0 Ratificada ([specs/constitution.md](specs/constitution.md)).
-- **Fase Actual:** Features 001–010 implementadas (Calificaciones y Centralizadores Anuales completos).
+- **Fase Actual:** Features 001–013 implementadas (incluyendo Reportes Básicos en PDF, Auditoría Inmutable del Sistema e Importación/Exportación Masiva Excel/CSV).
 - **Active feature:** Ninguna activa.
 
 <!--
