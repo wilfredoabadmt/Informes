@@ -580,12 +580,12 @@ export const LandingPage: React.FC = () => {
                   <span>Descargar QR</span>
                 </a>
                 <a
-                  href="https://wa.me/59170000000?text=Hola,%20acabo%20de%20realizar%20el%20pago%20con%20QR%20para%20activar%20mi%20colegio%20en%20SIGMA"
+                  href="https://wa.me/59171523780?text=Hola,%20acabo%20de%20realizar%20el%20pago%20con%20QR%20para%20activar%20mi%20colegio%20en%20SIGMA"
                   target="_blank"
                   rel="noreferrer"
                   className="flex-1 py-2.5 bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-bold rounded-xl flex items-center justify-center space-x-1 shadow-md shadow-emerald-200 transition"
                 >
-                  <span>Enviar Comprobante WhatsApp</span>
+                  <span>Enviar Comprobante WhatsApp (+591 71523780)</span>
                 </a>
               </div>
             </div>

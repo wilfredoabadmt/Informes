@@ -105,13 +105,13 @@ export const LoginPage: React.FC = () => {
                     <span>¿Necesitas reactivar tu Unidad Educativa?</span>
                   </span>
                   <a
-                    href="https://wa.me/59170000000?text=Hola,%20deseo%20regularizar%20la%20suscripci%C3%B3n%20y%20reactivar%20mi%20colegio%20en%20SIGMA-SEP"
+                    href="https://wa.me/59171523780?text=Hola,%20deseo%20regularizar%20la%20suscripci%C3%B3n%20y%20reactivar%20mi%20colegio%20en%20SIGMA-SEP"
                     target="_blank"
                     rel="noreferrer"
                     className="font-bold text-rose-700 hover:text-rose-900 underline flex items-center space-x-1"
                   >
                     <PhoneCall className="w-3 h-3" />
-                    <span>Contactar Administración</span>
+                    <span>Contactar Administración (+591 71523780)</span>
                   </a>
                 </div>
               </div>

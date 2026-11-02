@@ -419,14 +419,22 @@ export const BillingPage: React.FC = () => {
                     </p>
                   </div>
 
-                  <div className="mt-3 flex items-center justify-center space-x-3">
+                  <div className="mt-3 flex flex-col sm:flex-row items-center justify-center gap-2">
                     <a
                       href={qrImg}
                       download="qr-pago-sigma.png"
-                      className="inline-flex items-center space-x-1.5 text-xs text-slate-600 hover:text-emerald-700 bg-white px-3 py-1.5 rounded-xl border border-slate-200 shadow-sm font-semibold transition"
+                      className="w-full sm:w-auto inline-flex items-center justify-center space-x-1.5 text-xs text-slate-600 hover:text-emerald-700 bg-white px-3.5 py-2 rounded-xl border border-slate-200 shadow-xs font-semibold transition"
                     >
                       <Download className="w-3.5 h-3.5" />
                       <span>Descargar Imagen QR</span>
+                    </a>
+                    <a
+                      href="https://wa.me/59171523780?text=Hola,%20adjunto%20comprobante%20de%20pago%20de%20suscripci%C3%B3n%20para%20activaci%C3%B3n%20en%20SIGMA"
+                      target="_blank"
+                      rel="noreferrer"
+                      className="w-full sm:w-auto inline-flex items-center justify-center space-x-1.5 text-xs text-emerald-800 hover:text-emerald-950 bg-emerald-50 hover:bg-emerald-100 px-3.5 py-2 rounded-xl border border-emerald-200 shadow-xs font-bold transition"
+                    >
+                      <span>Enviar Comprobante WhatsApp (+591 71523780)</span>
                     </a>
                   </div>
                 </div>

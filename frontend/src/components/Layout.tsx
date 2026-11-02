@@ -349,13 +349,13 @@ export const Layout: React.FC = () => {
 
                   <div className="pt-2 flex flex-col sm:flex-row items-center justify-center gap-3">
                     <a
-                      href="https://wa.me/59170000000?text=Hola,%20solicito%20informaci%C3%B3n%20para%20regularizar%20la%20suscripci%C3%B3n%20y%20reactivar%20mi%20Unidad%20Educativa"
+                      href="https://wa.me/59171523780?text=Hola,%20solicito%20informaci%C3%B3n%20para%20regularizar%20la%20suscripci%C3%B3n%20y%20reactivar%20mi%20Unidad%20Educativa"
                       target="_blank"
                       rel="noreferrer"
                       className="w-full sm:w-auto px-6 py-3 bg-rose-600 hover:bg-rose-700 text-white rounded-xl text-xs font-bold transition shadow-md flex items-center justify-center space-x-2 cursor-pointer"
                     >
                       <PhoneCall className="w-4 h-4" />
-                      <span>Contactar Administración / Soporte</span>
+                      <span>Contactar Administración (+591 71523780)</span>
                     </a>
                     <button
                       type="button"
