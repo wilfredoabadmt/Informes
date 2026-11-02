@@ -103,6 +103,19 @@ export interface TenantStudent {
   estado: string;
 }
 
+export interface TenantTrimestreStatus {
+  sie: string;
+  cursoId: string;
+  materiaId: string;
+  trimestre: string; // '1' | '2' | '3'
+  estado: 'ABIERTO' | 'CERRADO_APROBADO' | 'HABILITADO_RECTIFICACION';
+  aprobadoPor?: string;
+  fechaAprobacion?: string;
+  habilitadoPor?: string;
+  fechaHabilitacion?: string;
+  motivoRectificacion?: string;
+}
+
 // 1. Colegios Semilla Oficiales alineados con la Base de Datos PostgreSQL
 export const DEFAULT_INSTITUTIONS: TenantInstitution[] = [
   {
@@ -734,5 +747,154 @@ export function saveSchedulesForInstitution(idOrSie: string, slots: TenantSchedu
   localStorage.setItem(`sigma_schedules_${sie}`, JSON.stringify(slots));
   if (typeof window !== 'undefined') {
     window.dispatchEvent(new CustomEvent('sigma_schedules_updated', { detail: { sie, slots } }));
+  }
+}
+
+// =========================================================================
+// GESTIÓN DE CIERRE Y APROBACIÓN DE TRIMESTRE CON RECTIFICACIÓN POR DIRECCIÓN
+// =========================================================================
+
+export function getTrimestresStatusForInstitution(idOrSie: string): TenantTrimestreStatus[] {
+  const sie = resolveTenantKey(idOrSie);
+  try {
+    const raw = localStorage.getItem(`sigma_trimestres_status_${sie}`);
+    if (raw) return JSON.parse(raw);
+  } catch (e) {
+    console.error('Error loading trimestres status for institution', e);
+  }
+  return [];
+}
+
+export function getTrimestreStatus(
+  idOrSie: string,
+  cursoId: string,
+  materiaId: string,
+  trimestre: string
+): TenantTrimestreStatus {
+  const sie = resolveTenantKey(idOrSie);
+  const list = getTrimestresStatusForInstitution(sie);
+  const found = list.find(
+    (item) => item.cursoId === cursoId && item.materiaId === materiaId && String(item.trimestre) === String(trimestre)
+  );
+  if (found) return found;
+  return {
+    sie,
+    cursoId,
+    materiaId,
+    trimestre: String(trimestre),
+    estado: 'ABIERTO',
+  };
+}
+
+export function saveTrimestresStatusForInstitution(idOrSie: string, statuses: TenantTrimestreStatus[]): void {
+  const sie = resolveTenantKey(idOrSie);
+  localStorage.setItem(`sigma_trimestres_status_${sie}`, JSON.stringify(statuses));
+  if (typeof window !== 'undefined') {
+    window.dispatchEvent(new CustomEvent('sigma_trimestre_status_updated', { detail: { sie, statuses } }));
+  }
+}
+
+export function lockTrimestreStatus(
+  idOrSie: string,
+  cursoId: string,
+  materiaId: string,
+  trimestre: string,
+  docenteNombre: string
+): TenantTrimestreStatus {
+  const sie = resolveTenantKey(idOrSie);
+  const list = getTrimestresStatusForInstitution(sie);
+  const index = list.findIndex(
+    (item) => item.cursoId === cursoId && item.materiaId === materiaId && String(item.trimestre) === String(trimestre)
+  );
+  const now = new Date().toLocaleString('es-BO', {
+    day: '2-digit',
+    month: '2-digit',
+    year: 'numeric',
+    hour: '2-digit',
+    minute: '2-digit',
+  });
+
+  const updatedItem: TenantTrimestreStatus = {
+    sie,
+    cursoId,
+    materiaId,
+    trimestre: String(trimestre),
+    estado: 'CERRADO_APROBADO',
+    aprobadoPor: docenteNombre,
+    fechaAprobacion: now,
+  };
+
+  if (index >= 0) {
+    list[index] = { ...list[index], ...updatedItem };
+  } else {
+    list.push(updatedItem);
+  }
+
+  saveTrimestresStatusForInstitution(sie, list);
+  return updatedItem;
+}
+
+export function unlockTrimestreStatus(
+  idOrSie: string,
+  cursoId: string,
+  materiaId: string,
+  trimestre: string,
+  directorNombre: string,
+  motivo: string
+): TenantTrimestreStatus {
+  const sie = resolveTenantKey(idOrSie);
+  const list = getTrimestresStatusForInstitution(sie);
+  const index = list.findIndex(
+    (item) => item.cursoId === cursoId && item.materiaId === materiaId && String(item.trimestre) === String(trimestre)
+  );
+  const now = new Date().toLocaleString('es-BO', {
+    day: '2-digit',
+    month: '2-digit',
+    year: 'numeric',
+    hour: '2-digit',
+    minute: '2-digit',
+  });
+
+  const prev = index >= 0 ? list[index] : undefined;
+  const updatedItem: TenantTrimestreStatus = {
+    sie,
+    cursoId,
+    materiaId,
+    trimestre: String(trimestre),
+    estado: 'HABILITADO_RECTIFICACION',
+    habilitadoPor: directorNombre,
+    fechaHabilitacion: now,
+    motivoRectificacion: motivo,
+    aprobadoPor: prev?.aprobadoPor,
+    fechaAprobacion: prev?.fechaAprobacion,
+  };
+
+  if (index >= 0) {
+    list[index] = updatedItem;
+  } else {
+    list.push(updatedItem);
+  }
+
+  saveTrimestresStatusForInstitution(sie, list);
+  return updatedItem;
+}
+
+// Almacén persistente local de calificaciones por institución y llave
+export function getGradesForInstitutionAndKey<T = any>(idOrSie: string, key: string): T | null {
+  const sie = resolveTenantKey(idOrSie);
+  try {
+    const raw = localStorage.getItem(`sigma_grades_${sie}_${key}`);
+    if (raw) return JSON.parse(raw);
+  } catch (e) {
+    console.error('Error loading grades for institution', e);
+  }
+  return null;
+}
+
+export function saveGradesForInstitutionAndKey(idOrSie: string, key: string, rows: any[]): void {
+  const sie = resolveTenantKey(idOrSie);
+  localStorage.setItem(`sigma_grades_${sie}_${key}`, JSON.stringify(rows));
+  if (typeof window !== 'undefined') {
+    window.dispatchEvent(new CustomEvent('sigma_grades_updated', { detail: { sie, key, rows } }));
   }
 }

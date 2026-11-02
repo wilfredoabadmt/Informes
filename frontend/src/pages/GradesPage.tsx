@@ -6,8 +6,14 @@ import {
   getStudentsForInstitution,
   saveCoursesForInstitution,
   resolveTenantKey,
+  getTrimestreStatus,
+  lockTrimestreStatus,
+  unlockTrimestreStatus,
+  getGradesForInstitutionAndKey,
+  saveGradesForInstitutionAndKey,
   type TenantParalelo,
   type TenantStudent,
+  type TenantTrimestreStatus,
 } from '../utils/multiTenantStore';
 import {
   BookOpenCheck,
@@ -24,6 +30,12 @@ import {
   Plus,
   Sparkles,
   X,
+  Lock,
+  Unlock,
+  AlertTriangle,
+  FileCheck,
+  KeyRound,
+  History,
 } from 'lucide-react';
 import { exportGradesToExcel, exportGradesToPdf } from '../utils/exportHelpers';
 import type { GradeExportRow } from '../utils/exportHelpers';
@@ -225,6 +237,50 @@ export const GradesPage: React.FC = () => {
     }
   }, [asignaturasVisibles, selectedAsignatura]);
 
+  // Nombre y cargo del usuario para el registro formal de aprobaciones y desbloqueos
+  const userFullName = user?.persona
+    ? `${user.persona.nombres} ${user.persona.primerApellido}${user.persona.segundoApellido ? ' ' + user.persona.segundoApellido : ''}`.trim()
+    : user?.email || (isDirector ? 'Dirección General' : isMaestro ? 'Docente de Asignatura' : 'Administrador');
+
+  // Estado oficial de bloqueo y aprobación del trimestre actual
+  const [trimestreStatus, setTrimestreStatus] = useState<TenantTrimestreStatus>(() =>
+    getTrimestreStatus(activeSie, selectedCurso, selectedAsignatura, selectedTrimestre)
+  );
+
+  // Estados de modales
+  const [showApproveModal, setShowApproveModal] = useState(false);
+  const [confirmApprovedCheck, setConfirmApprovedCheck] = useState(false);
+  const [approving, setApproving] = useState(false);
+
+  const [showRectifyModal, setShowRectifyModal] = useState(false);
+  const [rectifyReason, setRectifyReason] = useState('Error material de transcripción o cálculo de notas');
+  const [rectifyCustom, setRectifyCustom] = useState('');
+  const [unlocking, setUnlocking] = useState(false);
+
+  // Carga y sincronización reactiva del estado del trimestre
+  useEffect(() => {
+    if (selectedCurso && selectedAsignatura) {
+      setTrimestreStatus(getTrimestreStatus(activeSie, selectedCurso, selectedAsignatura, selectedTrimestre));
+    }
+  }, [activeSie, selectedCurso, selectedAsignatura, selectedTrimestre]);
+
+  useEffect(() => {
+    const handleStatusUpdate = () => {
+      if (selectedCurso && selectedAsignatura) {
+        setTrimestreStatus(getTrimestreStatus(activeSie, selectedCurso, selectedAsignatura, selectedTrimestre));
+      }
+    };
+    window.addEventListener('sigma_trimestre_status_updated', handleStatusUpdate);
+    return () => {
+      window.removeEventListener('sigma_trimestre_status_updated', handleStatusUpdate);
+    };
+  }, [activeSie, selectedCurso, selectedAsignatura, selectedTrimestre]);
+
+  const isLocked = trimestreStatus.estado === 'CERRADO_APROBADO';
+  const isHabilitadoRectificacion = trimestreStatus.estado === 'HABILITADO_RECTIFICACION';
+  // Bloqueo estricto: cuando está cerrado y aprobado, las notas no pueden modificarse salvo habilitación de Dirección
+  const canEdit = !isLocked && (isMaestro || isSuperAdmin);
+
   // Almacén reactivo de planillas por llave: sie_curso_materia_trimestre
   const [gradesStore, setGradesStore] = useState<Record<string, StudentGradeRow[]>>({});
   const [rows, setRows] = useState<StudentGradeRow[]>([]);
@@ -232,6 +288,7 @@ export const GradesPage: React.FC = () => {
   const [message, setMessage] = useState<string | null>(null);
 
   const currentKey = `${activeSie}_${selectedCurso}_${selectedAsignatura}_${selectedTrimestre}`;
+  const persistentKey = `${selectedCurso}_${selectedAsignatura}_${selectedTrimestre}`;
 
   // Carga o regenera las notas cuando cambia cualquier selector
   useEffect(() => {
@@ -240,7 +297,13 @@ export const GradesPage: React.FC = () => {
       return;
     }
 
-    if (gradesStore[currentKey]) {
+    // 1. Intentar recuperar desde almacenamiento persistente multi-tenant
+    const savedGrades = getGradesForInstitutionAndKey<StudentGradeRow[]>(activeSie, persistentKey);
+
+    if (savedGrades && savedGrades.length > 0) {
+      setRows(savedGrades);
+      setGradesStore((prev) => ({ ...prev, [currentKey]: savedGrades }));
+    } else if (gradesStore[currentKey]) {
       setRows(gradesStore[currentKey]);
     } else {
       // Buscar estudiantes del curso actual en la institución activa
@@ -272,9 +335,12 @@ export const GradesPage: React.FC = () => {
 
       setRows(generated);
       setGradesStore((prev) => ({ ...prev, [currentKey]: generated }));
+      if (generated.length > 0) {
+        saveGradesForInstitutionAndKey(activeSie, persistentKey, generated);
+      }
     }
     setMessage(null);
-  }, [selectedCurso, selectedAsignatura, selectedTrimestre, activeSie, currentKey, coursesList, studentsList]);
+  }, [selectedCurso, selectedAsignatura, selectedTrimestre, activeSie, currentKey, persistentKey, coursesList, studentsList]);
 
   const updateField = (
     index: number,
@@ -282,7 +348,10 @@ export const GradesPage: React.FC = () => {
     value: number,
     max: number
   ) => {
-    if (!isMaestro && !isSuperAdmin) return;
+    if (!canEdit) {
+      setMessage('🔒 Este trimestre se encuentra aprobado y bloqueado. Solo la Dirección puede autorizar modificaciones.');
+      return;
+    }
     const val = Math.max(0, Math.min(max, isNaN(value) ? 0 : value));
     const newRows = [...rows];
     (newRows[index] as any)[field] = val;
@@ -298,6 +367,7 @@ export const GradesPage: React.FC = () => {
 
     setRows(newRows);
     setGradesStore((prev) => ({ ...prev, [currentKey]: newRows }));
+    saveGradesForInstitutionAndKey(activeSie, persistentKey, newRows);
   };
 
   const calculateTotal = (row: StudentGradeRow) => {
@@ -321,12 +391,17 @@ export const GradesPage: React.FC = () => {
       : 'Tercer Trimestre';
 
   const handleSave = async () => {
+    if (!canEdit) {
+      setMessage('🔒 No se pueden guardar cambios: el trimestre está cerrado y bloqueado oficialmente.');
+      return;
+    }
     setSaving(true);
     setMessage(null);
     try {
-      // Guardar en store local
+      // Guardar en store local y en persistencia de institución
       setGradesStore((prev) => ({ ...prev, [currentKey]: rows }));
-      await new Promise((res) => setTimeout(res, 400));
+      saveGradesForInstitutionAndKey(activeSie, persistentKey, rows);
+      await new Promise((res) => setTimeout(res, 350));
       setMessage(
         `✅ Planilla guardada exitosamente para ${currentCursoObj?.nombre} - ${currentAsigObj?.nombre} (${trimLabel} 2026).`
       );
@@ -335,6 +410,80 @@ export const GradesPage: React.FC = () => {
     } finally {
       setSaving(false);
     }
+  };
+
+  // Acción Docente: Confirmar y Aprobar Trimestre (Bloqueo Definitivo)
+  const handleConfirmApprove = async () => {
+    setApproving(true);
+    setMessage(null);
+    try {
+      // 1. Guardar notas finales
+      saveGradesForInstitutionAndKey(activeSie, persistentKey, rows);
+      setGradesStore((prev) => ({ ...prev, [currentKey]: rows }));
+
+      // 2. Ejecutar bloqueo y cierre formal
+      const updated = lockTrimestreStatus(
+        activeSie,
+        selectedCurso,
+        selectedAsignatura,
+        selectedTrimestre,
+        userFullName
+      );
+      setTrimestreStatus(updated);
+      setShowApproveModal(false);
+      setConfirmApprovedCheck(false);
+      setMessage(
+        `🔒 ${trimLabel} Aprobado y Bloqueado Oficialmente. Las calificaciones han sido registradas y aseguradas contra modificaciones.`
+      );
+    } catch (e) {
+      setMessage('❌ Ocurrió un error al aprobar y bloquear el trimestre.');
+    } finally {
+      setApproving(false);
+    }
+  };
+
+  // Acción Dirección: Habilitar Modificación de Notas (Rectificación)
+  const handleConfirmRectify = async () => {
+    setUnlocking(true);
+    setMessage(null);
+    try {
+      const finalMotivo =
+        rectifyReason === 'Otro motivo debidamente fundamentado' && rectifyCustom.trim()
+          ? rectifyCustom.trim()
+          : rectifyReason + (rectifyCustom.trim() ? ` (${rectifyCustom.trim()})` : '');
+
+      const updated = unlockTrimestreStatus(
+        activeSie,
+        selectedCurso,
+        selectedAsignatura,
+        selectedTrimestre,
+        userFullName,
+        finalMotivo
+      );
+      setTrimestreStatus(updated);
+      setShowRectifyModal(false);
+      setRectifyCustom('');
+      setMessage(
+        `🔓 Modificación de notas habilitada por Dirección. El docente asignado ya puede corregir las calificaciones del ${trimLabel}.`
+      );
+    } catch (e) {
+      setMessage('❌ Error al autorizar la rectificación de notas.');
+    } finally {
+      setUnlocking(false);
+    }
+  };
+
+  // Acción Dirección: Re-cerrar / Bloquear directamente el trimestre
+  const handleDirectorReclose = () => {
+    const updated = lockTrimestreStatus(
+      activeSie,
+      selectedCurso,
+      selectedAsignatura,
+      selectedTrimestre,
+      `${userFullName} (Dirección)`
+    );
+    setTrimestreStatus(updated);
+    setMessage(`🔒 ${trimLabel} vuelto a bloquear formalmente por la Dirección.`);
   };
 
   // Exportar Excel Oficial
@@ -681,16 +830,73 @@ export const GradesPage: React.FC = () => {
             <span>Imprimir</span>
           </button>
 
-          {isMaestro ? (
+          {/* Guardar Planilla */}
+          {(isMaestro || isSuperAdmin) && canEdit && (
             <button
               onClick={handleSave}
               disabled={saving}
-              className="flex items-center space-x-2 px-4 py-2 bg-emerald-600 hover:bg-emerald-700 text-white rounded-lg text-xs font-bold shadow-sm transition disabled:opacity-50 cursor-pointer"
+              className="flex items-center space-x-2 px-3.5 py-2 bg-slate-800 hover:bg-slate-900 text-white rounded-lg text-xs font-bold shadow-sm transition disabled:opacity-50 cursor-pointer"
             >
-              <Save className="w-4 h-4" />
-              <span>{saving ? 'Guardando notas...' : 'Guardar Planilla'}</span>
+              <Save className="w-4 h-4 text-emerald-400" />
+              <span>{saving ? 'Guardando...' : 'Guardar Planilla'}</span>
             </button>
-          ) : (
+          )}
+
+          {/* Botón de Aprobación y Cierre de Trimestre para el Docente */}
+          {(isMaestro || isSuperAdmin) && !isLocked && (
+            <button
+              type="button"
+              onClick={() => {
+                setConfirmApprovedCheck(false);
+                setShowApproveModal(true);
+              }}
+              className="flex items-center space-x-2 px-4 py-2 bg-emerald-600 hover:bg-emerald-700 text-white rounded-lg text-xs font-bold shadow-sm transition cursor-pointer"
+              title={`Aprobar formalmente y bloquear las calificaciones del ${trimLabel}`}
+            >
+              <CheckCircle2 className="w-4 h-4" />
+              <span>Aprobar y Cerrar {selectedTrimestre}° Trimestre</span>
+            </button>
+          )}
+
+          {/* Indicador de Trimestre Bloqueado para Docente */}
+          {isLocked && !isDirector && !isSuperAdmin && (
+            <div className="flex items-center space-x-1.5 px-3.5 py-2 bg-rose-50 border border-rose-200 text-rose-800 rounded-lg text-xs font-bold">
+              <Lock className="w-4 h-4 text-rose-600" />
+              <span>{selectedTrimestre}° Trimestre Aprobado y Bloqueado</span>
+            </div>
+          )}
+
+          {/* Botón Exclusivo de Dirección para Habilitar Modificación */}
+          {(isDirector || isSuperAdmin) && isLocked && (
+            <button
+              type="button"
+              onClick={() => {
+                setRectifyReason('Error material de transcripción o cálculo de notas');
+                setRectifyCustom('');
+                setShowRectifyModal(true);
+              }}
+              className="flex items-center space-x-2 px-4 py-2 bg-amber-600 hover:bg-amber-700 text-white rounded-lg text-xs font-bold shadow-sm transition cursor-pointer"
+              title="Habilitar rectificación formal de calificaciones para el docente"
+            >
+              <Unlock className="w-4 h-4" />
+              <span>Habilitar Modificación (Dirección)</span>
+            </button>
+          )}
+
+          {/* Botón de Dirección para Re-bloquear Trimestre */}
+          {(isDirector || isSuperAdmin) && isHabilitadoRectificacion && (
+            <button
+              type="button"
+              onClick={handleDirectorReclose}
+              className="flex items-center space-x-1.5 px-3 py-2 bg-slate-200 hover:bg-slate-300 text-slate-800 rounded-lg text-xs font-semibold transition cursor-pointer"
+              title="Volver a bloquear el trimestre"
+            >
+              <Lock className="w-3.5 h-3.5 text-slate-600" />
+              <span>Re-bloquear</span>
+            </button>
+          )}
+
+          {!isMaestro && !isDirector && !isSuperAdmin && (
             <div className="flex items-center space-x-1.5 px-3 py-2 bg-slate-100 text-slate-700 rounded-lg text-xs font-semibold">
               <ShieldCheck className="w-4 h-4 text-emerald-600" />
               <span>Modo Supervisión</span>
@@ -755,9 +961,15 @@ export const GradesPage: React.FC = () => {
             onChange={(e) => setSelectedTrimestre(e.target.value)}
             className="w-full text-xs p-2.5 bg-slate-50 border border-slate-200 rounded-lg font-bold text-slate-800 focus:bg-white focus:border-emerald-500 focus:outline-none transition"
           >
-            <option value="1">Primer Trimestre (Gestión 2026)</option>
-            <option value="2">Segundo Trimestre (Gestión 2026)</option>
-            <option value="3">Tercer Trimestre (Gestión 2026)</option>
+            <option value="1">
+              1° Trimestre {getTrimestreStatus(activeSie, selectedCurso, selectedAsignatura, '1').estado === 'CERRADO_APROBADO' ? '🔒 (Bloqueado)' : getTrimestreStatus(activeSie, selectedCurso, selectedAsignatura, '1').estado === 'HABILITADO_RECTIFICACION' ? '🔓 (Rectificación)' : '🟢 (Abierto)'}
+            </option>
+            <option value="2">
+              2° Trimestre {getTrimestreStatus(activeSie, selectedCurso, selectedAsignatura, '2').estado === 'CERRADO_APROBADO' ? '🔒 (Bloqueado)' : getTrimestreStatus(activeSie, selectedCurso, selectedAsignatura, '2').estado === 'HABILITADO_RECTIFICACION' ? '🔓 (Rectificación)' : '🟢 (Abierto)'}
+            </option>
+            <option value="3">
+              3° Trimestre {getTrimestreStatus(activeSie, selectedCurso, selectedAsignatura, '3').estado === 'CERRADO_APROBADO' ? '🔒 (Bloqueado)' : getTrimestreStatus(activeSie, selectedCurso, selectedAsignatura, '3').estado === 'HABILITADO_RECTIFICACION' ? '🔓 (Rectificación)' : '🟢 (Abierto)'}
+            </option>
           </select>
         </div>
 
@@ -790,6 +1002,120 @@ export const GradesPage: React.FC = () => {
           </div>
         </div>
       </div>
+
+      {/* Banner de Estado Oficial de Aprobación y Bloqueo */}
+      {isLocked ? (
+        <div className="p-4 bg-gradient-to-r from-rose-50 to-amber-50 border-2 border-rose-300 rounded-2xl text-xs text-rose-950 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 shadow-sm animate-fadeIn">
+          <div className="flex items-start sm:items-center space-x-3.5">
+            <div className="p-2.5 bg-rose-600 text-white rounded-xl shadow-xs shrink-0">
+              <Lock className="w-5 h-5" />
+            </div>
+            <div>
+              <div className="font-extrabold text-sm text-rose-900 flex items-center gap-2">
+                <span>{trimLabel} Cerrado y Aprobado Oficialmente</span>
+                <span className="px-2 py-0.5 bg-rose-200 text-rose-900 text-[10px] font-black rounded-full uppercase tracking-wider">
+                  Solo Lectura (Bloqueado)
+                </span>
+              </div>
+              <p className="text-slate-700 mt-1 leading-relaxed">
+                Las calificaciones de este trimestre fueron aprobadas formalmente por <strong>{trimestreStatus.aprobadoPor || 'Docente'}</strong> el <strong>{trimestreStatus.fechaAprobacion || 'recientemente'}</strong>. El periodo se encuentra cerrado para evitar alteraciones en los siguientes trimestres.
+              </p>
+              {isMaestro && !isDirector && !isSuperAdmin && (
+                <p className="text-[11px] text-amber-800 font-semibold mt-1">
+                  ⚠️ Para rectificar alguna nota por error justificado, solicita formalmente la habilitación a la <strong>Dirección de la Unidad Educativa</strong>.
+                </p>
+              )}
+            </div>
+          </div>
+
+          {(isDirector || isSuperAdmin) && (
+            <button
+              type="button"
+              onClick={() => {
+                setRectifyReason('Error material de transcripción o cálculo de notas');
+                setRectifyCustom('');
+                setShowRectifyModal(true);
+              }}
+              className="inline-flex items-center space-x-2 px-4 py-2.5 bg-amber-600 hover:bg-amber-700 text-white rounded-xl text-xs font-bold transition shadow-sm cursor-pointer whitespace-nowrap self-start sm:self-auto"
+            >
+              <Unlock className="w-4 h-4" />
+              <span>Habilitar Modificación (Dirección)</span>
+            </button>
+          )}
+        </div>
+      ) : isHabilitadoRectificacion ? (
+        <div className="p-4 bg-gradient-to-r from-amber-50 to-emerald-50 border-2 border-amber-400 rounded-2xl text-xs text-amber-950 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 shadow-sm animate-fadeIn">
+          <div className="flex items-start sm:items-center space-x-3.5">
+            <div className="p-2.5 bg-amber-500 text-white rounded-xl shadow-xs shrink-0">
+              <Unlock className="w-5 h-5" />
+            </div>
+            <div>
+              <div className="font-extrabold text-sm text-amber-900 flex items-center gap-2">
+                <span>Modificación Habilitada por Dirección (Rectificación Oficial)</span>
+                <span className="px-2 py-0.5 bg-amber-200 text-amber-900 text-[10px] font-black rounded-full uppercase tracking-wider">
+                  Edición Habilitada
+                </span>
+              </div>
+              <p className="text-slate-800 mt-1 leading-relaxed">
+                Autorizado por: <strong>{trimestreStatus.habilitadoPor}</strong> el <strong>{trimestreStatus.fechaHabilitacion}</strong>.
+                <br />
+                <strong>Motivo formal:</strong> {trimestreStatus.motivoRectificacion || 'Rectificación justificada'}.
+              </p>
+              <p className="text-[11px] text-emerald-800 font-semibold mt-1">
+                ✏️ Puedes corregir las calificaciones. Al concluir las correcciones, presiona <strong>"Aprobar y Re-cerrar Trimestre"</strong> para volver a proteger el periodo.
+              </p>
+            </div>
+          </div>
+
+          <div className="flex items-center gap-2 self-start sm:self-auto">
+            {(isMaestro || isSuperAdmin) && (
+              <button
+                type="button"
+                onClick={() => {
+                  setConfirmApprovedCheck(false);
+                  setShowApproveModal(true);
+                }}
+                className="inline-flex items-center space-x-1.5 px-4 py-2 bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl text-xs font-bold transition shadow-sm cursor-pointer whitespace-nowrap"
+              >
+                <CheckCircle2 className="w-4 h-4" />
+                <span>Aprobar y Re-cerrar</span>
+              </button>
+            )}
+            {(isDirector || isSuperAdmin) && (
+              <button
+                type="button"
+                onClick={handleDirectorReclose}
+                className="inline-flex items-center space-x-1.5 px-3 py-2 bg-slate-200 hover:bg-slate-300 text-slate-800 rounded-xl text-xs font-semibold transition cursor-pointer whitespace-nowrap"
+              >
+                <Lock className="w-3.5 h-3.5" />
+                <span>Re-bloquear</span>
+              </button>
+            )}
+          </div>
+        </div>
+      ) : (
+        <div className="p-3 bg-emerald-50/70 border border-emerald-200 rounded-xl text-xs text-emerald-900 flex items-center justify-between gap-3">
+          <div className="flex items-center space-x-2.5">
+            <CheckCircle2 className="w-4 h-4 text-emerald-600 shrink-0" />
+            <span>
+              <strong>{trimLabel}:</strong> Registro abierto para el llenado de notas. Al finalizar de calificar, presiona <strong>"Aprobar y Cerrar {selectedTrimestre}° Trimestre"</strong> para oficializarlo y bloquearlo contra cambios.
+            </span>
+          </div>
+          {(isMaestro || isSuperAdmin) && (
+            <button
+              type="button"
+              onClick={() => {
+                setConfirmApprovedCheck(false);
+                setShowApproveModal(true);
+              }}
+              className="hidden sm:inline-flex items-center space-x-1 px-3 py-1 bg-emerald-600 hover:bg-emerald-700 text-white font-bold rounded-lg text-[11px] transition shrink-0 cursor-pointer"
+            >
+              <CheckCircle2 className="w-3.5 h-3.5" />
+              <span>Aprobar Trimestre</span>
+            </button>
+          )}
+        </div>
+      )}
 
       {/* Explanatory legend of dimensions */}
       <div className="p-3 bg-slate-50 border border-slate-200 rounded-xl flex flex-col sm:flex-row items-start sm:items-center justify-between text-xs text-slate-600 gap-2">
@@ -896,10 +1222,10 @@ export const GradesPage: React.FC = () => {
                             type="number"
                             min="0"
                             max="5"
-                            disabled={!isMaestro && !isSuperAdmin}
+                            disabled={!canEdit}
                             value={row.serAct1}
                             onChange={(e) => updateField(idx, 'serAct1', parseInt(e.target.value), 5)}
-                            className="w-12 text-center py-1 bg-white border border-slate-200 rounded font-bold text-slate-800 disabled:bg-slate-50"
+                            className="w-12 text-center py-1 bg-white border border-slate-200 rounded font-bold text-slate-800 disabled:bg-slate-100 disabled:text-slate-500 disabled:cursor-not-allowed"
                           />
                         </td>
                         {/* SER Act 2 (5) */}
@@ -908,10 +1234,10 @@ export const GradesPage: React.FC = () => {
                             type="number"
                             min="0"
                             max="5"
-                            disabled={!isMaestro && !isSuperAdmin}
+                            disabled={!canEdit}
                             value={row.serAct2}
                             onChange={(e) => updateField(idx, 'serAct2', parseInt(e.target.value), 5)}
-                            className="w-12 text-center py-1 bg-white border border-slate-200 rounded font-bold text-slate-800 disabled:bg-slate-50"
+                            className="w-12 text-center py-1 bg-white border border-slate-200 rounded font-bold text-slate-800 disabled:bg-slate-100 disabled:text-slate-500 disabled:cursor-not-allowed"
                           />
                         </td>
                         {/* SABER Ev 1 (35) */}
@@ -920,10 +1246,10 @@ export const GradesPage: React.FC = () => {
                             type="number"
                             min="0"
                             max="35"
-                            disabled={!isMaestro && !isSuperAdmin}
+                            disabled={!canEdit}
                             value={row.saberEv1}
                             onChange={(e) => updateField(idx, 'saberEv1', parseInt(e.target.value), 35)}
-                            className="w-14 text-center py-1 bg-white border border-slate-200 rounded font-bold text-slate-800 disabled:bg-slate-50"
+                            className="w-14 text-center py-1 bg-white border border-slate-200 rounded font-bold text-slate-800 disabled:bg-slate-100 disabled:text-slate-500 disabled:cursor-not-allowed"
                           />
                         </td>
                         {/* HACER Prac 1 (35) */}
@@ -932,10 +1258,10 @@ export const GradesPage: React.FC = () => {
                             type="number"
                             min="0"
                             max="35"
-                            disabled={!isMaestro && !isSuperAdmin}
+                            disabled={!canEdit}
                             value={row.hacerPrac1}
                             onChange={(e) => updateField(idx, 'hacerPrac1', parseInt(e.target.value), 35)}
-                            className="w-14 text-center py-1 bg-white border border-slate-200 rounded font-bold text-slate-800 disabled:bg-slate-50"
+                            className="w-14 text-center py-1 bg-white border border-slate-200 rounded font-bold text-slate-800 disabled:bg-slate-100 disabled:text-slate-500 disabled:cursor-not-allowed"
                           />
                         </td>
                       </>
@@ -947,10 +1273,10 @@ export const GradesPage: React.FC = () => {
                             type="number"
                             min="0"
                             max="10"
-                            disabled={!isMaestro && !isSuperAdmin}
+                            disabled={!canEdit}
                             value={row.ser}
                             onChange={(e) => updateField(idx, 'ser', parseInt(e.target.value), 10)}
-                            className="w-14 text-center py-1 bg-white border border-slate-200 rounded font-bold text-slate-800 disabled:bg-slate-50"
+                            className="w-14 text-center py-1 bg-white border border-slate-200 rounded font-bold text-slate-800 disabled:bg-slate-100 disabled:text-slate-500 disabled:cursor-not-allowed"
                           />
                         </td>
                         {/* SABER (35) */}
@@ -959,10 +1285,10 @@ export const GradesPage: React.FC = () => {
                             type="number"
                             min="0"
                             max="35"
-                            disabled={!isMaestro && !isSuperAdmin}
+                            disabled={!canEdit}
                             value={row.saber}
                             onChange={(e) => updateField(idx, 'saber', parseInt(e.target.value), 35)}
-                            className="w-14 text-center py-1 bg-white border border-slate-200 rounded font-bold text-slate-800 disabled:bg-slate-50"
+                            className="w-14 text-center py-1 bg-white border border-slate-200 rounded font-bold text-slate-800 disabled:bg-slate-100 disabled:text-slate-500 disabled:cursor-not-allowed"
                           />
                         </td>
                         {/* HACER (35) */}
@@ -971,10 +1297,10 @@ export const GradesPage: React.FC = () => {
                             type="number"
                             min="0"
                             max="35"
-                            disabled={!isMaestro && !isSuperAdmin}
+                            disabled={!canEdit}
                             value={row.hacer}
                             onChange={(e) => updateField(idx, 'hacer', parseInt(e.target.value), 35)}
-                            className="w-14 text-center py-1 bg-white border border-slate-200 rounded font-bold text-slate-800 disabled:bg-slate-50"
+                            className="w-14 text-center py-1 bg-white border border-slate-200 rounded font-bold text-slate-800 disabled:bg-slate-100 disabled:text-slate-500 disabled:cursor-not-allowed"
                           />
                         </td>
                       </>
@@ -986,10 +1312,10 @@ export const GradesPage: React.FC = () => {
                         type="number"
                         min="0"
                         max="10"
-                        disabled={!isMaestro && !isSuperAdmin}
+                        disabled={!canEdit}
                         value={row.decidir}
                         onChange={(e) => updateField(idx, 'decidir', parseInt(e.target.value), 10)}
-                        className="w-14 text-center py-1 bg-white border border-slate-200 rounded font-bold text-slate-800 disabled:bg-slate-50"
+                        className="w-14 text-center py-1 bg-white border border-slate-200 rounded font-bold text-slate-800 disabled:bg-slate-100 disabled:text-slate-500 disabled:cursor-not-allowed"
                       />
                     </td>
 
@@ -1006,10 +1332,10 @@ export const GradesPage: React.FC = () => {
                         type="number"
                         min="0"
                         max="10"
-                        disabled={!isMaestro && !isSuperAdmin}
+                        disabled={!canEdit}
                         value={row.puntosExtras}
                         onChange={(e) => updateField(idx, 'puntosExtras', parseInt(e.target.value), 10)}
-                        className="w-12 text-center py-1 bg-white border border-slate-200 rounded font-bold text-amber-700 disabled:bg-slate-50"
+                        className="w-12 text-center py-1 bg-white border border-slate-200 rounded font-bold text-amber-700 disabled:bg-slate-100 disabled:text-slate-500 disabled:cursor-not-allowed"
                       />
                     </td>
 
@@ -1046,6 +1372,193 @@ export const GradesPage: React.FC = () => {
           </table>
         </div>
       </div>
+
+      {/* Modal Docente: Confirmación de Aprobación y Cierre de Trimestre */}
+      {showApproveModal && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/60 backdrop-blur-xs p-4 animate-fadeIn">
+          <div className="bg-white rounded-2xl max-w-lg w-full p-6 shadow-2xl border border-slate-100">
+            <div className="flex justify-between items-start pb-4 border-b border-slate-100">
+              <div className="flex items-center space-x-3">
+                <div className="p-2.5 bg-emerald-100 text-emerald-800 rounded-xl">
+                  <CheckCircle2 className="w-6 h-6" />
+                </div>
+                <div>
+                  <h3 className="text-base font-bold text-slate-900">
+                    Aprobar y Cerrar {trimLabel}
+                  </h3>
+                  <p className="text-xs text-slate-500">
+                    {currentCursoObj?.nombre} • {currentAsigObj?.nombre}
+                  </p>
+                </div>
+              </div>
+              <button
+                onClick={() => setShowApproveModal(false)}
+                className="text-slate-400 hover:text-slate-600 p-1 rounded-lg cursor-pointer"
+              >
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+
+            <div className="py-4 space-y-3.5 text-xs">
+              <div className="p-3.5 bg-amber-50 border border-amber-200 rounded-xl text-amber-900 space-y-2">
+                <div className="flex items-center space-x-2 font-bold text-amber-950">
+                  <AlertTriangle className="w-4 h-4 text-amber-600 shrink-0" />
+                  <span>Consecuencias del Cierre Oficial:</span>
+                </div>
+                <ul className="list-disc pl-5 space-y-1 text-slate-700">
+                  <li>Las notas de este trimestre quedarán <strong>bloqueadas en modo solo lectura</strong>.</li>
+                  <li>No se podrán modificar calificaciones en los siguientes trimestres para evitar inconsistencias en el centralizador.</li>
+                  <li>Únicamente la <strong>Dirección de la Unidad Educativa</strong> podrá autorizar una rectificación formal si se presenta un motivo justificado.</li>
+                </ul>
+              </div>
+
+              <div className="bg-slate-50 p-3 rounded-xl border border-slate-200 space-y-1.5">
+                <div className="flex justify-between text-slate-600">
+                  <span>Estudiantes Evaluados:</span>
+                  <span className="font-bold text-slate-900">{rows.length} alumnos</span>
+                </div>
+                <div className="flex justify-between text-slate-600">
+                  <span>Responsable de Aprobación:</span>
+                  <span className="font-bold text-slate-900">{userFullName}</span>
+                </div>
+                <div className="flex justify-between text-slate-600">
+                  <span>Gestión Educativa:</span>
+                  <span className="font-bold text-slate-900">2026</span>
+                </div>
+              </div>
+
+              <label className="flex items-start space-x-2.5 pt-2 cursor-pointer select-none">
+                <input
+                  type="checkbox"
+                  checked={confirmApprovedCheck}
+                  onChange={(e) => setConfirmApprovedCheck(e.target.checked)}
+                  className="mt-0.5 rounded text-emerald-600 focus:ring-emerald-500 w-4 h-4 cursor-pointer"
+                />
+                <span className="text-slate-700 font-semibold leading-tight">
+                  Doy mi aprobación formal de que las calificaciones registradas son correctas, definitivas y conformes a la normativa de evaluación.
+                </span>
+              </label>
+            </div>
+
+            <div className="pt-3 border-t border-slate-100 flex justify-end space-x-2">
+              <button
+                type="button"
+                onClick={() => setShowApproveModal(false)}
+                className="px-4 py-2 border border-slate-200 text-slate-600 text-xs font-semibold rounded-xl hover:bg-slate-50 transition cursor-pointer"
+              >
+                Cancelar
+              </button>
+              <button
+                type="button"
+                disabled={!confirmApprovedCheck || approving}
+                onClick={handleConfirmApprove}
+                className="px-5 py-2 bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-bold rounded-xl transition shadow-sm disabled:opacity-50 cursor-pointer flex items-center space-x-2"
+              >
+                <Lock className="w-4 h-4" />
+                <span>{approving ? 'Bloqueando Trimestre...' : 'Aprobar y Bloquear Trimestre'}</span>
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Modal Dirección: Habilitar Modificación de Notas (Rectificación) */}
+      {showRectifyModal && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/60 backdrop-blur-xs p-4 animate-fadeIn">
+          <div className="bg-white rounded-2xl max-w-lg w-full p-6 shadow-2xl border border-slate-100">
+            <div className="flex justify-between items-start pb-4 border-b border-slate-100">
+              <div className="flex items-center space-x-3">
+                <div className="p-2.5 bg-amber-100 text-amber-800 rounded-xl">
+                  <KeyRound className="w-6 h-6" />
+                </div>
+                <div>
+                  <h3 className="text-base font-bold text-slate-900">
+                    Autorización de Dirección: Habilitar Modificación
+                  </h3>
+                  <p className="text-xs text-slate-500">
+                    {currentCursoObj?.nombre} • {currentAsigObj?.nombre} ({trimLabel})
+                  </p>
+                </div>
+              </div>
+              <button
+                onClick={() => setShowRectifyModal(false)}
+                className="text-slate-400 hover:text-slate-600 p-1 rounded-lg cursor-pointer"
+              >
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+
+            <div className="py-4 space-y-3.5 text-xs">
+              <div className="p-3 bg-blue-50 border border-blue-200 rounded-xl text-blue-900 leading-relaxed">
+                ℹ️ Como <strong>Dirección de la Unidad Educativa</strong>, tienes la potestad legal y administrativa de desbloquear este trimestre para que el docente pueda rectificar calificaciones fundamentadas.
+              </div>
+
+              <div>
+                <label className="block text-xs font-bold text-slate-700 mb-1.5">
+                  Motivo Administrativo de la Rectificación:
+                </label>
+                <select
+                  value={rectifyReason}
+                  onChange={(e) => setRectifyReason(e.target.value)}
+                  className="w-full px-3 py-2 border border-slate-300 rounded-xl text-xs font-medium text-slate-800 focus:outline-none focus:ring-2 focus:ring-amber-500"
+                >
+                  <option value="Error material de transcripción o cálculo de notas">
+                    Error material de transcripción o cálculo de notas
+                  </option>
+                  <option value="Revisión de prueba objetiva con estudiante / reclamo fundado">
+                    Revisión de prueba objetiva con estudiante / reclamo fundado
+                  </option>
+                  <option value="Presentación extemporánea de justificativo médico o licencia formal">
+                    Presentación extemporánea de justificativo médico o licencia formal
+                  </option>
+                  <option value="Disposición de Consejo de Maestros / Resolución Interna">
+                    Disposición de Consejo de Maestros / Resolución Interna
+                  </option>
+                  <option value="Otro motivo debidamente fundamentado">
+                    Otro motivo debidamente fundamentado...
+                  </option>
+                </select>
+              </div>
+
+              <div>
+                <label className="block text-xs font-bold text-slate-700 mb-1">
+                  Detalle u Observación Oficial (Opcional):
+                </label>
+                <textarea
+                  rows={2}
+                  value={rectifyCustom}
+                  onChange={(e) => setRectifyCustom(e.target.value)}
+                  placeholder="Escribe detalles adicionales sobre la rectificación autorizada..."
+                  className="w-full px-3 py-2 border border-slate-300 rounded-xl text-xs text-slate-800 focus:outline-none focus:ring-2 focus:ring-amber-500"
+                />
+              </div>
+
+              <div className="p-3 bg-amber-50 rounded-xl border border-amber-200 text-amber-800 text-[11px] leading-tight">
+                ⚠️ Una vez habilitada la modificación, el docente asignado podrá editar las notas. Al concluir, el docente deberá volver a presionar <strong>"Aprobar y Re-cerrar Trimestre"</strong>.
+              </div>
+            </div>
+
+            <div className="pt-3 border-t border-slate-100 flex justify-end space-x-2">
+              <button
+                type="button"
+                onClick={() => setShowRectifyModal(false)}
+                className="px-4 py-2 border border-slate-200 text-slate-600 text-xs font-semibold rounded-xl hover:bg-slate-50 transition cursor-pointer"
+              >
+                Cancelar
+              </button>
+              <button
+                type="button"
+                disabled={unlocking}
+                onClick={handleConfirmRectify}
+                className="px-5 py-2 bg-amber-600 hover:bg-amber-700 text-white text-xs font-bold rounded-xl transition shadow-sm disabled:opacity-50 cursor-pointer flex items-center space-x-2"
+              >
+                <Unlock className="w-4 h-4" />
+                <span>{unlocking ? 'Habilitando...' : 'Autorizar y Habilitar Modificación'}</span>
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 };
