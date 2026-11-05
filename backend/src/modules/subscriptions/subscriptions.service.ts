@@ -337,7 +337,7 @@ export class SubscriptionsService {
         montoActual: Number(sub.montoActual),
         mrrIndividual: Math.round(mrrIndiv * 100) / 100,
         ultimoPago: sub.pagos[0] || null,
-        activo: sub.institucion.activo,
+        activo: sub.institucion.activo ?? true,
       };
     });
 
