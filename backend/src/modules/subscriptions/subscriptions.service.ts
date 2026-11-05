@@ -290,6 +290,88 @@ export class SubscriptionsService {
       },
     });
 
+    // Detalle por institución con métricas individuales
+    const detallePorInstitucion = await this.prisma.suscripcionInstitucion.findMany({
+      include: {
+        institucion: { select: { id: true, sie: true, nombre: true, departamento: true, municipio: true } },
+        plan: { select: { nombre: true, codigo: true, precioMensual: true, precioAnual: true } },
+        pagos: {
+          orderBy: { createdAt: 'desc' },
+          take: 1,
+          select: { id: true, monto: true, estado: true, createdAt: true, codigoTransaccion: true },
+        },
+      },
+      orderBy: { updatedAt: 'desc' },
+    });
+
+    const detalle = detallePorInstitucion.map(sub => {
+      const esAnual = sub.periodoFacturacion === PeriodoFacturacion.ANUAL;
+      const precio = esAnual ? Number(sub.plan.precioAnual) : Number(sub.plan.precioMensual);
+      const mrrIndiv = esAnual ? precio / 12 : precio;
+      const fechaFin = new Date(sub.fechaFin);
+      const ahora = new Date();
+      const diffMs = fechaFin.getTime() - ahora.getTime();
+      const diasRestantes = Math.max(0, Math.ceil(diffMs / (1000 * 60 * 60 * 24)));
+
+      let estadoCalc = sub.estado;
+      if (diasRestantes === 0 && sub.estado === EstadoSuscripcion.ACTIVA) {
+        estadoCalc = EstadoSuscripcion.GRACIA;
+      } else if (diasRestantes === 0) {
+        estadoCalc = EstadoSuscripcion.VENCIDA;
+      }
+
+      return {
+        institucionId: sub.institucionId,
+        sie: sub.institucion.sie,
+        nombre: sub.institucion.nombre,
+        departamento: sub.institucion.departamento,
+        municipio: sub.institucion.municipio,
+        planCodigo: sub.plan.codigo,
+        planNombre: sub.plan.nombre,
+        estado: estadoCalc,
+        periodoFacturacion: sub.periodoFacturacion,
+        mesesContratados: esAnual ? 12 : 1,
+        fechaInicio: sub.fechaInicio,
+        fechaFin: sub.fechaFin,
+        diasRestantes,
+        montoActual: Number(sub.montoActual),
+        mrrIndividual: Math.round(mrrIndiv * 100) / 100,
+        ultimoPago: sub.pagos[0] || null,
+        activo: sub.institucion.activo,
+      };
+    });
+
+    // Métricas por mes (últimos 12 meses)
+    const ultimos12Meses = [];
+    for (let i = 11; i >= 0; i--) {
+      const fecha = new Date();
+      fecha.setMonth(fecha.getMonth() - i);
+      const inicioMes = new Date(fecha.getFullYear(), fecha.getMonth(), 1);
+      const finMes = new Date(fecha.getFullYear(), fecha.getMonth() + 1, 0, 23, 59, 59);
+
+      const pagosMes = await this.prisma.historialPagoSuscripcion.count({
+        where: {
+          estado: EstadoPagoSaaS.APROBADO,
+          fechaPago: { gte: inicioMes, lte: finMes },
+        },
+      });
+
+      const ingresosMes = await this.prisma.historialPagoSuscripcion.aggregate({
+        where: {
+          estado: EstadoPagoSaaS.APROBADO,
+          fechaPago: { gte: inicioMes, lte: finMes },
+        },
+        _sum: { monto: true },
+      });
+
+      ultimos12Meses.push({
+        mes: fecha.toLocaleDateString('es-BO', { month: 'short', year: 'numeric' }),
+        anioMes: `${fecha.getFullYear()}-${String(fecha.getMonth() + 1).padStart(2, '0')}`,
+        pagos: pagosMes,
+        ingresos: Number(ingresosMes._sum.monto || 0),
+      });
+    }
+
     return {
       totalInstituciones,
       totalSuscripciones,
@@ -298,6 +380,24 @@ export class SubscriptionsService {
       mrrEstimadoBOB: Math.round(mrr * 100) / 100,
       arrEstimadoBOB: Math.round(mrr * 12 * 100) / 100,
       ultimosPagos,
+      detallePorInstitucion: detalle,
+      metricasPorMes: ultimos12Meses,
+      resumenEstados: {
+        activa: detalle.filter(d => d.estado === EstadoSuscripcion.ACTIVA).length,
+        trial: detalle.filter(d => d.estado === EstadoSuscripcion.TRIAL).length,
+        gracia: detalle.filter(d => d.estado === EstadoSuscripcion.GRACIA).length,
+        vencida: detalle.filter(d => d.estado === EstadoSuscripcion.VENCIDA).length,
+        cancelada: detalle.filter(d => d.estado === EstadoSuscripcion.CANCELADA).length,
+      },
+      resumenPlanes: {
+        PLAN_PRO: detalle.filter(d => d.planCodigo === 'PLAN_PRO').length,
+        PLAN_ENTERPRISE: detalle.filter(d => d.planCodigo === 'PLAN_ENTERPRISE').length,
+      },
+      resumenPeriodos: {
+        MENSUAL: detalle.filter(d => d.periodoFacturacion === PeriodoFacturacion.MENSUAL).length,
+        ANUAL: detalle.filter(d => d.periodoFacturacion === PeriodoFacturacion.ANUAL).length,
+        SEMESTRAL: detalle.filter(d => d.periodoFacturacion === PeriodoFacturacion.SEMESTRAL).length,
+      },
     };
   }
 }

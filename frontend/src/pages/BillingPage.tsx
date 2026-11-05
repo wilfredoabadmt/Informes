@@ -302,47 +302,156 @@ export const BillingPage: React.FC = () => {
 
       {/* Superadmin SaaS Overview (Solo visible para Administradores de la Plataforma) */}
       {isSuperadmin && (
-        <div className="bg-gradient-to-r from-slate-900 to-emerald-950 text-white rounded-3xl p-6 shadow-xl">
-          <div className="flex items-center justify-between mb-6">
-            <div>
-              <span className="text-xs font-bold uppercase text-emerald-400 tracking-wider">
-                Métricas de Negocio de la Plataforma (Superadmin)
-              </span>
-              <h2 className="text-xl font-bold mt-1">Gobernanza SaaS • Sistema Nacional</h2>
+        <div className="space-y-6">
+          <div className="bg-gradient-to-r from-slate-900 to-emerald-950 text-white rounded-3xl p-6 shadow-xl">
+            <div className="flex items-center justify-between mb-6">
+              <div>
+                <span className="text-xs font-bold uppercase text-emerald-400 tracking-wider">
+                  Métricas de Negocio de la Plataforma (Superadmin)
+                </span>
+                <h2 className="text-xl font-bold mt-1">Gobernanza SaaS • Sistema Nacional</h2>
+              </div>
+              <button
+                onClick={fetchAdminOverview}
+                className="p-2 bg-white/10 hover:bg-white/20 rounded-xl transition cursor-pointer text-xs flex items-center space-x-1"
+              >
+                <RefreshCw className="w-3.5 h-3.5" />
+                <span>Actualizar</span>
+              </button>
             </div>
-            <button
-              onClick={fetchAdminOverview}
-              className="p-2 bg-white/10 hover:bg-white/20 rounded-xl transition cursor-pointer text-xs flex items-center space-x-1"
-            >
-              <RefreshCw className="w-3.5 h-3.5" />
-              <span>Actualizar</span>
-            </button>
+
+            <div className="grid grid-cols-2 sm:grid-cols-4 gap-4 mb-6">
+              <div className="bg-white/10 backdrop-blur-sm p-4 rounded-2xl border border-white/10">
+                <p className="text-xs text-slate-300">Ingreso Mensual (MRR)</p>
+                <p className="text-2xl font-black text-emerald-300 mt-1">
+                  Bs. {adminOverview?.mrrEstimadoBOB || '4.800'}
+                </p>
+              </div>
+              <div className="bg-white/10 backdrop-blur-sm p-4 rounded-2xl border border-white/10">
+                <p className="text-xs text-slate-300">Ingreso Anual (ARR)</p>
+                <p className="text-2xl font-black text-emerald-300 mt-1">
+                  Bs. {adminOverview?.arrEstimadoBOB || '57.600'}
+                </p>
+              </div>
+              <div className="bg-white/10 backdrop-blur-sm p-4 rounded-2xl border border-white/10">
+                <p className="text-xs text-slate-300">Colegios Activos</p>
+                <p className="text-2xl font-black text-white mt-1">
+                  {adminOverview?.activas || 3}
+                </p>
+              </div>
+              <div className="bg-white/10 backdrop-blur-sm p-4 rounded-2xl border border-white/10">
+                <p className="text-xs text-slate-300">En Prueba Gratuita</p>
+                <p className="text-2xl font-black text-amber-300 mt-1">
+                  {adminOverview?.trials || 1}
+                </p>
+              </div>
+            </div>
+
+            {/* Resumen Estados */}
+            <div className="grid grid-cols-2 sm:grid-cols-5 gap-3 mb-6">
+              {[
+                { label: 'Activos', value: adminOverview?.resumenEstados?.activa || 0, color: 'text-emerald-300' },
+                { label: 'Trial', value: adminOverview?.resumenEstados?.trial || 0, color: 'text-amber-300' },
+                { label: 'Gracia', value: adminOverview?.resumenEstados?.gracia || 0, color: 'text-yellow-300' },
+                { label: 'Vencidos', value: adminOverview?.resumenEstados?.vencida || 0, color: 'text-red-300' },
+                { label: 'Cancelados', value: adminOverview?.resumenEstados?.cancelada || 0, color: 'text-slate-400' },
+              ].map((item, i) => (
+                <div key={i} className="bg-white/5 backdrop-blur-sm p-3 rounded-xl border border-white/10 text-center">
+                  <p className="text-[10px] uppercase tracking-wider text-slate-400">{item.label}</p>
+                  <p className={`text-xl font-black ${item.color} mt-1`}>{item.value}</p>
+                </div>
+              ))}
+            </div>
           </div>
 
-          <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
-            <div className="bg-white/10 backdrop-blur-sm p-4 rounded-2xl border border-white/10">
-              <p className="text-xs text-slate-300">Ingreso Mensual (MRR)</p>
-              <p className="text-2xl font-black text-emerald-300 mt-1">
-                Bs. {adminOverview?.mrrEstimadoBOB || '4.800'}
-              </p>
+          {/* Detalle por Institución */}
+          <div className="bg-white rounded-3xl p-6 shadow-sm border border-slate-200">
+            <div className="flex items-center justify-between mb-4">
+              <h3 className="text-lg font-bold text-slate-900">Detalle por Colegio • Suscripciones Individuales</h3>
+              <span className="text-xs text-slate-500">
+                {adminOverview?.detallePorInstitucion?.length || 0} instituciones registradas
+              </span>
             </div>
-            <div className="bg-white/10 backdrop-blur-sm p-4 rounded-2xl border border-white/10">
-              <p className="text-xs text-slate-300">Ingreso Anual (ARR)</p>
-              <p className="text-2xl font-black text-emerald-300 mt-1">
-                Bs. {adminOverview?.arrEstimadoBOB || '57.600'}
-              </p>
+
+            <div className="overflow-x-auto">
+              <table className="w-full text-xs">
+                <thead>
+                  <tr className="border-b border-slate-200">
+                    <th className="text-left py-2 px-3 font-bold text-slate-600">SIE - Colegio</th>
+                    <th className="text-left py-2 px-3 font-bold text-slate-600">Departamento</th>
+                    <th className="text-left py-2 px-3 font-bold text-slate-600">Plan</th>
+                    <th className="text-left py-2 px-3 font-bold text-slate-600">Tipo</th>
+                    <th className="text-left py-2 px-3 font-bold text-slate-600">Estado</th>
+                    <th className="text-left py-2 px-3 font-bold text-slate-600">Vencimiento</th>
+                    <th className="text-right py-2 px-3 font-bold text-slate-600">MRR (Bs.)</th>
+                    <th className="text-right py-2 px-3 font-bold text-slate-600">Monto Actual</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {adminOverview?.detallePorInstitucion?.map((inst: any, idx: number) => (
+                    <tr key={idx} className="border-b border-slate-100 hover:bg-slate-50">
+                      <td className="py-2.5 px-3">
+                        <div>
+                          <p className="font-bold text-slate-900">{inst.nombre}</p>
+                          <p className="text-[10px] text-slate-500 font-mono">{inst.sie}</p>
+                        </div>
+                      </td>
+                      <td className="py-2.5 px-3 text-slate-600">{inst.departamento} / {inst.municipio}</td>
+                      <td className="py-2.5 px-3">
+                        <span className="px-2 py-1 rounded-lg bg-slate-100 text-slate-700 font-bold text-[10px]">
+                          {inst.planNombre}
+                        </span>
+                      </td>
+                      <td className="py-2.5 px-3">
+                        <span className={`px-2 py-1 rounded text-[10px] font-bold ${
+                          inst.periodoFacturacion === 'ANUAL'
+                            ? 'bg-emerald-100 text-emerald-800'
+                            : 'bg-blue-100 text-blue-800'
+                        }`}>
+                          {inst.periodoFacturacion} ({inst.mesesContratados} meses)
+                        </span>
+                      </td>
+                      <td className="py-2.5 px-3">
+                        <span className={`px-2 py-0.5 rounded-full text-[10px] font-black uppercase ${
+                          inst.estado === 'ACTIVA' ? 'bg-emerald-100 text-emerald-800' :
+                          inst.estado === 'TRIAL' ? 'bg-amber-100 text-amber-800' :
+                          inst.estado === 'GRACIA' ? 'bg-yellow-100 text-yellow-800' :
+                          inst.estado === 'VENCIDA' ? 'bg-red-100 text-red-800' :
+                          'bg-slate-100 text-slate-600'
+                        }`}>
+                          {inst.estado}
+                        </span>
+                      </td>
+                      <td className="py-2.5 px-3">
+                        <p className="text-slate-900 font-mono">{new Date(inst.fechaFin).toLocaleDateString('es-BO')}</p>
+                        <p className={`text-[10px] ${inst.diasRestantes <= 7 ? 'text-red-600 font-bold' : 'text-slate-500'}`}>
+                          {inst.diasRestantes} días restantes
+                        </p>
+                      </td>
+                      <td className="py-2.5 px-3 text-right font-bold text-emerald-700">
+                        Bs. {inst.mrrIndividual.toFixed(2)}
+                      </td>
+                      <td className="py-2.5 px-3 text-right font-bold text-slate-900">
+                        Bs. {inst.montoActual.toFixed(2)}
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
             </div>
-            <div className="bg-white/10 backdrop-blur-sm p-4 rounded-2xl border border-white/10">
-              <p className="text-xs text-slate-300">Colegios Activos</p>
-              <p className="text-2xl font-black text-white mt-1">
-                {adminOverview?.activas || 3}
-              </p>
-            </div>
-            <div className="bg-white/10 backdrop-blur-sm p-4 rounded-2xl border border-white/10">
-              <p className="text-xs text-slate-300">En Prueba Gratuita</p>
-              <p className="text-2xl font-black text-amber-300 mt-1">
-                {adminOverview?.trials || 1}
-              </p>
+          </div>
+
+          {/* Métricas por Mes */}
+          <div className="bg-white rounded-3xl p-6 shadow-sm border border-slate-200">
+            <h3 className="text-lg font-bold text-slate-900 mb-4">Ingresos Mensuales • Últimos 12 Meses</h3>
+            <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-6 gap-3">
+              {adminOverview?.metricasPorMes?.map((mes: any, idx: number) => (
+                <div key={idx} className="bg-slate-50 rounded-2xl p-3 border border-slate-200 text-center">
+                  <p className="text-[10px] uppercase text-slate-500 font-bold">{mes.mes}</p>
+                  <p className="text-lg font-black text-slate-900 mt-1">Bs. {(mes.ingresos / 1000).toFixed(1)}k</p>
+                  <p className="text-[10px] text-slate-500">{mes.pagos} pagos</p>
+                </div>
+              ))}
             </div>
           </div>
         </div>
