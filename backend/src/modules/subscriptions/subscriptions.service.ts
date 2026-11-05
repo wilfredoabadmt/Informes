@@ -293,7 +293,7 @@ export class SubscriptionsService {
     // Detalle por institución con métricas individuales
     const detallePorInstitucion = await this.prisma.suscripcionInstitucion.findMany({
       include: {
-        institucion: { select: { id: true, sie: true, nombre: true, departamento: true, municipio: true } },
+        institucion: { select: { id: true, sie: true, nombre: true, departamento: true, municipio: true, activo: true } },
         plan: { select: { nombre: true, codigo: true, precioMensual: true, precioAnual: true } },
         pagos: {
           orderBy: { createdAt: 'desc' },
